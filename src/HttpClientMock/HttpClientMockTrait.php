@@ -146,6 +146,29 @@ trait HttpClientMockTrait
         }
     }
 
+    protected static function assertRequestMockIsCalledWithQueryParameter(
+        string $name,
+        string $expected,
+        MockRequestBuilder $actualRequest,
+        string $message = ''
+    ): void {
+        $callStack = $actualRequest->getCallStack();
+        self::assertNotEmpty($callStack, $message);
+
+        foreach ($callStack as $call) {
+            self::assertEquals(
+                $expected,
+                $call->getQueryParams()[$name],
+                self::mockRequestMessage(
+                    $message,
+                    'Request not called with expected query parameter "%s": %s',
+                    $name,
+                    (string) $call
+                )
+            );
+        }
+    }
+
     /**
      * @param mixed[] $expected
      */
