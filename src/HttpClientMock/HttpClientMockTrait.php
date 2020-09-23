@@ -156,12 +156,31 @@ trait HttpClientMockTrait
         self::assertNotEmpty($callStack, $message);
 
         foreach ($callStack as $call) {
-            self::assertEquals(
-                $expected,
-                $call->getQueryParams()[$name],
+            $queryParams = $call->getQueryParams();
+            self::assertIsArray(
+                $queryParams,
+                self::mockRequestMessage(
+                    $message,
+                    'Request called without parameters: %s',
+                    (string) $call
+                )
+            );
+            self::assertArrayHasKey(
+                $name,
+                $queryParams,
                 self::mockRequestMessage(
                     $message,
                     'Request not called with expected query parameter "%s": %s',
+                    $name,
+                    (string) $call
+                )
+            );
+            self::assertEquals(
+                $expected,
+                $queryParams[$name],
+                self::mockRequestMessage(
+                    $message,
+                    'Request not called with expected query parameter value "%s": %s',
                     $name,
                     (string) $call
                 )
