@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\ZipContents;
 
+use DateTimeImmutable;
+use DateTimeZone;
+
 use function array_key_exists;
 use function fseek;
 use function ftell;
@@ -17,7 +20,6 @@ use function Safe\filesize;
 use function Safe\fopen;
 use function Safe\fread;
 use function Safe\iconv;
-use function Safe\mktime;
 use function Safe\rewind;
 use function Safe\substr;
 use function strlen;
@@ -242,7 +244,10 @@ final class ZipContents
             $minute = ($mtime & 0x07E0) >> 5;
             $second = ($mtime & 0x001F) << 1;
 
-            $mtime = mktime($hour, $minute, $second, $month, $day, $year);
+            $mtime = (int) (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+                ->setDate($year, $month, $day)
+                ->setTime($hour, $minute, $second, 0)
+                ->format('U');
         } else {
             $mtime = time();
         }
