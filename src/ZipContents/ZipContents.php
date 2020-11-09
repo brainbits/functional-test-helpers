@@ -22,9 +22,9 @@ use function Safe\fread;
 use function Safe\iconv;
 use function Safe\rewind;
 use function Safe\substr;
+use function Safe\unpack;
 use function strlen;
 use function time;
-use function unpack;
 
 final class ZipContents
 {
