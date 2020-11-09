@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\UnprocessableBody;
 use Riverline\MultiPartParser\StreamedPart;
 
 use function array_key_exists;
 use function assert;
 use function explode;
+use function is_callable;
+use function is_string;
 use function Safe\fopen;
 use function Safe\fwrite;
 use function Safe\json_decode;
@@ -84,8 +87,14 @@ final class MockRequestBuilderFactory
 
             fwrite($stream, "\r\n");
 
-            while ($chunk = ($body)(1000)) {
-                fwrite($stream, $chunk);
+            if (is_string($body)) {
+                fwrite($stream, $body);
+            } elseif (is_callable($body)) {
+                while ($chunk = ($body)(1000)) {
+                    fwrite($stream, $chunk);
+                }
+            } else {
+                throw UnprocessableBody::create();
             }
 
             rewind($stream);
