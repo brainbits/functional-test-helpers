@@ -135,4 +135,32 @@ final class MockRequestBuilderTest extends TestCase
 
         self::assertFalse($mockRequestBuilder->hasResponseBuilder());
     }
+
+    public function testXmlStringsAreDetectedAsXml(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->content('<root><first>abc</first></root>');
+
+        self::assertTrue($mockRequestBuilder->isXml());
+        self::assertFalse($mockRequestBuilder->isEmpty());
+        self::assertFalse($mockRequestBuilder->isJson());
+    }
+
+    public function testXmlStringsAreAccessibleAsSimpleXmlObjects(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->content('<root><first>abc</first></root>');
+
+        self::assertSame('abc', (string) $mockRequestBuilder->getXml()->first);
+    }
+
+    public function testXmlStringsWithNamespacesAreAccessibleAsSimpleXmlObjects(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->content('<root xmlns="http://example.org/xml"><first>abc</first></root>');
+
+        $xml = $mockRequestBuilder->getXml(['x' => 'http://example.org/xml']);
+
+        self::assertSame('abc', (string) $xml->xpath('//x:first')[0]);
+    }
 }

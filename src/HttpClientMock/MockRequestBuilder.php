@@ -7,6 +7,8 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoUriConfigured;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\ResponseAlreadyConfigured;
 use Safe\Exceptions\JsonException;
+use Safe\Exceptions\SimplexmlException;
+use SimpleXMLElement;
 use Symfony\Component\HttpFoundation\File\File;
 use Throwable;
 
@@ -18,6 +20,7 @@ use function is_subclass_of;
 use function Safe\json_decode;
 use function Safe\json_encode;
 use function Safe\preg_match;
+use function Safe\simplexml_load_string;
 use function Safe\sprintf;
 use function Safe\substr;
 use function str_repeat;
@@ -153,6 +156,21 @@ final class MockRequestBuilder
         return true;
     }
 
+    public function isXml(): bool
+    {
+        if (!$this->hasContent()) {
+            return false;
+        }
+
+        try {
+            simplexml_load_string($this->content);
+        } catch (SimplexmlException $e) {
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * @return mixed[]
      */
@@ -163,6 +181,24 @@ final class MockRequestBuilder
         }
 
         return json_decode($this->content, true);
+    }
+
+    /**
+     * @param array<string, string> $namespaces
+     */
+    public function getXml(array $namespaces = []): ?SimpleXMLElement
+    {
+        if (!$this->isXml()) {
+            return null;
+        }
+
+        $xml = simplexml_load_string($this->content);
+
+        foreach ($namespaces as $prefix => $namespace) {
+            $xml->registerXPathNamespace($prefix, $namespace);
+        }
+
+        return $xml;
     }
 
     public function queryParam(string $key, string $value, string ...$placeholders): self
