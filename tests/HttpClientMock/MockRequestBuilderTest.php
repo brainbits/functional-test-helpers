@@ -118,6 +118,15 @@ final class MockRequestBuilderTest extends TestCase
         self::assertSame(['one' => '1', 'two' => '2', 'three' => 'a b c'], $mockRequestBuilder->getQueryParams());
     }
 
+    public function testIgnoresEmptyQueryString(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->uri('http://example.org?');
+
+        self::assertNull($mockRequestBuilder->getQueryParams());
+        self::assertSame('http://example.org', $mockRequestBuilder->getUri());
+    }
+
     public function testExceptionIsResettable(): void
     {
         $mockRequestBuilder = (new MockRequestBuilder())

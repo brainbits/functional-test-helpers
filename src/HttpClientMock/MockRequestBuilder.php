@@ -437,6 +437,10 @@ final class MockRequestBuilder
      */
     private function parseEncodedParams(string $encodedParams): array
     {
+        if ($encodedParams === '') {
+            return [];
+        }
+
         $params = [];
 
         foreach (explode('&', $encodedParams) as $keyValue) {
