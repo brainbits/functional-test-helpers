@@ -87,7 +87,7 @@ trait SchemaTrait
     {
         foreach ($dataBuilder->getData() as $table => $rows) {
             foreach ($rows as $row) {
-                $connection->insert($table, $row);
+                $connection->insert($connection->quoteIdentifier($table), $row);
             }
         }
     }
