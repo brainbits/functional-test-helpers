@@ -9,10 +9,6 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
-use function trigger_error;
-
-use const E_USER_DEPRECATED;
-
 // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
 
 /**
@@ -20,27 +16,7 @@ use const E_USER_DEPRECATED;
  */
 trait SchemaTrait
 {
-    /**
-     * @deprecated use fixtureFromConnection()
-     */
-    final protected function fixtureFromServiceConnection(
-        Connection $connection,
-        SchemaBuilder $schemaBuilder,
-        DataBuilder $dataBuilder,
-        callable $buildData,
-        bool $quoteDataTable = true
-    ): Connection {
-        trigger_error(
-            'fixtureFromServiceConnection() is deprecated, use fixtureFromConnection()',
-            E_USER_DEPRECATED,
-        );
-
-        $this->fixtureFromConnection($connection, $schemaBuilder, $dataBuilder, $buildData, $quoteDataTable);
-
-        return $connection;
-    }
-
-    final protected function fixtureFromConnection(
+    final protected function fixtureFromConnection( // @phpstan-ignore-line
         Connection $connection,
         SchemaBuilder $schemaBuilder,
         DataBuilder $dataBuilder,
@@ -53,7 +29,7 @@ trait SchemaTrait
         $this->applyData($dataBuilder, $connection, $quoteDataTable);
     }
 
-    final protected function fixtureFromNewConnection(
+    final protected function fixtureFromNewConnection( // @phpstan-ignore-line
         SchemaBuilder $schemaBuilder,
         DataBuilder $dataBuilder,
         callable $buildData,

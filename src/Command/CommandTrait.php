@@ -8,10 +8,6 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
-use function trigger_error;
-
-use const E_USER_DEPRECATED;
-
 /**
  * @mixin WebTestCase
  */
@@ -29,20 +25,6 @@ trait CommandTrait
         $commandTester->execute($input, $options);
 
         return $commandTester;
-    }
-
-    final protected static function assertConsoleOutputContains(string $needle, CommandTester $commandTester): void
-    {
-        @trigger_error('Use assertCommandOutputContains() instead of assertConsoleOutputContains()', E_USER_DEPRECATED);
-
-        self::assertCommandOutputContains($needle, $commandTester);
-    }
-
-    final protected static function assertConsoleStatusCodeSame(int $expectedCode, CommandTester $commandTester): void
-    {
-        @trigger_error('Use assertCommandStatusCodeSame() instead of assertConsoleStatusCodeSame()', E_USER_DEPRECATED);
-
-        self::assertCommandStatusCodeSame($expectedCode, $commandTester);
     }
 
     final protected static function assertCommandOutputContains(string $needle, CommandTester $commandTester): void

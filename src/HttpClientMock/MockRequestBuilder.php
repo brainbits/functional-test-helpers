@@ -27,13 +27,11 @@ use function str_repeat;
 use function str_replace;
 use function strpos;
 use function strtolower;
-use function trigger_error;
 use function trim;
 use function ucwords;
 use function urldecode;
 use function urlencode;
 
-use const E_USER_DEPRECATED;
 use const PHP_EOL;
 
 final class MockRequestBuilder
@@ -128,15 +126,11 @@ final class MockRequestBuilder
     }
 
     /**
-     * @param mixed[]|null $data
+     * @param mixed[] $data
      */
-    public function json(?array $data = null): self
+    public function json(array $data): self
     {
-        if ($data !== null) {
-            $this->content(json_encode($data));
-        } else {
-            trigger_error('Calling json() without data is deprecated', E_USER_DEPRECATED);
-        }
+        $this->content(json_encode($data));
 
         return $this;
     }
