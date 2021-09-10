@@ -184,12 +184,11 @@ final class RequestBuilder
     }
 
     /**
-     * @param string[] $roles
-     * @param string[] $additionalParams
+     * @param mixed[] $additionalParams
      */
-    public function authToken(string $username, array $roles = ['ROLE_USER'], array $additionalParams = []): self
+    public function authToken(string $userIdentifier, array ...$additionalParams): self
     {
-        $token = ($this->createToken)($username, $roles, $additionalParams);
+        $token = ($this->createToken)($userIdentifier, ...$additionalParams);
 
         $this->server('HTTP_AUTHORIZATION', sprintf('Bearer %s', $token));
 

@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\User\User;
 
+use function current;
 use function method_exists;
 use function Safe\json_encode;
 
@@ -156,9 +157,17 @@ final class RequestBuilderTest extends TestCase
     public function testAuthorizationHeaderIsSetOnAuthTokenCall(): void
     {
         $builder = $this->createRequestBuilder('GET', '/users')
+            ->authToken('foo');
+
+        $this->assertSame(['HTTP_AUTHORIZATION' => 'Bearer ["foo"]'], $builder->getServer());
+    }
+
+    public function testAuthorizationHeaderWithAdditionalParametersIsSetOnAuthTokenCall(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users')
             ->authToken('foo', ['bar', 'baz']);
 
-        $this->assertSame(['HTTP_AUTHORIZATION' => 'Bearer ["foo",["bar","baz"],[]]'], $builder->getServer());
+        $this->assertSame(['HTTP_AUTHORIZATION' => 'Bearer ["foo",["bar","baz"]]'], $builder->getServer());
     }
 
     public function testAuthorizationHeaderIsSetOnAuthLoginCall(): void
@@ -222,7 +231,7 @@ final class RequestBuilderTest extends TestCase
     private function createRequestBuilder(string $method = 'GET', string $uri = '/foo'): RequestBuilder
     {
         return RequestBuilder::create(
-            static fn (...$params) => $params,
+            static fn (...$params) => current($params),
             static fn (...$params) => json_encode($params),
             $method,
             $uri
