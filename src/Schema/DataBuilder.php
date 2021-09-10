@@ -6,8 +6,6 @@ namespace Brainbits\FunctionalTestHelpers\Schema;
 
 interface DataBuilder
 {
-    public static function create(SchemaBuilder $schemaBuilder): self;
-
     /**
      * @return mixed[]
      */

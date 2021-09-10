@@ -8,7 +8,5 @@ use Doctrine\DBAL\Schema\Schema;
 
 interface SchemaBuilder
 {
-    public static function create(): self;
-
     public function getSchema(): Schema;
 }
