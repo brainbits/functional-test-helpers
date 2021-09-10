@@ -10,7 +10,7 @@
     "require-dev": {
         "brainbits/phpcs-standard": "^4.0",
         "brainbits/phpstan-rules": "^1.0",
-        "doctrine/dbal": "^2.10",
+        "doctrine/dbal": "^2.11",
         "doctrine/event-manager": "^1.1",
         "ergebnis/phpstan-rules": "^0.15.2",
         "jangregor/phpstan-prophecy": "^0.8.0",
