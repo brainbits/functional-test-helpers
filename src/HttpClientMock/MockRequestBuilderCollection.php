@@ -8,6 +8,7 @@ use IteratorAggregate;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
 use function array_map;
+use function is_callable;
 
 final class MockRequestBuilderCollection implements IteratorAggregate
 {
@@ -36,6 +37,10 @@ final class MockRequestBuilderCollection implements IteratorAggregate
 
         if ($requestBuilder->hasException()) {
             throw $requestBuilder->getException();
+        }
+
+        if ($requestBuilder->onMatch && is_callable($requestBuilder->onMatch)) {
+            ($requestBuilder->onMatch)($realRequest);
         }
 
         return $this->responseFactory->fromRequestBuilder($requestBuilder);

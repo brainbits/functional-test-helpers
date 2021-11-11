@@ -4,19 +4,24 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoUriConfigured;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\ResponseAlreadyConfigured;
+use DOMDocument;
 use Safe\Exceptions\JsonException;
-use Safe\Exceptions\SimplexmlException;
 use SimpleXMLElement;
 use Symfony\Component\HttpFoundation\File\File;
 use Throwable;
 
+use function array_key_exists;
 use function assert;
 use function count;
+use function error_reporting;
 use function explode;
 use function is_array;
 use function is_subclass_of;
+use function libxml_get_errors;
+use function libxml_use_internal_errors;
 use function Safe\json_decode;
 use function Safe\json_encode;
 use function Safe\preg_match;
@@ -57,6 +62,9 @@ final class MockRequestBuilder
     /** @var self[] */
     private array $calls = [];
 
+    /** @var callable */
+    public $onMatch;
+
     public function method(?string $method): self
     {
         $this->method = $method;
@@ -92,12 +100,25 @@ final class MockRequestBuilder
         return $this;
     }
 
+    public function hasHeaders(): bool
+    {
+        return $this->headers !== null;
+    }
+
     /**
      * @return mixed[]
      */
     public function getHeaders(): ?array
     {
         return $this->headers;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function hasHeader(string $key): bool
+    {
+        return array_key_exists($key, $this->headers);
     }
 
     /**
@@ -150,21 +171,6 @@ final class MockRequestBuilder
         return true;
     }
 
-    public function isXml(): bool
-    {
-        if (!$this->hasContent()) {
-            return false;
-        }
-
-        try {
-            simplexml_load_string($this->content);
-        } catch (SimplexmlException $e) {
-            return false;
-        }
-
-        return true;
-    }
-
     /**
      * @return mixed[]
      */
@@ -175,6 +181,29 @@ final class MockRequestBuilder
         }
 
         return json_decode($this->content, true);
+    }
+
+    /**
+     * @param mixed[] $data
+     */
+    public function xml(string $data): self
+    {
+        if (!$this->isXmlString($data)) {
+            throw InvalidMockRequest::notXml($data);
+        }
+
+        $this->content($data);
+
+        return $this;
+    }
+
+    public function isXml(): bool
+    {
+        if (!$this->hasContent()) {
+            return false;
+        }
+
+        return $this->isXmlString($this->getContent());
     }
 
     /**
@@ -300,6 +329,13 @@ final class MockRequestBuilder
     public function getUri(): ?string
     {
         return $this->uri;
+    }
+
+    public function onMatch(callable $fn): self
+    {
+        $this->onMatch = $fn;
+
+        return $this;
     }
 
     public function willRespond(MockResponseBuilder $responseBuilder): self
@@ -444,5 +480,23 @@ final class MockRequestBuilder
         }
 
         return $params;
+    }
+
+    private function isXmlString(string $data): bool
+    {
+        $document = new DOMDocument();
+        $internal = libxml_use_internal_errors(true);
+        $reporting = error_reporting(0);
+
+        try {
+            $document->loadXML($data);
+
+            $errors = libxml_get_errors();
+        } finally {
+            libxml_use_internal_errors($internal);
+            error_reporting($reporting);
+        }
+
+        return count($errors) === 0;
     }
 }

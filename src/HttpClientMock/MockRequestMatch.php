@@ -112,6 +112,11 @@ final class MockRequestMatch
         return new self(0, sprintf('Mismatching json content, expected %s, got %s', $content, $otherContent ?? 'NULL'));
     }
 
+    public static function mismatchingXmlContent(string $content, ?string $otherContent): self
+    {
+        return new self(0, sprintf('Mismatching xml content, expected %s, got %s', $content, $otherContent ?? 'NULL'));
+    }
+
     public static function mismatchingRequestParameterContent(string $content, ?string $otherContent): self
     {
         return new self(0, sprintf('Mismatching request parameters, expected %s, got %s', $content, $otherContent ?? 'NULL')); // phpcs:ignore Generic.Files.LineLength.TooLong
@@ -129,6 +134,38 @@ final class MockRequestMatch
                 'Mismatching multiparts, expected %s, got %s',
                 json_encode($multiparts),
                 json_encode($otherMultiparts),
+            ),
+        );
+    }
+
+    /**
+     * @param mixed $value
+     */
+    public static function missingHeader(string $key, string $value): self
+    {
+        return new self(
+            0,
+            sprintf(
+                'Missing header, expected %s: %s',
+                $key,
+                json_encode($value),
+            ),
+        );
+    }
+
+    /**
+     * @param mixed $value
+     * @param mixed $otherValue
+     */
+    public static function mismatchingHeader(string $key, $value, $otherValue): self
+    {
+        return new self(
+            0,
+            sprintf(
+                'Mismatching header %s, expected %s, got %s',
+                $key,
+                json_encode($value),
+                json_encode($otherValue),
             ),
         );
     }

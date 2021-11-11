@@ -8,6 +8,10 @@
         "thecodingmachine/safe": "^1.3"
     },
     "require-dev": {
+        "ext-dom": "*",
+        "ext-iconv": "*",
+        "ext-mbstring": "*",
+        "ext-simplexml": "*",
         "brainbits/phpcs-standard": "^4.0",
         "brainbits/phpstan-rules": "^1.0",
         "doctrine/dbal": "^2.11",
@@ -35,6 +39,10 @@
         "thecodingmachine/phpstan-strict-rules": "^0.12.0"
     },
     "suggest": {
+        "ext-dom": "For mocking xml requests",
+        "ext-iconv": "For asserting zip files",
+        "ext-mbstring": "For asserting zip files",
+        "ext-simplexml": "For mocking xml requests",
         "doctrine/dbal": "For schema trait",
         "doctrine/event-manager": "For schema trait",
         "monolog/monolog": "For http client mock trait",

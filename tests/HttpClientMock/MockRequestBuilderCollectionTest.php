@@ -85,7 +85,7 @@ final class MockRequestBuilderCollectionTest extends TestCase
      *
      * @dataProvider requests
      */
-    public function testFoo(string $method, string $uri, array $options, string $index): void
+    public function testRequestMatching(string $method, string $uri, array $options, string $index): void
     {
         ($this->collection)($method, $uri, $options);
 

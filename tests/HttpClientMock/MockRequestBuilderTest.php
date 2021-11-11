@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use PHPUnit\Framework\TestCase;
@@ -171,5 +172,32 @@ final class MockRequestBuilderTest extends TestCase
         $xml = $mockRequestBuilder->getXml(['x' => 'http://example.org/xml']);
 
         self::assertSame('abc', (string) $xml->xpath('//x:first')[0]);
+    }
+
+    public function testWithJsonContent(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->json(['value' => 'key=value']);
+
+        self::assertTrue($mockRequestBuilder->isJson());
+        self::assertSame(['value' => 'key=value'], $mockRequestBuilder->getJson());
+    }
+
+    public function testWithInvalidXmlThrowsException(): void
+    {
+        $this->expectException(InvalidMockRequest::class);
+        $this->expectExceptionMessage('No valid xml: foo');
+
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->xml('foo');
+    }
+
+    public function testWithXmlContent(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->xml('<foo/>');
+
+        self::assertTrue($mockRequestBuilder->isXml());
+        self::assertXmlStringEqualsXmlString('<?xml version="1.0"?><foo/>', $mockRequestBuilder->getXml()->saveXML());
     }
 }

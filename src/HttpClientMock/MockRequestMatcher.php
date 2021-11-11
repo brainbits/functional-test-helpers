@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
+use DOMDocument;
+
 final class MockRequestMatcher
 {
     private Compare $compare;
@@ -32,11 +34,31 @@ final class MockRequestMatcher
             return MockRequestMatch::mismatchingQueryParams($expectation->getQueryParams(), $realRequest->getQueryParams());
         }
 
+        // phpcs:disable Generic.Files.LineLength.TooLong
+        if ($expectation->hasHeaders()) {
+            foreach ($expectation->getHeaders() as $key => $value) {
+                if (!$realRequest->hasHeader($key)) {
+                    return MockRequestMatch::missingHeader($key, $value);
+                }
+
+                if (!($this->compare)($value, $realRequest->getHeader($key))) {
+                    return MockRequestMatch::mismatchingHeader($key, $value, $realRequest->getHeader($key));
+                }
+            }
+        }
+
         // phpcs:enable Generic.Files.LineLength.TooLong
 
         if ($expectation->isJson()) {
             if (!$this->isJsonContentMatching($expectation, $realRequest)) {
                 return MockRequestMatch::mismatchingJsonContent(
+                    $expectation->getContent(),
+                    $realRequest->getContent()
+                );
+            }
+        } elseif ($expectation->isXml()) {
+            if (!$this->isXmlContentMatching($expectation, $realRequest)) {
+                return MockRequestMatch::mismatchingXmlContent(
                     $expectation->getContent(),
                     $realRequest->getContent()
                 );
@@ -121,6 +143,29 @@ final class MockRequestMatcher
         }
 
         return ($this->compare)($expectation->getJson(), $realRequest->getJson());
+    }
+
+    private function isXmlContentMatching(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): bool
+    {
+        if (!$expectation->hasContent() || !$expectation->isXml()) {
+            return false;
+        }
+
+        if (!$realRequest->hasContent() || !$realRequest->isXml()) {
+            return false;
+        }
+
+        $expectedDom = new DOMDocument();
+        $expectedDom->preserveWhiteSpace = false;
+        $expectedDom->formatOutput = true;
+        $expectedDom->loadXML($expectation->getContent());
+
+        $realDom = new DOMDocument();
+        $realDom->preserveWhiteSpace = false;
+        $realDom->formatOutput = true;
+        $realDom->loadXML($realRequest->getContent());
+
+        return $expectedDom->saveXML() === $realDom->saveXML();
     }
 
     private function isRequestParamsMatching(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): bool
