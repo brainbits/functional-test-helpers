@@ -42,6 +42,7 @@
         "ext-dom": "For mocking xml requests",
         "ext-iconv": "For asserting zip files",
         "ext-mbstring": "For asserting zip files",
+        "ext-json": "For json snapshot tests",
         "ext-simplexml": "For mocking xml requests",
         "doctrine/dbal": "For schema trait",
         "doctrine/event-manager": "For schema trait",
