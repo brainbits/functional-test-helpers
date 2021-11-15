@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Snapshot;
 
+use DOMDocument;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -47,7 +48,7 @@ trait SnapshotTrait
     {
         self::assertJson($actual, $message);
 
-        $fixtureFilename = $this->snapshotFilename();
+        $fixtureFilename = $this->snapshotFilename('json');
 
         $this->snapshotDumpJson($fixtureFilename, $actual);
 
@@ -58,12 +59,26 @@ trait SnapshotTrait
         );
     }
 
-    private function snapshotFilename(): string
+    final protected function assertMatchesXmlSnapshot(string $actual, string $message = ''): void
+    {
+        $fixtureFilename = $this->snapshotFilename('xml');
+
+        $this->snapshotDumpXml($fixtureFilename, $actual);
+
+        self::assertXmlStringEqualsXmlFile(
+            $fixtureFilename,
+            $actual,
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+        );
+    }
+
+    private function snapshotFilename(string $extension): string
     {
         $filename = sprintf(
-            '%s/__snapshots__/%s.json',
+            '%s/__snapshots__/%s.%s',
             $this->snapshotPath(),
-            $this->snapshotName()
+            $this->snapshotName(),
+            $extension,
         );
 
         if (!($this->filenames[$filename] ?? false)) {
@@ -141,6 +156,23 @@ trait SnapshotTrait
                 JSON_PRETTY_PRINT
             )
         );
+    }
+
+    private function snapshotDumpXml(string $fixtureFilename, string $string): void
+    {
+        $filesystem = new Filesystem();
+
+        if (!getenv('UPDATE_SNAPSHOTS') && $filesystem->exists($fixtureFilename)) {
+            return;
+        }
+
+        $filesystem->mkdir(dirname($fixtureFilename));
+
+        $dom = new DOMDocument();
+        $dom->loadXML($string);
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+        $dom->save($fixtureFilename);
     }
 
     private function snapshotAppendFilenameHint(string $fixtureFilename, string $message): string

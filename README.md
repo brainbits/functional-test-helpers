@@ -335,7 +335,7 @@ abstract class FunctionalTestCase extends WebTestCase
 }
 ```
 
-Call assertions to verify json with snapshot. The snapshot file is created automatically on the first run.
+Call assertions to verify snapshot. The snapshot file is created automatically on the first run.
 
 ```php
 public function testJsonFactoryCreatesJsonCorrectly()
@@ -349,6 +349,11 @@ public function testJsonFactoryCreatesJsonCorrectly()
 ```
 
 To recreate/update snapshot files run PHPUnit with the environment variable `UPDATE_SNAPSHOTS`.
+
+### Snapshot Assertions
+* Array `assertMatchesArraySnapshot()`
+* JSON `assertMatchesJsonSnapshot()`
+* XML `assertMatchesXmlSnapshot()`
 
 ```shell
 UPDATE_SNAPSHOTS=1 phpunit
