@@ -15,6 +15,7 @@ use Throwable;
 
 use function array_key_exists;
 use function assert;
+use function base64_encode;
 use function count;
 use function error_reporting;
 use function explode;
@@ -127,6 +128,13 @@ final class MockRequestBuilder
     public function getHeader(string $key)
     {
         return $this->headers[strtolower($key)] ?? null;
+    }
+
+    public function basicAuthentication(string $username, string $password): self
+    {
+        $token = base64_encode(sprintf('%s:%s', $username, $password));
+
+        return $this->header('Authorization', sprintf('Basic %s', $token));
     }
 
     public function content(string $content): self

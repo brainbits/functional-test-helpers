@@ -200,4 +200,12 @@ final class MockRequestBuilderTest extends TestCase
         self::assertTrue($mockRequestBuilder->isXml());
         self::assertXmlStringEqualsXmlString('<?xml version="1.0"?><foo/>', $mockRequestBuilder->getXml()->saveXML());
     }
+
+    public function testWithBasicAuthentication(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->basicAuthentication('username', 'password');
+
+        $this->assertSame('Basic dXNlcm5hbWU6cGFzc3dvcmQ=', $mockRequestBuilder->getHeader('Authorization'));
+    }
 }
