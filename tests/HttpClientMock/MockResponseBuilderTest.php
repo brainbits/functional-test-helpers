@@ -12,7 +12,7 @@ use function implode;
 use const PHP_EOL;
 
 /**
- * @covers \Brainbits\FunctionalTestHelpers\Request\MockResponseBuilder
+ * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder
  */
 final class MockResponseBuilderTest extends TestCase
 {

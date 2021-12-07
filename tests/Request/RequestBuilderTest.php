@@ -11,7 +11,7 @@ use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Security\Core\User\User;
+use Symfony\Component\Security\Core\User\InMemoryUser;
 
 use function current;
 use function method_exists;
@@ -175,7 +175,7 @@ final class RequestBuilderTest extends TestCase
 
     public function testAuthorizationHeaderIsSetOnAuthLoginCall(): void
     {
-        $user = new User('foo', 'bar');
+        $user = new InMemoryUser('foo', 'bar');
 
         if (!method_exists(KernelBrowser::class, 'loginUser')) {
             $this->markTestSkipped('authLogin() only available for symfony/framework-bundle >= 5.1');
