@@ -25,21 +25,21 @@ trait HttpClientMockTrait
 
     protected function mockRequest(?string $method = null, ?string $uri = null): MockRequestBuilder
     {
-        if (!self::$container) {
+        if (!self::getContainer()) {
             static::fail(sprintf(
                 'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
                 static::class,
             ));
         }
 
-        if (!self::$container->has(MockRequestBuilderCollection::class)) {
+        if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(sprintf(
                 '%s not found, did you forget to include it in your test services?',
                 MockRequestBuilderCollection::class
             ));
         }
 
-        $stack = self::$container->get(MockRequestBuilderCollection::class);
+        $stack = self::getContainer()->get(MockRequestBuilderCollection::class);
         assert($stack instanceof MockRequestBuilderCollection);
 
         $builder = (new MockRequestBuilder())
@@ -58,21 +58,21 @@ trait HttpClientMockTrait
 
     protected function callStack(): CallStack
     {
-        if (!self::$container) {
+        if (!self::getContainer()) {
             static::fail(sprintf(
                 'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
                 static::class,
             ));
         }
 
-        if (!self::$container->has(MockRequestBuilderCollection::class)) {
+        if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(sprintf(
                 '%s not found, did you forget to include it in your test services?',
                 MockRequestBuilderCollection::class
             ));
         }
 
-        $stack = self::$container->get(MockRequestBuilderCollection::class);
+        $stack = self::getContainer()->get(MockRequestBuilderCollection::class);
         assert($stack instanceof MockRequestBuilderCollection);
 
         return $stack->getCallStack();
@@ -349,7 +349,7 @@ trait HttpClientMockTrait
 
     protected static function assertAllRequestMocksAreCalled(string $message = ''): void
     {
-        if (!self::$container) {
+        if (!self::getContainer()) {
             static::fail(self::mockRequestMessage(
                 $message,
                 'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
@@ -357,7 +357,7 @@ trait HttpClientMockTrait
             ));
         }
 
-        if (!self::$container->has(MockRequestBuilderCollection::class)) {
+        if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(self::mockRequestMessage(
                 $message,
                 '%s not found, did you forget to include it in your test services?',
@@ -365,7 +365,7 @@ trait HttpClientMockTrait
             ));
         }
 
-        $stack = self::$container->get(MockRequestBuilderCollection::class);
+        $stack = self::getContainer()->get(MockRequestBuilderCollection::class);
         assert($stack instanceof MockRequestBuilderCollection);
 
         foreach ($stack as $request) {
