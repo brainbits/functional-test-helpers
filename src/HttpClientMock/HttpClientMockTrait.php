@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockRequest;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Event\ConsoleErrorEvent;
+use Symfony\Component\Console\Event\ConsoleTerminateEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 use function assert;
 use function Safe\sprintf;
@@ -16,11 +22,82 @@ use function ucfirst;
  */
 trait HttpClientMockTrait
 {
-    protected ?NoMatchingMockRequestHandler $mockRequestLogHandler = null;
+    protected function registerNoMatchingMockRequestAsserts(
+        EventDispatcherInterface $eventDispatcher,
+        Logger ...$loggers,
+    ): void {
+        $storage = new ArrayObject();
 
-    protected function expectNoMismatchingMockRequestsInLog(Logger $logger): void
-    {
-        $logger->pushHandler($this->mockRequestLogHandler = new NoMatchingMockRequestHandler());
+        $callbackHandler = new CallbackHandler(static function ($record) use (&$storage): void {
+            if (!($record['context']['exception'] ?? null)) {
+                return;
+            }
+
+            $exception = $record['context']['exception'];
+            while (!($exception instanceof NoMatchingMockRequest) && $exception->getPrevious()) {
+                $exception = $exception->getPrevious();
+            }
+
+            if (!($exception instanceof NoMatchingMockRequest)) {
+                return;
+            }
+
+            $storage['exception'] = $exception;
+        });
+
+        foreach ($loggers as $logger) {
+            $logger->pushHandler($callbackHandler);
+        }
+
+        $eventDispatcher->addListener('kernel.exception', static function (ExceptionEvent $event) use ($storage): void {
+            $exception = $event->getThrowable();
+            while (!($exception instanceof NoMatchingMockRequest) && $exception->getPrevious()) {
+                $exception = $exception->getPrevious();
+            }
+
+            if (!($exception instanceof NoMatchingMockRequest)) {
+                return;
+            }
+
+            $storage['exception'] = $exception;
+        }, 255);
+
+        $eventDispatcher->addListener('console.error', static function (ConsoleErrorEvent $event) use ($storage): void {
+            $exception = $event->getError();
+            while (!($exception instanceof NoMatchingMockRequest) && $exception->getPrevious()) {
+                $exception = $exception->getPrevious();
+            }
+
+            if (!($exception instanceof NoMatchingMockRequest)) {
+                return;
+            }
+
+            $storage['exception'] = $exception;
+        }, 255);
+
+        $eventDispatcher->addListener(
+            'kernel.terminate',
+            static function (TerminateEvent $event) use ($storage): void {
+                if (!($storage['exception'] ?? false) || !$storage['exception'] instanceof NoMatchingMockRequest) {
+                    return;
+                }
+
+                self::fail($storage['exception']->getMessage());
+            },
+            255,
+        );
+
+        $eventDispatcher->addListener(
+            'console.terminate',
+            static function (ConsoleTerminateEvent $event) use ($storage): void {
+                if (!($storage['exception'] ?? false) || !$storage['exception'] instanceof NoMatchingMockRequest) {
+                    return;
+                }
+
+                self::fail($storage['exception']->getMessage());
+            },
+            255,
+        );
     }
 
     protected function mockRequest(?string $method = null, string|callable|null $uri = null): MockRequestBuilder // phpcs:ignore Generic.Files.LineLength.TooLong,SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing.NoSpaceBetweenTypeHintAndParameter

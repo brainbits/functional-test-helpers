@@ -18,7 +18,7 @@
         "doctrine/event-manager": "^1.1",
         "ergebnis/phpstan-rules": "^1.0",
         "jangregor/phpstan-prophecy": "^1.0",
-        "monolog/monolog": "^2.1",
+        "monolog/monolog": "^2.3",
         "php-coveralls/php-coveralls": "^2.4",
         "phpspec/prophecy-phpunit": "^2.0",
         "phpstan/phpstan": "^1.0",
@@ -60,7 +60,10 @@
         "preferred-install": {
             "*": "dist"
         },
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     },
     "autoload": {
         "psr-4": {
