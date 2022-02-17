@@ -157,6 +157,14 @@ final class RequestBuilderTest extends TestCase
         $this->assertSame(['HTTP_ACCEPT' => 'application/json'], $builder->getServer());
     }
 
+    public function testAuthorizationHeaderIsSetOnAuthBearerCall(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users')
+            ->authBearer('foo');
+
+        $this->assertSame(['HTTP_AUTHORIZATION' => 'Bearer foo'], $builder->getServer());
+    }
+
     public function testAuthorizationHeaderIsSetOnAuthTokenCall(): void
     {
         $builder = $this->createRequestBuilder('GET', '/users')
@@ -179,6 +187,14 @@ final class RequestBuilderTest extends TestCase
             ->authBasic('user', 'password');
 
         $this->assertSame(['PHP_AUTH_USER' => 'user', 'PHP_AUTH_PW' => 'password'], $builder->getServer());
+    }
+
+    public function testAuthenticationHeadersAreSetOnAuthCall(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users')
+            ->auth('foo');
+
+        $this->assertSame(['HTTP_AUTHORIZATION' => 'foo'], $builder->getServer());
     }
 
     public function testAuthorizationHeaderIsSetOnAuthLoginCall(): void

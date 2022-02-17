@@ -181,6 +181,13 @@ final class RequestBuilder
         return $this;
     }
 
+    public function authBearer(string $bearer): self
+    {
+        $this->server('HTTP_AUTHORIZATION', sprintf('Bearer %s', $bearer));
+
+        return $this;
+    }
+
     public function authToken(string $userIdentifier, mixed ...$additionalParams): self
     {
         $token = ($this->createToken)($userIdentifier, ...$additionalParams);
