@@ -39,10 +39,6 @@ final class MockRequestBuilderCollection implements IteratorAggregate
         $requestBuilder = ($this->requestResolver)($this, $realRequest);
         $requestBuilder->called($realRequest);
 
-        if ($requestBuilder->hasException()) {
-            throw $requestBuilder->getException();
-        }
-
         if ($requestBuilder->onMatch && is_callable($requestBuilder->onMatch)) {
             ($requestBuilder->onMatch)($realRequest);
         }

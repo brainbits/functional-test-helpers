@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\AddMockResponseFailed;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use PHPUnit\Framework\TestCase;
@@ -128,22 +130,93 @@ final class MockRequestBuilderTest extends TestCase
         self::assertSame('http://example.org', $mockRequestBuilder->getUri());
     }
 
-    public function testExceptionIsResettable(): void
+    public function testEmptyResponsesThrowsException(): void
     {
-        $mockRequestBuilder = (new MockRequestBuilder())
-            ->willThrow(RuntimeException::class)
-            ->resetException();
+        $this->expectException(NoResponseMock::class);
+        $this->expectExceptionMessage('No response configured');
 
-        self::assertFalse($mockRequestBuilder->hasException());
+        $mockRequestBuilder = (new MockRequestBuilder());
+
+        $mockRequestBuilder->nextResponse();
+    }
+
+    public function testNoNextResponseThrowsException(): void
+    {
+        $this->expectException(NoResponseMock::class);
+        $this->expectExceptionMessage('All responses have already been processed');
+
+        $mockRequestBuilder = (new MockRequestBuilder())
+            ->willRespond(new MockResponseBuilder());
+
+        $mockRequestBuilder->nextResponse();
+        $mockRequestBuilder->nextResponse();
+    }
+
+    public function testAddAfterAddAlwaysThrowsException(): void
+    {
+        $this->expectException(AddMockResponseFailed::class);
+        $this->expectExceptionMessage('Single response already added, add not possible');
+
+        $mockRequestBuilder = (new MockRequestBuilder())
+            ->willAlwaysRespond(new MockResponseBuilder())
+            ->willRespond(new MockResponseBuilder());
+    }
+
+    public function testAddAlwaysAfterAddThrowsException(): void
+    {
+        $this->expectException(AddMockResponseFailed::class);
+        $this->expectExceptionMessage('Response already added, add always not possible');
+
+        $mockRequestBuilder = (new MockRequestBuilder())
+            ->willRespond(new MockResponseBuilder())
+            ->willAlwaysRespond(new MockResponseBuilder());
+    }
+
+    public function testSingleResponseIsAlwaysReturned(): void
+    {
+        $response = new MockResponseBuilder();
+
+        $mockRequestBuilder = (new MockRequestBuilder())
+            ->willAlwaysRespond($response);
+
+        $result = $mockRequestBuilder->nextResponse();
+        self::assertSame($response, $result);
+
+        $result = $mockRequestBuilder->nextResponse();
+        self::assertSame($response, $result);
+
+        $result = $mockRequestBuilder->nextResponse();
+        self::assertSame($response, $result);
+    }
+
+    public function testMultipleResponsesAreReturned(): void
+    {
+        $response1 = new MockResponseBuilder();
+        $response2 = new RuntimeException('foo');
+        $response3 = new MockResponseBuilder();
+
+        $mockRequestBuilder = (new MockRequestBuilder())
+            ->willRespond($response1)
+            ->willThrow($response2)
+            ->willRespond($response3);
+
+        $result = $mockRequestBuilder->nextResponse();
+        self::assertSame($response1, $result);
+
+        $result = $mockRequestBuilder->nextResponse();
+        self::assertSame($response2, $result);
+
+        $result = $mockRequestBuilder->nextResponse();
+        self::assertSame($response3, $result);
     }
 
     public function testResponseBuilderIsResettable(): void
     {
         $mockRequestBuilder = (new MockRequestBuilder())
             ->willRespond(new MockResponseBuilder())
-            ->resetResponseBuilder();
+            ->resetResponses();
 
-        self::assertFalse($mockRequestBuilder->hasResponseBuilder());
+        self::assertFalse($mockRequestBuilder->hasResponse());
     }
 
     public function testXmlStringsAreDetectedAsXml(): void

@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Throwable;
 
 final class SymfonyMockResponseFactory implements MockResponseFactory
 {
     public function fromRequestBuilder(MockRequestBuilder $requestBuilder): MockResponse
     {
-        $responseBuilder = $requestBuilder->getResponseBuilder();
+        $responseBuilder = $requestBuilder->nextResponse();
 
-        if (!$responseBuilder) {
-            return new MockResponse();
+        if ($responseBuilder instanceof Throwable) {
+            throw $responseBuilder;
         }
 
         $info = [];

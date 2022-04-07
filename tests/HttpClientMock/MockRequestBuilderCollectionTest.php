@@ -6,6 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
@@ -27,51 +28,62 @@ final class MockRequestBuilderCollectionTest extends TestCase
     public function setUp(): void
     {
         $this->builders = [
-            'fallback' => (new MockRequestBuilder()),
+            'fallback' => (new MockRequestBuilder())
+                ->willRespond(new MockResponseBuilder()),
 
             'get' => (new MockRequestBuilder())
-                ->method('GET'),
+                ->method('GET')
+                ->willRespond(new MockResponseBuilder()),
 
             'post' => (new MockRequestBuilder())
-                ->method('POST'),
+                ->method('POST')
+                ->willRespond(new MockResponseBuilder()),
 
             'foo' => (new MockRequestBuilder())
-                ->uri('/foo'),
+                ->uri('/foo')
+                ->willRespond(new MockResponseBuilder()),
 
             'getBar' => (new MockRequestBuilder())
                 ->method('GET')
-                ->uri('/bar'),
+                ->uri('/bar')
+                ->willRespond(new MockResponseBuilder()),
 
             'getBarWithOneParam' => (new MockRequestBuilder())
                 ->method('GET')
-                ->uri('/bar?one=1'),
+                ->uri('/bar?one=1')
+                ->willRespond(new MockResponseBuilder()),
 
             'getBarWithTwoParams' => (new MockRequestBuilder())
                 ->method('GET')
                 ->uri('/bar')
                 ->queryParam('one', '1')
-                ->queryParam('two', '2'),
+                ->queryParam('two', '2')
+                ->willRespond(new MockResponseBuilder()),
 
             'postBarJson' => (new MockRequestBuilder())
                 ->method('POST')
                 ->uri('/bar')
-                ->json(['json' => 'data']),
+                ->json(['json' => 'data'])
+                ->willRespond(new MockResponseBuilder()),
 
             'postBarWithOneParam' => (new MockRequestBuilder())
                 ->method('POST')
                 ->uri('/bar')
-                ->requestParam('one', '1'),
+                ->requestParam('one', '1')
+                ->willRespond(new MockResponseBuilder()),
 
             'postBarWithTwoParams' => (new MockRequestBuilder())
                 ->method('POST')
                 ->uri('/bar')
                 ->requestParam('one', '1')
-                ->requestParam('two', '2'),
+                ->requestParam('two', '2')
+                ->willRespond(new MockResponseBuilder()),
 
             'postBarWithContent' => (new MockRequestBuilder())
                 ->method('POST')
                 ->uri('/bar')
-                ->content('content'),
+                ->content('content')
+                ->willRespond(new MockResponseBuilder()),
         ];
 
         $this->collection = new MockRequestBuilderCollection(new SymfonyMockResponseFactory());

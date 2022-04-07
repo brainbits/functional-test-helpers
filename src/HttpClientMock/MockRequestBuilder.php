@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
-use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\ResponseAlreadyConfigured;
 use DOMDocument;
 use Safe\Exceptions\JsonException;
 use SimpleXMLElement;
@@ -16,7 +15,6 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_values;
-use function assert;
 use function base64_encode;
 use function count;
 use function error_reporting;
@@ -24,7 +22,6 @@ use function explode;
 use function is_array;
 use function is_callable;
 use function is_string;
-use function is_subclass_of;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
 use function Safe\json_decode;
@@ -65,15 +62,18 @@ final class MockRequestBuilder
     /** @var mixed[] */
     private ?array $multiparts = null;
 
-    private ?MockResponseBuilder $responseBuilder = null;
-
-    private ?Throwable $exception = null;
+    private MockResponseCollection $responses;
 
     /** @var self[] */
     private array $calls = [];
 
     /** @var callable */
     public $onMatch;
+
+    public function __construct()
+    {
+        $this->responses = new MockResponseCollection();
+    }
 
     public function method(?string $method): self
     {
@@ -368,68 +368,47 @@ final class MockRequestBuilder
         return $this;
     }
 
+    public function willAlwaysRespond(MockResponseBuilder $responseBuilder): self
+    {
+        $this->responses->addAlways($responseBuilder);
+
+        return $this;
+    }
+
+    public function willAlwaysThrow(Throwable $exception): self
+    {
+        $this->responses->addAlways($exception);
+
+        return $this;
+    }
+
     public function willRespond(MockResponseBuilder $responseBuilder): self
     {
-        if ($this->responseBuilder !== null) {
-            throw ResponseAlreadyConfigured::withAResponse($this->responseBuilder);
-        }
-
-        if ($this->exception !== null) {
-            throw ResponseAlreadyConfigured::withAnException($this->exception);
-        }
-
-        $this->responseBuilder = $responseBuilder;
+        $this->responses->add($responseBuilder);
 
         return $this;
     }
 
-    public function willThrow(string $class, string $message = 'Mocked exception'): self
+    public function willThrow(Throwable $exception): self
     {
-        assert(is_subclass_of($class, Throwable::class));
-
-        if ($this->responseBuilder !== null) {
-            throw ResponseAlreadyConfigured::withAResponse($this->responseBuilder);
-        }
-
-        if ($this->exception !== null) {
-            throw ResponseAlreadyConfigured::withAnException($this->exception);
-        }
-
-        $this->exception = new $class($message);
+        $this->responses->add($exception);
 
         return $this;
     }
 
-    public function hasResponseBuilder(): bool
+    public function hasResponse(): bool
     {
-        return $this->responseBuilder !== null;
+        return !$this->responses->isEmpty();
     }
 
-    public function getResponseBuilder(): ?MockResponseBuilder
+    public function nextResponse(): null|MockResponseBuilder|Throwable
     {
-        return $this->responseBuilder;
+        return $this->responses->next();
     }
 
-    public function resetResponseBuilder(): self
+    public function resetResponses(): self
     {
-        $this->responseBuilder = null;
-
-        return $this;
-    }
-
-    public function hasException(): bool
-    {
-        return $this->exception !== null;
-    }
-
-    public function getException(): ?Throwable
-    {
-        return $this->exception;
-    }
-
-    public function resetException(): self
-    {
-        $this->exception = null;
+        $this->responses->reset();
 
         return $this;
     }
