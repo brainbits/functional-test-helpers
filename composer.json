@@ -14,7 +14,7 @@
         "ext-simplexml": "*",
         "brainbits/phpcs-standard": "^5.0",
         "brainbits/phpstan-rules": "^3.0",
-        "doctrine/dbal": "^2.11",
+        "doctrine/dbal": "^2.11|^3.0",
         "doctrine/event-manager": "^1.1",
         "ergebnis/phpstan-rules": "^1.0",
         "jangregor/phpstan-prophecy": "^1.0",
