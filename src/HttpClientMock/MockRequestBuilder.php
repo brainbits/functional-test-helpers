@@ -64,6 +64,9 @@ final class MockRequestBuilder
     /** @var mixed[] */
     private ?array $multiparts = null;
 
+    /** @var callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string */
+    private mixed $that = null;
+
     private MockResponseCollection $responses;
 
     /** @var self[] */
@@ -361,6 +364,26 @@ final class MockRequestBuilder
     public function getUriParams(): array
     {
         return $this->uriParams;
+    }
+
+    /**
+     * @param callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string $that
+     */
+    public function that(callable $that): self
+    {
+        $this->that = $that;
+
+        return $this;
+    }
+
+    public function hasThat(): bool
+    {
+        return $this->that !== null;
+    }
+
+    public function getThat(): callable|null
+    {
+        return $this->that;
     }
 
     public function onMatch(callable $fn): self

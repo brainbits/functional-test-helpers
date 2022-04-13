@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
+use Stringable;
+
 use function Safe\json_encode;
 use function Safe\sprintf;
 
@@ -179,6 +181,14 @@ final class MockRequestMatch
                 json_encode($queryParams),
                 json_encode($otherQueryParams),
             ),
+        );
+    }
+
+    public static function mismatchingThat(string|Stringable $reason): self
+    {
+        return new self(
+            0,
+            sprintf('Mismatching that, reason: %s', (string) $reason),
         );
     }
 }

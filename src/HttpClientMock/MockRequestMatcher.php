@@ -106,6 +106,14 @@ final class MockRequestMatcher
             }
         }
 
+        if ($expectation->getThat() !== null) {
+            $reason = ($expectation->getThat())($expectation, $realRequest);
+
+            if ($reason) {
+                return MockRequestMatch::mismatchingThat($reason);
+            }
+        }
+
         $match = MockRequestMatch::create();
 
         if ($expectation->getMethod() !== null && $expectation->getMethod() === $realRequest->getMethod()) {

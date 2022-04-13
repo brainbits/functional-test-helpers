@@ -8,11 +8,11 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockReque
 
 final class MockRequestResolver
 {
-    private MockRequestMatcher $match;
+    private MockRequestMatcher $matcher;
 
     public function __construct()
     {
-        $this->match = new MockRequestMatcher();
+        $this->matcher = new MockRequestMatcher();
     }
 
     /**
@@ -27,7 +27,7 @@ final class MockRequestResolver
         $matches = [];
         $bestMatch = null;
         foreach ($requestBuilders as $requestBuilder) {
-            $matches[] = $match = ($this->match)($requestBuilder, $realRequest);
+            $matches[] = $match = ($this->matcher)($requestBuilder, $realRequest);
 
             if ($match->isMismatch() || ($bestMatch && $match->getScore() <= $bestMatch->getScore())) {
                 continue;
