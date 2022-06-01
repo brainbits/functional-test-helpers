@@ -6,6 +6,8 @@ parameters:
     excludePaths:
         - src/Kernel.php
         - tests/bootstrap.php
+        - src/HttpClientMock/CallbackHandler.php # needed because of unknown classes when installed with monolog 2.x
+        - src/HttpClientMock/LegacyCallbackHandler.php # needed because of unknown classes when installed with monolog 2.x
         - src/ZipContents/ZipContents.php # remove after updating to thecodingmachine/safe >= 2.0
     ignoreErrors:
         # - '#Class DateTimeImmutable is unsafe to use#' # reactivate after updating to thecodingmachine/safe >= 2.0

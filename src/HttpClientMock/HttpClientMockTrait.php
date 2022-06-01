@@ -7,6 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 use ArrayObject;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\HttpClientMockException;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
@@ -15,6 +16,7 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 use function assert;
+use function class_exists;
 use function Safe\sprintf;
 use function ucfirst;
 
@@ -29,7 +31,7 @@ trait HttpClientMockTrait
     ): void {
         $storage = new ArrayObject();
 
-        $callbackHandler = new CallbackHandler(static function ($record) use (&$storage): void {
+        $callbackHandlerFn = static function ($record) use (&$storage): void {
             if (!($record['context']['exception'] ?? null)) {
                 return;
             }
@@ -44,7 +46,15 @@ trait HttpClientMockTrait
             }
 
             $storage['exception'] = $exception;
-        });
+        };
+
+        if (class_exists(LogRecord::class)) {
+            // Used when Monolog >= 3.0 is installed
+            $callbackHandler = new CallbackHandler($callbackHandlerFn);
+        } else {
+            // Used when Monolog < 3.0 is installed
+            $callbackHandler = new LegacyCallbackHandler($callbackHandlerFn);
+        }
 
         foreach ($loggers as $logger) {
             $logger->pushHandler($callbackHandler);

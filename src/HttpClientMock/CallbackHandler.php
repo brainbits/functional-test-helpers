@@ -5,41 +5,38 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use Monolog\Handler\AbstractProcessingHandler;
-use Monolog\Logger;
-use Psr\Log\LogLevel;
+use Monolog\Level;
+use Monolog\LogRecord;
 
-/**
- * @phpstan-import-type Level from Logger
- * @phpstan-import-type LevelName from Logger
- */
-final class CallbackHandler extends AbstractProcessingHandler
-{
-    /** @var callable */
-    private $fn;
+use function class_exists;
 
+if (class_exists(LogRecord::class)) {
     /**
-     * @phpstan-param Level|LevelName|LogLevel::* $level
+     * Callback handler for Monolog 3.x
      */
-    public function __construct(callable $fn, int|string $level = Logger::DEBUG, bool $bubble = true)
+    final class CallbackHandler extends AbstractProcessingHandler
     {
-        parent::__construct($level, $bubble);
+        /** @var callable */
+        private $fn;
 
-        $this->fn = $fn;
-    }
+        public function __construct(callable $fn, int|string|Level $level = Level::Debug, bool $bubble = true)
+        {
+            parent::__construct($level, $bubble);
 
-    public function clear(): void
-    {
-    }
+            $this->fn = $fn;
+        }
 
-    public function reset(): void
-    {
-    }
+        public function clear(): void
+        {
+        }
 
-    /**
-     * @param mixed[] $record
-     */
-    protected function write(array $record): void
-    {
-        ($this->fn)($record);
+        public function reset(): void
+        {
+        }
+
+        protected function write(LogRecord $record): void
+        {
+            ($this->fn)($record);
+        }
     }
 }
