@@ -42,12 +42,25 @@ trait SnapshotTrait
      */
     final protected function assertMatchesArraySnapshot(array $actual, string $message = ''): void
     {
-        $this->assertMatchesJsonSnapshot(json_encode($actual), $message);
+        $this->assertMatchesNamedArraySnapshot($actual, '', $message);
+    }
+
+    /**
+     * @param mixed[] $actual
+     */
+    final protected function assertMatchesNamedArraySnapshot(array $actual, string $name, string $message = ''): void
+    {
+        $this->assertMatchesNamedJsonSnapshot(json_encode($actual), $name, $message);
     }
 
     final protected function assertMatchesTextSnapshot(string $actual, string $message = ''): void
     {
-        $fixtureFilename = $this->snapshotFilename('txt');
+        $this->assertMatchesNamedTextSnapshot($actual, '', $message);
+    }
+
+    final protected function assertMatchesNamedTextSnapshot(string $actual, string $name, string $message = ''): void
+    {
+        $fixtureFilename = $this->snapshotFilename('txt', $name);
 
         $this->snapshotDump($fixtureFilename, $actual);
 
@@ -60,9 +73,14 @@ trait SnapshotTrait
 
     final protected function assertMatchesJsonSnapshot(string $actual, string $message = ''): void
     {
+        $this->assertMatchesNamedJsonSnapshot($actual, '', $message);
+    }
+
+    final protected function assertMatchesNamedJsonSnapshot(string $actual, string $name, string $message = ''): void
+    {
         self::assertJson($actual, $message);
 
-        $fixtureFilename = $this->snapshotFilename('json');
+        $fixtureFilename = $this->snapshotFilename('json', $name);
         $actual = $this->snapshotFormatJson($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -76,7 +94,14 @@ trait SnapshotTrait
 
     final protected function assertMatchesXmlSnapshot(string $actual, string $message = ''): void
     {
-        $fixtureFilename = $this->snapshotFilename('xml');
+        $this->assertMatchesNamedXmlSnapshot($actual, '', $message);
+    }
+
+    final protected function assertMatchesNamedXmlSnapshot(string $actual, string $name, string $message = ''): void
+    {
+        self::assertThat($actual, new IsXml(), $message);
+
+        $fixtureFilename = $this->snapshotFilename('xml', $name);
         $actual = $this->snapshotFormatXml($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -90,7 +115,12 @@ trait SnapshotTrait
 
     final protected function assertMatchesHtmlSnapshot(string $actual, string $message = ''): void
     {
-        $fixtureFilename = $this->snapshotFilename('html');
+        $this->assertMatchesNamedHtmlSnapshot($actual, '', $message);
+    }
+
+    final protected function assertMatchesNamedHtmlSnapshot(string $actual, string $name, string $message = ''): void
+    {
+        $fixtureFilename = $this->snapshotFilename('html', $name);
         $actual = $this->snapshotFormatHtml($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -102,12 +132,12 @@ trait SnapshotTrait
         );
     }
 
-    private function snapshotFilename(string $extension): string
+    private function snapshotFilename(string $extension, string $name): string
     {
         $filename = sprintf(
             '%s/__snapshots__/%s.%s',
             $this->snapshotPath(),
-            $this->snapshotName(),
+            $this->snapshotName($name),
             $extension,
         );
 
@@ -120,7 +150,7 @@ trait SnapshotTrait
         return sprintf(
             '%s/__snapshots__/%s_%s.json',
             $this->snapshotPath(),
-            $this->snapshotName(),
+            $this->snapshotName($name),
             ++$this->filenames[$filename],
         );
     }
@@ -136,7 +166,7 @@ trait SnapshotTrait
         return $path;
     }
 
-    private function snapshotName(): string
+    private function snapshotName(string $postfix): string
     {
         $class = preg_replace('/.*\\\\/', '', static::class);
 
@@ -161,7 +191,7 @@ trait SnapshotTrait
 
         $dataset = $matches[1] ?? $dataset;
 
-        $lowercase = mb_strtolower($class . ':' . $method . ':' . $dataset);
+        $lowercase = mb_strtolower($class . ':' . $method . ':' . ($postfix ? $postfix . ':' : '') . $dataset);
         $noSpecialCharacters = preg_replace('/[^\pL0-9]+/u', '_', $lowercase);
 
         return rtrim($noSpecialCharacters, '_');
