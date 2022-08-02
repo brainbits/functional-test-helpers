@@ -60,6 +60,10 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedTextSnapshot(string $actual, string $name, string $message = ''): void
     {
+        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
         $fixtureFilename = $this->snapshotFilename('txt', $name);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -78,6 +82,10 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedJsonSnapshot(string $actual, string $name, string $message = ''): void
     {
+        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
         self::assertJson($actual, $message);
 
         $fixtureFilename = $this->snapshotFilename('json', $name);
@@ -99,6 +107,10 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedXmlSnapshot(string $actual, string $name, string $message = ''): void
     {
+        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
         self::assertThat($actual, new IsXml(), $message);
 
         $fixtureFilename = $this->snapshotFilename('xml', $name);
@@ -120,6 +132,10 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedHtmlSnapshot(string $actual, string $name, string $message = ''): void
     {
+        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
         $fixtureFilename = $this->snapshotFilename('html', $name);
         $actual = $this->snapshotFormatHtml($actual);
 
