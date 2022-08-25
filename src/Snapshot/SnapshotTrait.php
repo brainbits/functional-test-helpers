@@ -11,8 +11,10 @@ use tidy;
 
 use function dirname;
 use function getenv;
+use function is_string;
 use function mb_strtolower;
 use function rtrim;
+use function Safe\array_walk_recursive;
 use function Safe\json_decode;
 use function Safe\json_encode;
 use function Safe\preg_match;
@@ -20,6 +22,7 @@ use function Safe\preg_replace;
 use function Safe\sprintf;
 use function Safe\substr;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 
@@ -80,6 +83,11 @@ trait SnapshotTrait
         $this->assertMatchesNamedJsonSnapshot($actual, '', $message);
     }
 
+    final protected function assertMatchesJsonLdSnapshot(string $actual, string $message = ''): void
+    {
+        $this->assertMatchesNamedJsonLdSnapshot($actual, '', $message);
+    }
+
     final protected function assertMatchesNamedJsonSnapshot(string $actual, string $name, string $message = ''): void
     {
         if (getenv('SKIP_SNAPSHOT_TESTS')) {
@@ -90,6 +98,26 @@ trait SnapshotTrait
 
         $fixtureFilename = $this->snapshotFilename('json', $name);
         $actual = $this->snapshotFormatJson($actual);
+
+        $this->snapshotDump($fixtureFilename, $actual);
+
+        self::assertJsonStringEqualsJsonFile(
+            $fixtureFilename,
+            $actual,
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+        );
+    }
+
+    final protected function assertMatchesNamedJsonLdSnapshot(string $actual, string $name, string $message = ''): void
+    {
+        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
+        self::assertJson($actual, $message);
+
+        $fixtureFilename = $this->snapshotFilename('json', $name);
+        $actual = $this->snapshotFormatJsonLd($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
 
@@ -217,6 +245,29 @@ trait SnapshotTrait
     {
         return json_encode(
             json_decode($string),
+            JSON_UNESCAPED_SLASHES |
+            JSON_UNESCAPED_LINE_TERMINATORS |
+            JSON_UNESCAPED_UNICODE |
+            JSON_PRETTY_PRINT
+        );
+    }
+
+    private function snapshotFormatJsonLd(string $string): string
+    {
+        $data = json_decode($string, true);
+
+        array_walk_recursive(
+            $data,
+            static function (&$item, $key): void {
+                // phpcs:ignore
+                if ($key === '@id' && is_string($item) && str_starts_with($item, '/.well-known/genid/')) {
+                    $item = 'snapshot-normalized-id';
+                }
+            }
+        );
+
+        return json_encode(
+            $data,
             JSON_UNESCAPED_SLASHES |
             JSON_UNESCAPED_LINE_TERMINATORS |
             JSON_UNESCAPED_UNICODE |
