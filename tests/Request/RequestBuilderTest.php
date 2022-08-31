@@ -223,13 +223,26 @@ final class RequestBuilderTest extends TestCase
         $this->assertSame([], $builder->getFiles());
     }
 
-    public function testFilesCanBeSet(): void
+    public function testFileCanBeSet(): void
     {
         $builder = $this->createRequestBuilder('GET', '/users')
             ->file('file', new UploadedFile(__FILE__, 'test.jpg'));
 
         $this->assertArrayHasKey('file', $builder->getFiles());
         $this->assertContainsOnlyInstancesOf(UploadedFile::class, $builder->getFiles());
+    }
+
+    public function testFilesCanBeSet(): void
+    {
+        $files = [
+            new UploadedFile(__FILE__, 'test1.jpg'),
+            new UploadedFile(__FILE__, 'test2.jpg'),
+        ];
+        $builder = $this->createRequestBuilder('GET', '/users')
+            ->files('files', $files);
+
+        $this->assertArrayHasKey('files', $builder->getFiles());
+        $this->assertContainsOnlyInstancesOf(UploadedFile::class, $builder->getFiles()['files']);
     }
 
     public function testFilesCanBeSetByPath(): void

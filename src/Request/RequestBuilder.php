@@ -237,6 +237,24 @@ final class RequestBuilder
         return $this;
     }
 
+    /**
+     * @param array<int, UploadedFile> $files
+     */
+    public function files(string $key, array $files): self
+    {
+        $this->server('CONTENT_TYPE', 'multipart/form-data');
+
+        foreach ($files as $file) {
+            if (!$file instanceof UploadedFile) {
+                continue;
+            }
+
+            $this->files[$key][] = $file;
+        }
+
+        return $this;
+    }
+
     public function fileByPath(string $key, string $path): self
     {
         $filesystem = new Filesystem();
