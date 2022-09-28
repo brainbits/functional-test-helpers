@@ -21,8 +21,8 @@ use function Safe\preg_match;
 use function Safe\preg_replace;
 use function Safe\sprintf;
 use function Safe\substr;
+use function str_contains;
 use function str_replace;
-use function str_starts_with;
 use function strlen;
 use function strpos;
 
@@ -260,7 +260,7 @@ trait SnapshotTrait
             $data,
             static function (&$item, $key): void {
                 // phpcs:ignore
-                if ($key === '@id' && is_string($item) && str_starts_with($item, '/.well-known/genid/')) {
+                if ($key === '@id' && is_string($item) && str_contains($item, '/.well-known/genid/')) {
                     $item = 'snapshot-normalized-id';
                 }
             }
