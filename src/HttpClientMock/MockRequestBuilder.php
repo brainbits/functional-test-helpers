@@ -451,6 +451,11 @@ final class MockRequestBuilder
         }
     }
 
+    public function hasNextResponse(): bool
+    {
+        return $this->responses->hasNext();
+    }
+
     public function resetResponses(): self
     {
         $this->responses->reset();

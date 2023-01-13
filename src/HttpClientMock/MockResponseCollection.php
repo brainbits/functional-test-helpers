@@ -63,6 +63,11 @@ final class MockResponseCollection
         return $responseBuilder;
     }
 
+    public function hasNext(): bool
+    {
+        return current($this->responses) !== false;
+    }
+
     public function reset(): void
     {
         $this->responses = [];

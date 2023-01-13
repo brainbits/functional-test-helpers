@@ -6,6 +6,9 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockRequest;
 
+use function array_pop;
+use function count;
+
 final class MockRequestResolver
 {
     private MockRequestMatcher $matcher;
@@ -22,25 +25,35 @@ final class MockRequestResolver
         MockRequestBuilderCollection $requestBuilders,
         MockRequestBuilder $realRequest
     ): MockRequestBuilder {
-        $bestMatchingRequestBuilder = null;
-
         $matches = [];
-        $bestMatch = null;
+        $bestScore = null;
+        $bestMatchingRequestBuilders = [];
+
         foreach ($requestBuilders as $requestBuilder) {
             $matches[] = $match = ($this->matcher)($requestBuilder, $realRequest);
 
-            if ($match->isMismatch() || ($bestMatch && $match->getScore() <= $bestMatch->getScore())) {
+            if ($match->isMismatch() || ($bestScore !== null && $match->getScore() < $bestScore)) {
                 continue;
             }
 
-            $bestMatchingRequestBuilder = $requestBuilder;
-            $bestMatch = $match;
+            if ($bestScore === null || $match->getScore() > $bestScore) {
+                $bestMatchingRequestBuilders = [];
+                $bestScore = $match->getScore();
+            }
+
+            $bestMatchingRequestBuilders[] = $requestBuilder;
         }
 
-        if (!$bestMatchingRequestBuilder) {
+        if (count($bestMatchingRequestBuilders) === 0) {
             throw NoMatchingMockRequest::fromMockRequest($realRequest, $matches);
         }
 
-        return $bestMatchingRequestBuilder;
+        foreach ($bestMatchingRequestBuilders as $requestBuilder) {
+            if ($requestBuilder->hasNextResponse()) {
+                return $requestBuilder;
+            }
+        }
+
+        return array_pop($bestMatchingRequestBuilders);
     }
 }
