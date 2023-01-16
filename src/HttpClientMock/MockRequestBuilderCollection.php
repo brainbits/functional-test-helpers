@@ -11,27 +11,21 @@ use Traversable;
 use function array_map;
 use function is_callable;
 
-/**
- * @implements IteratorAggregate<MockRequestBuilder>
- */
+/** @implements IteratorAggregate<MockRequestBuilder> */
 final class MockRequestBuilderCollection implements IteratorAggregate
 {
     private MockRequestBuilderFactory $requestFactory;
     private MockRequestResolver $requestResolver;
-    private MockResponseFactory $responseFactory;
     /** @var MockRequestBuilder[] */
     private array $requestBuilders = [];
 
-    public function __construct(MockResponseFactory $responseFactory)
+    public function __construct(private MockResponseFactory $responseFactory)
     {
         $this->requestFactory = new MockRequestBuilderFactory();
         $this->requestResolver = new MockRequestResolver();
-        $this->responseFactory = $responseFactory;
     }
 
-    /**
-     * @param mixed[] $options
-     */
+    /** @param mixed[] $options */
     public function __invoke(string $method, string $url, array $options): ResponseInterface
     {
         $realRequest = ($this->requestFactory)($method, $url, $options);
@@ -55,15 +49,13 @@ final class MockRequestBuilderCollection implements IteratorAggregate
     {
         $callStacks = array_map(
             static fn ($requestBuilder) => $requestBuilder->getCallStack(),
-            $this->requestBuilders
+            $this->requestBuilders,
         );
 
         return CallStack::fromCallStacks(...$callStacks);
     }
 
-    /**
-     * @return Traversable<MockRequestBuilder>|MockRequestBuilder[]
-     */
+    /** @return Traversable<MockRequestBuilder>|MockRequestBuilder[] */
     public function getIterator(): Traversable
     {
         yield from $this->requestBuilders;

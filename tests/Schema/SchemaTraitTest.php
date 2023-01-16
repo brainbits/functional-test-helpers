@@ -13,9 +13,7 @@ use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\Schema\SchemaTrait
- */
+/** @covers \Brainbits\FunctionalTestHelpers\Schema\SchemaTrait */
 final class SchemaTraitTest extends TestCase
 {
     use ProphecyTrait;
@@ -88,7 +86,7 @@ final class SchemaTraitTest extends TestCase
             $dataBuilder,
             static function ($dataBuilder): void {
                 $dataBuilder->foo('baz');
-            }
+            },
         );
     }
 
@@ -114,7 +112,7 @@ final class SchemaTraitTest extends TestCase
             static function ($dataBuilder): void {
                 $dataBuilder->foo('baz');
             },
-            false
+            false,
         );
     }
 
@@ -146,20 +144,18 @@ final class SchemaTraitTest extends TestCase
         };
     }
 
-    private function createDataBuilder(?SchemaBuilder $schemaBuilder = null): DataBuilder
+    private function createDataBuilder(SchemaBuilder|null $schemaBuilder = null): DataBuilder
     {
         if (!$schemaBuilder) {
             $schemaBuilder = $this->createSchemaBuilder();
         }
 
         return new class ($schemaBuilder) implements DataBuilder {
-            private SchemaBuilder $schemaBuilder;
             /** @var mixed[] */
             private array $data = [];
 
-            public function __construct(SchemaBuilder $schemaBuilder)
+            public function __construct(private SchemaBuilder $schemaBuilder)
             {
-                $this->schemaBuilder = $schemaBuilder;
             }
 
             public static function create(SchemaBuilder $schemaBuilder): DataBuilder
@@ -167,9 +163,7 @@ final class SchemaTraitTest extends TestCase
                 return new self($schemaBuilder);
             }
 
-            /**
-             * @return mixed[]
-             */
+            /** @return mixed[] */
             public function getData(): array
             {
                 return $this->data;

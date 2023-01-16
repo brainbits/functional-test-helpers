@@ -14,9 +14,7 @@ use const PHP_EOL;
 
 final class NoMatchingMockRequest extends RuntimeException implements HttpClientMockException
 {
-    /**
-     * @param MockRequestMatch[] $matches
-     */
+    /** @param MockRequestMatch[] $matches */
     public static function fromMockRequest(MockRequestBuilder $request, array $matches): self
     {
         $message = sprintf('No matching mock request builder found for:%s%s%s', PHP_EOL, $request, PHP_EOL);

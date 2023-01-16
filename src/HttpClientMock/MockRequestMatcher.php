@@ -71,28 +71,28 @@ final class MockRequestMatcher
             if (!$this->isJsonContentMatching($expectation, $realRequest)) {
                 return MockRequestMatch::mismatchingJsonContent(
                     $expectation->getContent(),
-                    $realRequest->getContent()
+                    $realRequest->getContent(),
                 );
             }
         } elseif ($expectation->isXml()) {
             if (!$this->isXmlContentMatching($expectation, $realRequest)) {
                 return MockRequestMatch::mismatchingXmlContent(
                     $expectation->getContent(),
-                    $realRequest->getContent()
+                    $realRequest->getContent(),
                 );
             }
         } elseif ($expectation->hasRequestParams()) {
             if (!$this->isRequestParamsMatching($expectation, $realRequest)) {
                 return MockRequestMatch::mismatchingRequestParameterContent(
                     $expectation->getContent(),
-                    $realRequest->getContent()
+                    $realRequest->getContent(),
                 );
             }
         } elseif ($expectation->hasContent()) {
             if (!$this->isPlainContentMatching($expectation, $realRequest)) {
                 return MockRequestMatch::mismatchingContent(
                     $expectation->getContent(),
-                    $realRequest->getContent()
+                    $realRequest->getContent(),
                 );
             }
         }
@@ -101,7 +101,7 @@ final class MockRequestMatcher
             if (!($this->compare)($expectation->getMultiparts(), $realRequest->getMultiparts())) {
                 return MockRequestMatch::mismatchingMultiparts(
                     $expectation->getMultiparts(),
-                    $realRequest->getMultiparts()
+                    $realRequest->getMultiparts(),
                 );
             }
         }

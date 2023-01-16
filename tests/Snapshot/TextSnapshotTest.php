@@ -12,9 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 use function Safe\file_put_contents;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait
- */
+/** @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait */
 final class TextSnapshotTest extends TestCase
 {
     use SnapshotTrait;
@@ -47,7 +45,7 @@ final class TextSnapshotTest extends TestCase
 
         try {
             $this->assertMatchesTextSnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 
@@ -73,7 +71,7 @@ final class TextSnapshotTest extends TestCase
 
         try {
             $this->assertMatchesTextSnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 

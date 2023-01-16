@@ -7,14 +7,10 @@ namespace Brainbits\FunctionalTestHelpers\ZipContents;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @mixin TestCase
- */
+/** @mixin TestCase */
 trait ZipContentsTrait
 {
-    /**
-     * @param resource $stream
-     */
+    /** @param resource $stream */
     final protected static function readZipStream($stream, int $size): ZipInfo
     {
         $zipContents = new ZipContents();
@@ -37,7 +33,7 @@ trait ZipContentsTrait
     final protected static function assertZipHasNumberOfFiles(
         int $expectedNumberOfFiles,
         ZipInfo $zip,
-        string $message = ''
+        string $message = '',
     ): void {
         Assert::assertCount($expectedNumberOfFiles, $zip, $message);
     }
@@ -51,7 +47,7 @@ trait ZipContentsTrait
         string $expectedPath,
         int $expectedSize,
         ZipInfo $zip,
-        string $message = ''
+        string $message = '',
     ): void {
         self::assertZipHasFile($expectedPath, $zip, $message);
 

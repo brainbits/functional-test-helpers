@@ -9,28 +9,18 @@ use function count;
 
 final class DataBuilder
 {
-    /** @var mixed[] */
-    private array $data;
-
-    /**
-     * @param mixed[] $data
-     */
-    private function __construct(array $data)
+    /** @param mixed[] $data */
+    private function __construct(private array $data)
     {
-        $this->data = $data;
     }
 
-    /**
-     * @param mixed[] $data
-     */
+    /** @param mixed[] $data */
     public static function from(array $data): self
     {
         return new self($data);
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function __invoke(): array
     {
         return $this->data;

@@ -17,9 +17,7 @@ use function current;
 use function method_exists;
 use function Safe\json_encode;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\Request\RequestBuilder
- */
+/** @covers \Brainbits\FunctionalTestHelpers\Request\RequestBuilder */
 final class RequestBuilderTest extends TestCase
 {
     use ProphecyTrait;
@@ -30,7 +28,7 @@ final class RequestBuilderTest extends TestCase
             static fn (...$params) => $params,
             static fn (...$params) => $params,
             'POST',
-            '/test'
+            '/test',
         );
 
         $this->assertInstanceOf(RequestBuilder::class, $builder);
@@ -141,9 +139,7 @@ final class RequestBuilderTest extends TestCase
         $this->assertSame(['CONTENT_TYPE' => 'application/json'], $builder->getServer());
     }
 
-    /**
-     * @dataProvider provideJsonData
-     */
+    /** @dataProvider provideJsonData */
     public function testJsonDataIsSet(mixed $data, string|null $encoded): void
     {
         $builder = $this->createRequestBuilder('GET', '/users')
@@ -152,9 +148,7 @@ final class RequestBuilderTest extends TestCase
         $this->assertSame($encoded, $builder->getContent());
     }
 
-    /**
-     * @return array<string, array{mixed, string|null}>
-     */
+    /** @return array<string, array{mixed, string|null}> */
     public function provideJsonData(): array
     {
         return [
@@ -349,7 +343,7 @@ final class RequestBuilderTest extends TestCase
             static fn (...$params) => current($params),
             static fn (...$params) => json_encode($params),
             $method,
-            $uri
+            $uri,
         );
     }
 }

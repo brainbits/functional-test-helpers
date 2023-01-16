@@ -12,9 +12,7 @@ use function Safe\filesize;
 use function Safe\fopen;
 use function Safe\sprintf;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContents
- */
+/** @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContents */
 final class ZipContentsTest extends TestCase
 {
     private const FILE = __DIR__ . '/../files/test.zip';

@@ -12,9 +12,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver
- */
+/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver */
 final class MockRequestResolverTest extends TestCase
 {
     public function testEmptyCollection(): void

@@ -8,9 +8,7 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
-/**
- * @mixin WebTestCase
- */
+/** @mixin WebTestCase */
 trait CommandTrait
 {
     /**

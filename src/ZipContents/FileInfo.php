@@ -67,13 +67,7 @@ final class FileInfo
     ];
 
     private string $path;
-    private int $size;
-    private int $compressedSize;
-    private int $compression;
     private DateTimeImmutable $lastModified;
-    private int $crc;
-    private ?string $comment;
-    private bool $isDir;
 
     /**
      * initialize dynamic defaults
@@ -82,31 +76,23 @@ final class FileInfo
      */
     public function __construct(
         string $path,
-        int $size,
-        int $compressedSize,
-        int $compression,
+        private int $size,
+        private int $compressedSize,
+        private int $compression,
         int $lastModified,
-        int $crc,
-        ?string $comment,
-        bool $isDir
+        private int $crc,
+        private string|null $comment,
+        private bool $isDir,
     ) {
         $this->path = $this->cleanPath($path);
-        $this->size = $size;
-        $this->compressedSize = $compressedSize;
-        $this->compression = $compression;
         $this->lastModified = DateTimeImmutable::createFromFormat(
             'U',
             (string) $lastModified,
             new DateTimeZone('UTC'),
         );
-        $this->crc = $crc;
-        $this->comment = $comment;
-        $this->isDir = $isDir;
     }
 
-    /**
-     * @param mixed[] $header
-     */
+    /** @param mixed[] $header */
     public static function fromCentralFileHeader(array $header): self
     {
         $path = null;
@@ -133,7 +119,7 @@ final class FileInfo
             $header['mtime'],
             $header['crc'],
             $comment,
-            $header['external'] === 0x41FF0010 || $header['external'] === 16
+            $header['external'] === 0x41FF0010 || $header['external'] === 16,
         );
     }
 
@@ -181,7 +167,7 @@ final class FileInfo
         return dechex($this->crc);
     }
 
-    public function getComment(): ?string
+    public function getComment(): string|null
     {
         return $this->comment;
     }

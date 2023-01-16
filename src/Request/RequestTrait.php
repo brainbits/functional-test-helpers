@@ -10,12 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 use function Safe\sprintf;
 
-/**
- * @mixin TestCase
- */
+/** @mixin TestCase */
 trait RequestTrait
 {
-    private static ?AbstractBrowser $requestClient = null;
+    private static AbstractBrowser|null $requestClient = null;
 
     protected function findUser(): callable
     {
@@ -27,17 +25,13 @@ trait RequestTrait
         return static fn () => null;
     }
 
-    /**
-     * @before
-     */
+    /** @before */
     protected function setUpRequest(): void
     {
         self::$requestClient = static::createClient();
     }
 
-    /**
-     * @after
-     */
+    /** @after */
     protected function tearDownRequest(): void
     {
         self::$requestClient = null;

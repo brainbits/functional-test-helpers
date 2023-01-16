@@ -12,9 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 use function Safe\file_put_contents;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait
- */
+/** @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait */
 final class XmlSnapshotTest extends TestCase
 {
     use SnapshotTrait;
@@ -34,7 +32,7 @@ final class XmlSnapshotTest extends TestCase
 
         try {
             $this->assertMatchesXmlSnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 
@@ -60,7 +58,7 @@ final class XmlSnapshotTest extends TestCase
 
         try {
             $this->assertMatchesXmlSnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 
@@ -86,7 +84,7 @@ final class XmlSnapshotTest extends TestCase
 
         try {
             $this->assertMatchesXmlSnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 

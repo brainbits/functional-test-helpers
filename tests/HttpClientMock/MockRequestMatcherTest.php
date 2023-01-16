@@ -9,9 +9,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatch;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher
- */
+/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher */
 final class MockRequestMatcherTest extends TestCase
 {
     private MockRequestMatcher $matcher;

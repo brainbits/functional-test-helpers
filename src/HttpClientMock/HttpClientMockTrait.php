@@ -20,9 +20,7 @@ use function class_exists;
 use function Safe\sprintf;
 use function ucfirst;
 
-/**
- * @mixin TestCase
- */
+/** @mixin TestCase */
 trait HttpClientMockTrait
 {
     protected function registerNoMatchingMockRequestAsserts(
@@ -111,7 +109,7 @@ trait HttpClientMockTrait
         );
     }
 
-    protected function mockRequest(?string $method = null, string|callable|null $uri = null): MockRequestBuilder // phpcs:ignore Generic.Files.LineLength.TooLong,SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing.NoSpaceBetweenTypeHintAndParameter
+    protected function mockRequest(string|null $method = null, string|callable|null $uri = null): MockRequestBuilder // phpcs:ignore Generic.Files.LineLength.TooLong,SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing.NoSpaceBetweenTypeHintAndParameter
     {
         if (!self::getContainer()) {
             static::fail(sprintf(
@@ -123,7 +121,7 @@ trait HttpClientMockTrait
         if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(sprintf(
                 '%s not found, did you forget to include it in your test services?',
-                MockRequestBuilderCollection::class
+                MockRequestBuilderCollection::class,
             ));
         }
 
@@ -156,7 +154,7 @@ trait HttpClientMockTrait
         if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(sprintf(
                 '%s not found, did you forget to include it in your test services?',
-                MockRequestBuilderCollection::class
+                MockRequestBuilderCollection::class,
             ));
         }
 
@@ -166,13 +164,11 @@ trait HttpClientMockTrait
         return $stack->getCallStack();
     }
 
-    /**
-     * @param mixed[] $expected
-     */
+    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithJson(
         array $expected,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, $message);
@@ -181,18 +177,16 @@ trait HttpClientMockTrait
             self::assertEquals(
                 $expected,
                 $call->getJson(),
-                self::mockRequestMessage($message, 'Request not called with expected json data: %s', (string) $call)
+                self::mockRequestMessage($message, 'Request not called with expected json data: %s', (string) $call),
             );
         }
     }
 
-    /**
-     * @param mixed[] $expected
-     */
+    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithRequestParameters(
         array $expected,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, $message);
@@ -204,19 +198,17 @@ trait HttpClientMockTrait
                 self::mockRequestMessage(
                     $message,
                     'Request not called with expected request parameters: %s',
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
         }
     }
 
-    /**
-     * @param mixed[] $expected
-     */
+    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithQueryParameters(
         array $expected,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, $message);
@@ -228,8 +220,8 @@ trait HttpClientMockTrait
                 self::mockRequestMessage(
                     $message,
                     'Request not called with expected query parameters: %s',
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
         }
     }
@@ -238,7 +230,7 @@ trait HttpClientMockTrait
         string $name,
         string $expected,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, $message);
@@ -250,8 +242,8 @@ trait HttpClientMockTrait
                 self::mockRequestMessage(
                     $message,
                     'Request called without parameters: %s',
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
             self::assertArrayHasKey(
                 $name,
@@ -260,8 +252,8 @@ trait HttpClientMockTrait
                     $message,
                     'Request not called with expected query parameter "%s": %s',
                     $name,
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
             self::assertEquals(
                 $expected,
@@ -270,19 +262,17 @@ trait HttpClientMockTrait
                     $message,
                     'Request not called with expected query parameter value "%s": %s',
                     $name,
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
         }
     }
 
-    /**
-     * @param mixed[] $expected
-     */
+    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithContent(
         string $expected,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, $message);
@@ -291,20 +281,18 @@ trait HttpClientMockTrait
             self::assertSame(
                 $expected,
                 $call->getContent(),
-                self::mockRequestMessage($message, 'Request not called with expected content: %s', (string) $call)
+                self::mockRequestMessage($message, 'Request not called with expected content: %s', (string) $call),
             );
         }
     }
 
-    /**
-     * @param mixed[] $expected
-     */
+    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithFile(
         string $expectedKey,
         string $expectedFilename,
         int $expectedSize,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, $message);
@@ -319,8 +307,8 @@ trait HttpClientMockTrait
                     $message,
                     'Request not called with file "%s": %s',
                     $expectedKey,
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
 
             self::assertSame(
@@ -330,8 +318,8 @@ trait HttpClientMockTrait
                     $message,
                     'Request not called with expected filename "%s": %s',
                     $expectedFilename,
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
 
             self::assertSame(
@@ -341,8 +329,8 @@ trait HttpClientMockTrait
                     $message,
                     'Request not called with expected file size "%s": %s',
                     $expectedSize,
-                    (string) $call
-                )
+                    (string) $call,
+                ),
             );
         }
     }
@@ -351,7 +339,7 @@ trait HttpClientMockTrait
         string $expectedHeader,
         string $expectedSubstring,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, self::mockRequestMessage($message, 'Request not called', $actualRequest));
@@ -360,7 +348,7 @@ trait HttpClientMockTrait
             self::assertStringContainsString(
                 $expectedSubstring,
                 $call->getHeader($expectedHeader),
-                self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call)
+                self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call),
             );
         }
     }
@@ -369,7 +357,7 @@ trait HttpClientMockTrait
         string $expectedHeader,
         string $expectedSubstring,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty($callStack, self::mockRequestMessage($message, 'Request not called', $actualRequest));
@@ -378,7 +366,7 @@ trait HttpClientMockTrait
             self::assertStringNotContainsString(
                 $expectedSubstring,
                 $call->getHeader($expectedHeader),
-                self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call)
+                self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call),
             );
         }
     }
@@ -387,19 +375,19 @@ trait HttpClientMockTrait
         string $expectedHeader,
         string $expectedValue,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty(
             $callStack,
-            self::mockRequestMessage($message, 'Request not called: %s', (string) $actualRequest)
+            self::mockRequestMessage($message, 'Request not called: %s', (string) $actualRequest),
         );
 
         foreach ($callStack as $call) {
             self::assertSame(
                 $expectedValue,
                 $call->getHeader($expectedHeader),
-                self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call)
+                self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call),
             );
         }
     }
@@ -407,18 +395,18 @@ trait HttpClientMockTrait
     protected static function assertRequestMockIsCalledWithoutHeader(
         string $expectedHeader,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         $callStack = $actualRequest->getCallStack();
         self::assertNotEmpty(
             $callStack,
-            self::mockRequestMessage($message, 'Request not called: %s', (string) $actualRequest)
+            self::mockRequestMessage($message, 'Request not called: %s', (string) $actualRequest),
         );
 
         foreach ($callStack as $call) {
             self::assertNull(
                 $call->getHeader($expectedHeader),
-                self::mockRequestMessage($message, 'Request not called without expected header: %s', (string) $call)
+                self::mockRequestMessage($message, 'Request not called without expected header: %s', (string) $call),
             );
         }
     }
@@ -426,12 +414,12 @@ trait HttpClientMockTrait
     protected static function assertRequestMockIsCalledNTimes(
         int $expected,
         MockRequestBuilder $actualRequest,
-        string $message = ''
+        string $message = '',
     ): void {
         self::assertCount(
             $expected,
             $actualRequest->getCallStack(),
-            self::mockRequestMessage($message, 'Request not called expected times: %s', (string) $actualRequest)
+            self::mockRequestMessage($message, 'Request not called expected times: %s', (string) $actualRequest),
         );
     }
 
@@ -449,7 +437,7 @@ trait HttpClientMockTrait
             static::fail(self::mockRequestMessage(
                 $message,
                 '%s not found, did you forget to include it in your test services?',
-                MockRequestBuilderCollection::class
+                MockRequestBuilderCollection::class,
             ));
         }
 
@@ -467,7 +455,7 @@ trait HttpClientMockTrait
     protected static function mockRequestMessage(
         string $userMessage,
         string $messageTemplate,
-        mixed ...$values
+        mixed ...$values,
     ): string {
         $message = sprintf($messageTemplate, ...$values);
 

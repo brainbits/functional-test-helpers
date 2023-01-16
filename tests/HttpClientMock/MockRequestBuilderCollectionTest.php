@@ -106,9 +106,7 @@ final class MockRequestBuilderCollectionTest extends TestCase
         self::assertFalse($expectedMockRequestBuilder->getCallStack()->isEmpty());
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function requests(): array
     {
         return [

@@ -107,7 +107,7 @@ final class ZipContents
 
         $data = unpack(
             'vdisk/vdisk_start/vdisk_entries/ventries/Vsize/Voffset/vcomment_size',
-            fread($fh, 18)
+            fread($fh, 18),
         );
 
         $centralDir['comment'] = null;
@@ -140,7 +140,7 @@ final class ZipContents
         $header = unpack(
             // phpcs:ignore Generic.Files.LineLength.TooLong
             'vchkid/vid/vversion/vversion_extracted/vflag/vcompression/vmtime/vmdate/Vcrc/Vcompressed_size/Vsize/vfilename_len/vextra_len/vcomment_len/vdisk/vinternal/Vexternal/Voffset',
-            $binaryData
+            $binaryData,
         );
 
         $header['filename'] = null;
@@ -233,7 +233,7 @@ final class ZipContents
     /**
      * Create a UNIX timestamp from a DOS timestamp
      */
-    private function makeUnixTime(?int $mdate = null, ?int $mtime = null): int
+    private function makeUnixTime(int|null $mdate = null, int|null $mtime = null): int
     {
         if ($mdate && $mtime) {
             $year = (($mdate & 0xFE00) >> 9) + 1980;

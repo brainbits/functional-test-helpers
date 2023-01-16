@@ -15,9 +15,7 @@ use function Safe\sprintf;
 
 use const PHP_EOL;
 
-/**
- * @implements IteratorAggregate<MockRequestBuilder>
- */
+/** @implements IteratorAggregate<MockRequestBuilder> */
 final class CallStack implements Countable, IteratorAggregate
 {
     /** @var MockRequestBuilder[] */
@@ -35,7 +33,7 @@ final class CallStack implements Countable, IteratorAggregate
         return new self(...$requests);
     }
 
-    public function first(): ?MockRequestBuilder
+    public function first(): MockRequestBuilder|null
     {
         if (!count($this->calls)) {
             return null;
@@ -54,9 +52,7 @@ final class CallStack implements Countable, IteratorAggregate
         return count($this->calls);
     }
 
-    /**
-     * @return Traversable<MockRequestBuilder>|MockRequestBuilder[]
-     */
+    /** @return Traversable<MockRequestBuilder>|MockRequestBuilder[] */
     public function getIterator(): Traversable
     {
         yield from $this->calls;

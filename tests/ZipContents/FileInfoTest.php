@@ -7,9 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\ZipContents;
 use Brainbits\FunctionalTestHelpers\ZipContents\ZipContents;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\ZipContents\FileInfo
- */
+/** @covers \Brainbits\FunctionalTestHelpers\ZipContents\FileInfo */
 final class FileInfoTest extends TestCase
 {
     private const FILE = __DIR__ . '/../files/test.zip';

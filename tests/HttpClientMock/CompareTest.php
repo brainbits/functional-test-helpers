@@ -7,9 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Compare;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\Compare
- */
+/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\Compare */
 final class CompareTest extends TestCase
 {
     public function testCompareScalar(): void

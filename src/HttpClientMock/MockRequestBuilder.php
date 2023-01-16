@@ -45,7 +45,7 @@ use const PHP_EOL;
 
 final class MockRequestBuilder
 {
-    private ?string $method = null;
+    private string|null $method = null;
 
     /** @var string|callable|null  */
     private mixed $uri = null;
@@ -54,15 +54,15 @@ final class MockRequestBuilder
     private array $uriParams = [];
 
     /** @var mixed[] */
-    private ?array $headers = null;
+    private array|null $headers = null;
 
     /** @var mixed[] */
-    private ?array $queryParams = null;
+    private array|null $queryParams = null;
 
-    private ?string $content = null;
+    private string|null $content = null;
 
     /** @var mixed[] */
-    private ?array $multiparts = null;
+    private array|null $multiparts = null;
 
     /** @var callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string */
     private mixed $that = null;
@@ -80,7 +80,7 @@ final class MockRequestBuilder
         $this->responses = new MockResponseCollection();
     }
 
-    public function method(?string $method): self
+    public function method(string|null $method): self
     {
         $this->method = $method;
 
@@ -126,17 +126,13 @@ final class MockRequestBuilder
         return $this->headers !== null;
     }
 
-    /**
-     * @return mixed[]
-     */
-    public function getHeaders(): ?array
+    /** @return mixed[] */
+    public function getHeaders(): array|null
     {
         return $this->headers;
     }
 
-    /**
-     * @return mixed
-     */
+    /** @return mixed */
     public function hasHeader(string $key): bool
     {
         return array_key_exists($key, $this->headers);
@@ -161,7 +157,7 @@ final class MockRequestBuilder
         return $this;
     }
 
-    public function getContent(): ?string
+    public function getContent(): string|null
     {
         return $this->content;
     }
@@ -171,9 +167,7 @@ final class MockRequestBuilder
         return $this->content !== null;
     }
 
-    /**
-     * @param mixed[] $data
-     */
+    /** @param mixed[] $data */
     public function json(array $data): self
     {
         $this->content(json_encode($data));
@@ -189,17 +183,15 @@ final class MockRequestBuilder
 
         try {
             json_decode($this->content, true);
-        } catch (JsonException $e) {
+        } catch (JsonException) {
             return false;
         }
 
         return true;
     }
 
-    /**
-     * @return mixed[]
-     */
-    public function getJson(): ?array
+    /** @return mixed[] */
+    public function getJson(): array|null
     {
         if (!$this->isJson()) {
             return null;
@@ -208,9 +200,7 @@ final class MockRequestBuilder
         return json_decode($this->content, true);
     }
 
-    /**
-     * @param mixed[] $data
-     */
+    /** @param mixed[] $data */
     public function xml(string $data): self
     {
         if (!$this->isXmlString($data)) {
@@ -231,10 +221,8 @@ final class MockRequestBuilder
         return $this->isXmlString($this->getContent());
     }
 
-    /**
-     * @param array<string, string> $namespaces
-     */
-    public function getXml(array $namespaces = []): ?SimpleXMLElement
+    /** @param array<string, string> $namespaces */
+    public function getXml(array $namespaces = []): SimpleXMLElement|null
     {
         if (!$this->isXml()) {
             return null;
@@ -257,10 +245,8 @@ final class MockRequestBuilder
         return $this;
     }
 
-    /**
-     * @return string[]
-     */
-    public function getQueryParams(): ?array
+    /** @return string[] */
+    public function getQueryParams(): array|null
     {
         return $this->queryParams;
     }
@@ -281,9 +267,7 @@ final class MockRequestBuilder
         return $this;
     }
 
-    /**
-     * @return string[]
-     */
+    /** @return string[] */
     public function getRequestParams(): array
     {
         return $this->parseEncodedParams((string) $this->content);
@@ -314,10 +298,8 @@ final class MockRequestBuilder
         return $this;
     }
 
-    /**
-     * @return mixed[]
-     */
-    public function getMultiparts(): ?array
+    /** @return mixed[] */
+    public function getMultiparts(): array|null
     {
         return $this->multiparts;
     }
@@ -334,7 +316,7 @@ final class MockRequestBuilder
         return $this;
     }
 
-    public function getMethod(): ?string
+    public function getMethod(): string|null
     {
         return $this->method;
     }
@@ -358,17 +340,13 @@ final class MockRequestBuilder
         return (bool) $this->uriParams;
     }
 
-    /**
-     * @return array<string,string>
-     */
+    /** @return array<string,string> */
     public function getUriParams(): array
     {
         return $this->uriParams;
     }
 
-    /**
-     * @param callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string $that
-     */
+    /** @param callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string $that */
     public function that(callable $that): self
     {
         $this->that = $that;
@@ -442,7 +420,7 @@ final class MockRequestBuilder
         return !$this->responses->isEmpty();
     }
 
-    public function nextResponse(): null|MockResponseBuilder|Throwable
+    public function nextResponse(): MockResponseBuilder|Throwable|null
     {
         try {
             return $this->responses->next();
@@ -518,9 +496,7 @@ final class MockRequestBuilder
                $this->multiparts === null;
     }
 
-    /**
-     * @param array<string,string> $uriParams
-     */
+    /** @param array<string,string> $uriParams */
     private static function replaceUriParams(string $uri, array $uriParams): mixed
     {
         $keys = array_keys($uriParams);
@@ -537,9 +513,7 @@ final class MockRequestBuilder
         }
     }
 
-    /**
-     * @return string[]
-     */
+    /** @return string[] */
     private function parseEncodedParams(string $encodedParams): array
     {
         if ($encodedParams === '') {

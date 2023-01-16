@@ -32,25 +32,19 @@ use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 use const PHP_EOL;
 
-/**
- * @mixin TestCase
- */
+/** @mixin TestCase */
 trait SnapshotTrait
 {
     /** @var array<string,int> */
     private array $filenames = [];
 
-    /**
-     * @param mixed[] $actual
-     */
+    /** @param mixed[] $actual */
     final protected function assertMatchesArraySnapshot(array $actual, string $message = ''): void
     {
         $this->assertMatchesNamedArraySnapshot($actual, '', $message);
     }
 
-    /**
-     * @param mixed[] $actual
-     */
+    /** @param mixed[] $actual */
     final protected function assertMatchesNamedArraySnapshot(array $actual, string $name, string $message = ''): void
     {
         $this->assertMatchesNamedJsonSnapshot(json_encode($actual), $name, $message);
@@ -74,7 +68,7 @@ trait SnapshotTrait
         self::assertStringEqualsFile(
             $fixtureFilename,
             $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
         );
     }
 
@@ -104,7 +98,7 @@ trait SnapshotTrait
         self::assertJsonStringEqualsJsonFile(
             $fixtureFilename,
             $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
         );
     }
 
@@ -124,7 +118,7 @@ trait SnapshotTrait
         self::assertJsonStringEqualsJsonFile(
             $fixtureFilename,
             $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
         );
     }
 
@@ -149,7 +143,7 @@ trait SnapshotTrait
         self::assertXmlStringEqualsXmlFile(
             $fixtureFilename,
             $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
         );
     }
 
@@ -172,7 +166,7 @@ trait SnapshotTrait
         self::assertStringEqualsFile(
             $fixtureFilename,
             $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message)
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
         );
     }
 
@@ -248,7 +242,7 @@ trait SnapshotTrait
             JSON_UNESCAPED_SLASHES |
             JSON_UNESCAPED_LINE_TERMINATORS |
             JSON_UNESCAPED_UNICODE |
-            JSON_PRETTY_PRINT
+            JSON_PRETTY_PRINT,
         );
     }
 
@@ -263,7 +257,7 @@ trait SnapshotTrait
                 if ($key === '@id' && is_string($item) && str_contains($item, '/.well-known/genid/')) {
                     $item = 'snapshot-normalized-id';
                 }
-            }
+            },
         );
 
         return json_encode(
@@ -271,7 +265,7 @@ trait SnapshotTrait
             JSON_UNESCAPED_SLASHES |
             JSON_UNESCAPED_LINE_TERMINATORS |
             JSON_UNESCAPED_UNICODE |
-            JSON_PRETTY_PRINT
+            JSON_PRETTY_PRINT,
         );
     }
 

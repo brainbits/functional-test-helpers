@@ -25,34 +25,30 @@ final class RequestBuilder
     private $findUser;
     /** @var callable */
     private $createToken;
-    private string $method;
-    private string $uri;
     /** @var mixed[] */
     private array $parameters = [];
     /** @var mixed[] */
     private array $files = [];
     /** @var mixed[] */
     private array $server = [];
-    private ?string $content = null;
+    private string|null $content = null;
     private bool $changeHistory = true;
 
     private function __construct(
         callable $findUser,
         callable $createToken,
-        string $method,
-        string $uri
+        private string $method,
+        private string $uri,
     ) {
         $this->findUser = $findUser;
         $this->createToken = $createToken;
-        $this->method = $method;
-        $this->uri = $uri;
     }
 
     public static function create(
         callable $findUser,
         callable $createToken,
         string $method,
-        string $uri
+        string $uri,
     ): self {
         return new self($findUser, $createToken, $method, $uri);
     }
@@ -121,7 +117,7 @@ final class RequestBuilder
         return $this;
     }
 
-    public function xml(?string $xml = null): self
+    public function xml(string|null $xml = null): self
     {
         $this->contentType('text/xml');
 
@@ -235,9 +231,7 @@ final class RequestBuilder
         return $this;
     }
 
-    /**
-     * @param UploadedFile|UploadedFile[] $files
-     */
+    /** @param UploadedFile|UploadedFile[] $files */
     public function file(string $key, UploadedFile|array $files): self
     {
         $this->server('CONTENT_TYPE', 'multipart/form-data');
@@ -289,31 +283,25 @@ final class RequestBuilder
         return $this->uri;
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function getParameters(): array
     {
         return $this->parameters;
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function getFiles(): array
     {
         return $this->files;
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function getServer(): array
     {
         return $this->server;
     }
 
-    public function getContent(): ?string
+    public function getContent(): string|null
     {
         return $this->content;
     }

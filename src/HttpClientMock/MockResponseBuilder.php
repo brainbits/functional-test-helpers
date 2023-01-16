@@ -21,10 +21,10 @@ final class MockResponseBuilder
 {
     /** @var mixed[] */
     private array $headers = [];
-    private ?string $content = null;
-    private ?int $code = null;
+    private string|null $content = null;
+    private int|null $code = null;
 
-    public function content(?string $content): self
+    public function content(string|null $content): self
     {
         $this->content = $content;
 
@@ -59,10 +59,8 @@ final class MockResponseBuilder
         return $this;
     }
 
-    /**
-     * @param mixed[]|null $data
-     */
-    public function json(?array $data = null): self
+    /** @param mixed[]|null $data */
+    public function json(array|null $data = null): self
     {
         $this->contentType('application/json');
         $this->content($data !== null ? json_encode($data) : null);
@@ -70,7 +68,7 @@ final class MockResponseBuilder
         return $this;
     }
 
-    public function xml(?string $data = null): self
+    public function xml(string|null $data = null): self
     {
         $this->contentType('text/xml');
         $this->content($data ?? null);
@@ -78,16 +76,14 @@ final class MockResponseBuilder
         return $this;
     }
 
-    public function code(?int $code): self
+    public function code(int|null $code): self
     {
         $this->code = $code;
 
         return $this;
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function getHeaders(): array
     {
         return $this->headers;
@@ -98,7 +94,7 @@ final class MockResponseBuilder
         return count($this->headers) > 0;
     }
 
-    public function getHeader(string $key): ?string
+    public function getHeader(string $key): string|null
     {
         if ($this->hasHeader($key)) {
             return $this->headers[strtolower($key)];
@@ -112,7 +108,7 @@ final class MockResponseBuilder
         return array_key_exists(strtolower($key), $this->headers);
     }
 
-    public function getContent(): ?string
+    public function getContent(): string|null
     {
         return $this->content;
     }
@@ -122,10 +118,8 @@ final class MockResponseBuilder
         return $this->content !== null;
     }
 
-    /**
-     * @return mixed[]|null
-     */
-    public function getJson(): ?array
+    /** @return mixed[]|null */
+    public function getJson(): array|null
     {
         if ($this->content === null) {
             return null;
@@ -134,7 +128,7 @@ final class MockResponseBuilder
         return json_decode($this->content, true);
     }
 
-    public function getCode(): ?int
+    public function getCode(): int|null
     {
         return $this->code;
     }

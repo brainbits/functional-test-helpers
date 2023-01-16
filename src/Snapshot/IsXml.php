@@ -12,9 +12,7 @@ use function Safe\sprintf;
 
 // phpcs:disable SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
 
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
+/** @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit */
 final class IsXml extends Constraint
 {
     /**
@@ -40,7 +38,7 @@ final class IsXml extends Constraint
         try {
             $dom = new DOMDocument();
             $dom->loadXML($other);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             return false;
         }
 

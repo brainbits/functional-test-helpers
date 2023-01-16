@@ -14,19 +14,9 @@ use function count;
 
 final class ZipInfo implements Countable, IteratorAggregate
 {
-    private int $size;
-    private ?string $comment;
-    /** @var FileInfo[] */
-    private array $files;
-
-    /**
-     * @param FileInfo[] $files
-     */
-    private function __construct(int $size, ?string $comment, array $files)
+    /** @param FileInfo[] $files */
+    private function __construct(private int $size, private string|null $comment, private array $files)
     {
-        $this->size = $size;
-        $this->comment = $comment;
-        $this->files = $files;
     }
 
     /**
@@ -48,14 +38,12 @@ final class ZipInfo implements Countable, IteratorAggregate
         return $this->size;
     }
 
-    public function getComment(): ?string
+    public function getComment(): string|null
     {
         return $this->comment;
     }
 
-    /**
-     * @return FileInfo[]
-     */
+    /** @return FileInfo[] */
     public function getFiles(): array
     {
         return array_values($this->files);
@@ -66,7 +54,7 @@ final class ZipInfo implements Countable, IteratorAggregate
         return array_key_exists($path, $this->files);
     }
 
-    public function getFile(string $path): ?FileInfo
+    public function getFile(string $path): FileInfo|null
     {
         if (!$this->hasFile($path)) {
             return null;

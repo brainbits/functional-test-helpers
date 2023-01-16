@@ -7,9 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 use Brainbits\FunctionalTestHelpers\Request\DataBuilder;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\Request\DataBuilder
- */
+/** @covers \Brainbits\FunctionalTestHelpers\Request\DataBuilder */
 final class DataBuilderTest extends TestCase
 {
     public function testItEncapsulatesDataAsArray(): void
@@ -65,7 +63,7 @@ final class DataBuilderTest extends TestCase
 
         self::assertEquals(
             ['root' => ['old index' => 'old value', 'new index' => 'new value']],
-            $dataProvider->with('new value', 'root', 'new index')()
+            $dataProvider->with('new value', 'root', 'new index')(),
         );
     }
 

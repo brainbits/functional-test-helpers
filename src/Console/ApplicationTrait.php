@@ -8,9 +8,7 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Tester\ApplicationTester;
 
-/**
- * @mixin WebTestCase
- */
+/** @mixin WebTestCase */
 trait ApplicationTrait
 {
     /**

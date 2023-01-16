@@ -11,9 +11,7 @@ use function implode;
 
 use const PHP_EOL;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder
- */
+/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder */
 final class MockResponseBuilderTest extends TestCase
 {
     public function testConvertableToStringWithJson(): void

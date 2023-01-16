@@ -23,9 +23,7 @@ if (!class_exists(LogRecord::class)) {
         /** @var callable */
         private $fn;
 
-        /**
-         * @phpstan-param Level|LevelName|LogLevel::* $level
-         */
+        /** @phpstan-param Level|LevelName|LogLevel::* $level */
         public function __construct(callable $fn, int|string $level = Logger::DEBUG, bool $bubble = true)
         {
             parent::__construct($level, $bubble);
@@ -41,9 +39,7 @@ if (!class_exists(LogRecord::class)) {
         {
         }
 
-        /**
-         * @param mixed[] $record
-         */
+        /** @param mixed[] $record */
         protected function write(array $record): void
         {
             ($this->fn)($record);

@@ -12,9 +12,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder
- */
+/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder */
 final class MockRequestBuilderTest extends TestCase
 {
     public function testWithoutAnythingSpecifiedARequestIsEmpty(): void

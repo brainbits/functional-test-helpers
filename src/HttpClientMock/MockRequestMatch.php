@@ -11,15 +11,11 @@ use function Safe\sprintf;
 
 final class MockRequestMatch
 {
-    private int $score;
-    private ?string $reason;
     /** @var mixed[] */
     private array $matches = [];
 
-    private function __construct(int $score = 0, ?string $reason = null)
+    private function __construct(private int $score = 0, private string|null $reason = null)
     {
-        $this->score = $score;
-        $this->reason = $reason;
     }
 
     public function getScore(): int
@@ -32,14 +28,12 @@ final class MockRequestMatch
         return $this->score === 0;
     }
 
-    public function getReason(): ?string
+    public function getReason(): string|null
     {
         return $this->reason;
     }
 
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function getMatches(): array
     {
         return $this->matches;
@@ -57,9 +51,7 @@ final class MockRequestMatch
         $this->matches['uri'] = $uri;
     }
 
-    /**
-     * @param mixed[] $queryParams
-     */
+    /** @param mixed[] $queryParams */
     public function matchesQueryParams(array $queryParams): void
     {
         $this->score += 5;
@@ -72,9 +64,7 @@ final class MockRequestMatch
         $this->matches['content'] = $content;
     }
 
-    /**
-     * @param mixed[] $multiparts
-     */
+    /** @param mixed[] $multiparts */
     public function matchesMultiparts(array $multiparts): void
     {
         $this->score += 5;
@@ -94,32 +84,32 @@ final class MockRequestMatch
         return new self(1);
     }
 
-    public static function mismatchingMethod(string $method, ?string $otherMethod): self
+    public static function mismatchingMethod(string $method, string|null $otherMethod): self
     {
         return new self(0, sprintf('Mismatching method, expected %s, got %s', $method, $otherMethod ?? 'NULL'));
     }
 
-    public static function mismatchingUri(string $uri, ?string $otherUri): self
+    public static function mismatchingUri(string $uri, string|null $otherUri): self
     {
         return new self(0, sprintf('Mismatching uri, expected %s, got %s', $uri, $otherUri ?? 'NULL'));
     }
 
-    public static function mismatchingContent(string $content, ?string $otherContent): self
+    public static function mismatchingContent(string $content, string|null $otherContent): self
     {
         return new self(0, sprintf('Mismatching content, expected %s, got %s', $content, $otherContent ?? 'NULL'));
     }
 
-    public static function mismatchingJsonContent(string $content, ?string $otherContent): self
+    public static function mismatchingJsonContent(string $content, string|null $otherContent): self
     {
         return new self(0, sprintf('Mismatching json content, expected %s, got %s', $content, $otherContent ?? 'NULL'));
     }
 
-    public static function mismatchingXmlContent(string $content, ?string $otherContent): self
+    public static function mismatchingXmlContent(string $content, string|null $otherContent): self
     {
         return new self(0, sprintf('Mismatching xml content, expected %s, got %s', $content, $otherContent ?? 'NULL'));
     }
 
-    public static function mismatchingRequestParameterContent(string $content, ?string $otherContent): self
+    public static function mismatchingRequestParameterContent(string $content, string|null $otherContent): self
     {
         return new self(0, sprintf('Mismatching request parameters, expected %s, got %s', $content, $otherContent ?? 'NULL')); // phpcs:ignore Generic.Files.LineLength.TooLong
     }
@@ -128,7 +118,7 @@ final class MockRequestMatch
      * @param mixed[] $multiparts
      * @param mixed[] $otherMultiparts
      */
-    public static function mismatchingMultiparts(array $multiparts, ?array $otherMultiparts): self
+    public static function mismatchingMultiparts(array $multiparts, array|null $otherMultiparts): self
     {
         return new self(
             0,
@@ -140,9 +130,7 @@ final class MockRequestMatch
         );
     }
 
-    /**
-     * @param mixed $value
-     */
+    /** @param mixed $value */
     public static function missingHeader(string $key, string $value): self
     {
         return new self(
@@ -172,7 +160,7 @@ final class MockRequestMatch
      * @param mixed[] $queryParams
      * @param mixed[] $otherQueryParams
      */
-    public static function mismatchingQueryParams(array $queryParams, ?array $otherQueryParams): self
+    public static function mismatchingQueryParams(array $queryParams, array|null $otherQueryParams): self
     {
         return new self(
             0,

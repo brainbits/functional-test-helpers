@@ -6,8 +6,6 @@ namespace Brainbits\FunctionalTestHelpers\Schema;
 
 interface DataBuilder
 {
-    /**
-     * @return mixed[]
-     */
+    /** @return mixed[] */
     public function getData(): array;
 }

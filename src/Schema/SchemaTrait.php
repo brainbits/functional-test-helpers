@@ -11,9 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
 
-/**
- * @mixin TestCase
- */
+/** @mixin TestCase */
 trait SchemaTrait
 {
     final protected function fixtureFromConnection( // @phpstan-ignore-line
@@ -21,7 +19,7 @@ trait SchemaTrait
         SchemaBuilder $schemaBuilder,
         DataBuilder $dataBuilder,
         callable $buildData,
-        bool $quoteDataTable = true
+        bool $quoteDataTable = true,
     ): void {
         $buildData($dataBuilder);
 
@@ -33,7 +31,7 @@ trait SchemaTrait
         SchemaBuilder $schemaBuilder,
         DataBuilder $dataBuilder,
         callable $buildData,
-        bool $quoteDataTable = true
+        bool $quoteDataTable = true,
     ): Connection {
         $connection = DriverManager::getConnection(
             [
@@ -49,9 +47,7 @@ trait SchemaTrait
         return $connection;
     }
 
-    /**
-     * @internal
-     */
+    /** @internal */
     private function applySchema(SchemaBuilder $schemaBuilder, Connection $connection): void
     {
         foreach ($schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform()) as $sql) {
@@ -59,9 +55,7 @@ trait SchemaTrait
         }
     }
 
-    /**
-     * @internal
-     */
+    /** @internal */
     private function applyData(DataBuilder $dataBuilder, Connection $connection, bool $quoteDataTable = true): void
     {
         foreach ($dataBuilder->getData() as $table => $rows) {

@@ -13,9 +13,7 @@ use PHPUnit\Framework\TestCase;
 use function Safe\file_put_contents;
 use function Safe\json_decode;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait
- */
+/** @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait */
 final class ArraySnapshotTest extends TestCase
 {
     use SnapshotTrait;
@@ -48,7 +46,7 @@ final class ArraySnapshotTest extends TestCase
 
         try {
             $this->assertMatchesArraySnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 
@@ -74,7 +72,7 @@ final class ArraySnapshotTest extends TestCase
 
         try {
             $this->assertMatchesArraySnapshot($data);
-        } catch (ExpectationFailedException $e) {
+        } catch (ExpectationFailedException) {
             return;
         }
 

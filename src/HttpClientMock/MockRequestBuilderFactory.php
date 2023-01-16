@@ -23,9 +23,7 @@ use function urldecode;
 
 final class MockRequestBuilderFactory
 {
-    /**
-     * @param mixed[] $options
-     */
+    /** @param mixed[] $options */
     public function __invoke(string $method, string $url, array $options): MockRequestBuilder
     {
         $mockRequestBuilder = (new MockRequestBuilder())

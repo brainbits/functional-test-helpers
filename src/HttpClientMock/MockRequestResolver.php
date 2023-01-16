@@ -18,12 +18,10 @@ final class MockRequestResolver
         $this->matcher = new MockRequestMatcher();
     }
 
-    /**
-     * @param mixed[] $options
-     */
+    /** @param mixed[] $options */
     public function __invoke(
         MockRequestBuilderCollection $requestBuilders,
-        MockRequestBuilder $realRequest
+        MockRequestBuilder $realRequest,
     ): MockRequestBuilder {
         $matches = [];
         $bestScore = null;

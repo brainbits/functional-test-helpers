@@ -11,9 +11,7 @@ use PHPUnit\Framework\TestCase;
 use function Safe\filesize;
 use function Safe\fopen;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContentsTrait
- */
+/** @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContentsTrait */
 final class ZipContentsTraitTest extends TestCase
 {
     use ZipContentsTrait;
