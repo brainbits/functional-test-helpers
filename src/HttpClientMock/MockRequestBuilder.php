@@ -32,6 +32,7 @@ use function Safe\preg_match;
 use function Safe\simplexml_load_string;
 use function Safe\sprintf;
 use function Safe\substr;
+use function str_contains;
 use function str_repeat;
 use function str_replace;
 use function strpos;
@@ -523,7 +524,12 @@ final class MockRequestBuilder
         $params = [];
 
         foreach (explode('&', $encodedParams) as $keyValue) {
-            [$key, $value] = explode('=', (string) $keyValue);
+            if (str_contains($keyValue, '=')) {
+                [$key, $value] = explode('=', (string) $keyValue);
+            } else {
+                $key = $keyValue;
+                $value = '';
+            }
 
             $params[urldecode((string) $key)] = urldecode((string) $value);
         }

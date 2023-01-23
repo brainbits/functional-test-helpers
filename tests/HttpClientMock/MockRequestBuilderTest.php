@@ -109,6 +109,14 @@ final class MockRequestBuilderTest extends TestCase
         self::assertSame(['space' => ' ', 'quote' => '"'], $mockRequestBuilder->getQueryParams());
     }
 
+    public function testSupportsQueryParamWithoutValue(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->uri('http://example.org?key');
+
+        self::assertSame(['key' => ''], $mockRequestBuilder->getQueryParams());
+    }
+
     public function testSupportsQueryParams(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
