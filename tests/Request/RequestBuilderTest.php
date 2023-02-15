@@ -6,9 +6,8 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 
 use Brainbits\FunctionalTestHelpers\Request\InvalidRequest;
 use Brainbits\FunctionalTestHelpers\Request\RequestBuilder;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Prophecy\Argument;
-use Prophecy\PhpUnit\ProphecyTrait;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\User\InMemoryUser;
@@ -20,8 +19,6 @@ use function Safe\json_encode;
 /** @covers \Brainbits\FunctionalTestHelpers\Request\RequestBuilder */
 final class RequestBuilderTest extends TestCase
 {
-    use ProphecyTrait;
-
     public function testItCanBeCreated(): void
     {
         $builder = RequestBuilder::create(
@@ -139,7 +136,7 @@ final class RequestBuilderTest extends TestCase
         $this->assertSame(['CONTENT_TYPE' => 'application/json'], $builder->getServer());
     }
 
-    /** @dataProvider provideJsonData */
+    #[DataProvider('provideJsonData')]
     public function testJsonDataIsSet(mixed $data, string|null $encoded): void
     {
         $builder = $this->createRequestBuilder('GET', '/users')
@@ -149,7 +146,7 @@ final class RequestBuilderTest extends TestCase
     }
 
     /** @return array<string, array{mixed, string|null}> */
-    public function provideJsonData(): array
+    public static function provideJsonData(): array
     {
         return [
             'null' => [null, null], // data is skipped

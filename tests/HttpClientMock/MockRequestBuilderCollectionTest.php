@@ -8,8 +8,8 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Prophecy\PhpUnit\ProphecyTrait;
 
 /**
  * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder
@@ -19,8 +19,6 @@ use Prophecy\PhpUnit\ProphecyTrait;
  */
 final class MockRequestBuilderCollectionTest extends TestCase
 {
-    use ProphecyTrait;
-
     private MockRequestBuilderCollection $collection;
     /** @var MockRequestBuilder[] */
     private array $builders = [];
@@ -92,11 +90,8 @@ final class MockRequestBuilderCollectionTest extends TestCase
         }
     }
 
-    /**
-     * @param mixed[] $options
-     *
-     * @dataProvider requests
-     */
+    /** @param mixed[] $options */
+    #[DataProvider('requests')]
     public function testRequestMatching(string $method, string $uri, array $options, string $index): void
     {
         ($this->collection)($method, $uri, $options);
@@ -107,7 +102,7 @@ final class MockRequestBuilderCollectionTest extends TestCase
     }
 
     /** @return mixed[] */
-    public function requests(): array
+    public static function requests(): array
     {
         return [
             ['DELETE', '/baz', [], 'fallback'],

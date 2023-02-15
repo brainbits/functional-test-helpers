@@ -11,12 +11,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\TestCase;
-use Prophecy\PhpUnit\ProphecyTrait;
 
 /** @covers \Brainbits\FunctionalTestHelpers\Schema\SchemaTrait */
 final class SchemaTraitTest extends TestCase
 {
-    use ProphecyTrait;
     use SchemaTrait;
 
     public function testApplySchema(): void
@@ -24,13 +22,15 @@ final class SchemaTraitTest extends TestCase
         $schemaBuilder = $this->createSchemaBuilder();
         $schemaBuilder->foo();
 
-        $connection = $this->prophesize(Connection::class);
-        $connection->getDatabasePlatform()
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('getDatabasePlatform')
             ->willReturn(new SqlitePlatform());
-        $connection->executeStatement('CREATE TABLE foo (bar VARCHAR(255) NOT NULL)')
-            ->shouldBeCalled();
+        $connection->expects($this->once())
+            ->method('executeStatement')
+            ->with('CREATE TABLE foo (bar VARCHAR(255) NOT NULL)');
 
-        $this->applySchema($schemaBuilder, $connection->reveal());
+        $this->applySchema($schemaBuilder, $connection);
     }
 
     public function testApplyDataWithQuoteTableName(): void
@@ -38,15 +38,16 @@ final class SchemaTraitTest extends TestCase
         $dataBuilder = $this->createDataBuilder();
         $dataBuilder->foo('baz');
 
-        $connection = $this->prophesize(Connection::class);
-        $connection->getDatabasePlatform()
-            ->willReturn(new SqlitePlatform());
-        $connection->quoteIdentifier('foo')
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('quoteIdentifier')
+            ->with('foo')
             ->willReturn('#foo#');
-        $connection->insert('#foo#', ['bar' => 'baz'])
-            ->shouldBeCalled();
+        $connection->expects($this->once())
+            ->method('insert')
+            ->with('#foo#', ['bar' => 'baz']);
 
-        $this->applyData($dataBuilder, $connection->reveal());
+        $this->applyData($dataBuilder, $connection);
     }
 
     public function testApplyDataWithoutQuoteTableName(): void
@@ -54,15 +55,15 @@ final class SchemaTraitTest extends TestCase
         $dataBuilder = $this->createDataBuilder();
         $dataBuilder->foo('baz');
 
-        $connection = $this->prophesize(Connection::class);
-        $connection->getDatabasePlatform()
-            ->willReturn(new SqlitePlatform());
-        $connection->quoteIdentifier('foo')
-            ->shouldNotBeCalled();
-        $connection->insert('foo', ['bar' => 'baz'])
-            ->shouldBeCalled();
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->never())
+            ->method('quoteIdentifier')
+            ->with('foo');
+        $connection->expects($this->once())
+            ->method('insert')
+            ->with('foo', ['bar' => 'baz']);
 
-        $this->applyData($dataBuilder, $connection->reveal(), false);
+        $this->applyData($dataBuilder, $connection, false);
     }
 
     public function testFixtureFromConnectionWithTableNameQuote(): void
@@ -70,18 +71,23 @@ final class SchemaTraitTest extends TestCase
         $schemaBuilder = $this->createSchemaBuilder();
         $dataBuilder = $this->createDataBuilder($schemaBuilder);
 
-        $connection = $this->prophesize(Connection::class);
-        $connection->getDatabasePlatform()
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('getDatabasePlatform')
             ->willReturn(new SqlitePlatform());
-        $connection->executeStatement('CREATE TABLE foo (bar VARCHAR(255) NOT NULL)')
-            ->shouldBeCalled();
-        $connection->quoteIdentifier('foo')
+        $connection->expects($this->once())
+            ->method('executeStatement')
+            ->with('CREATE TABLE foo (bar VARCHAR(255) NOT NULL)');
+        $connection->expects($this->once())
+            ->method('quoteIdentifier')
+            ->with('foo')
             ->willReturn('#foo#');
-        $connection->insert('#foo#', ['bar' => 'baz'])
-            ->shouldBeCalled();
+        $connection->expects($this->once())
+            ->method('insert')
+            ->with('#foo#', ['bar' => 'baz']);
 
         $this->fixtureFromConnection(
-            $connection->reveal(),
+            $connection,
             $schemaBuilder,
             $dataBuilder,
             static function ($dataBuilder): void {
@@ -95,18 +101,19 @@ final class SchemaTraitTest extends TestCase
         $schemaBuilder = $this->createSchemaBuilder();
         $dataBuilder = $this->createDataBuilder($schemaBuilder);
 
-        $connection = $this->prophesize(Connection::class);
-        $connection->getDatabasePlatform()
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('getDatabasePlatform')
             ->willReturn(new SqlitePlatform());
-        $connection->executeStatement('CREATE TABLE foo (bar VARCHAR(255) NOT NULL)')
-            ->shouldBeCalled();
-        $connection->quoteIdentifier('foo')
-            ->willReturn('foo');
-        $connection->insert('foo', ['bar' => 'baz'])
-            ->shouldBeCalled();
+        $connection->expects($this->once())
+            ->method('executeStatement')
+            ->with('CREATE TABLE foo (bar VARCHAR(255) NOT NULL)');
+        $connection->expects($this->once())
+            ->method('insert')
+            ->with('foo', ['bar' => 'baz']);
 
         $this->fixtureFromConnection(
-            $connection->reveal(),
+            $connection,
             $schemaBuilder,
             $dataBuilder,
             static function ($dataBuilder): void {

@@ -30,13 +30,15 @@ final class XmlSnapshotTest extends TestCase
     {
         $data = 'test';
 
+        $exception = null;
+
         try {
             $this->assertMatchesXmlSnapshot($data);
-        } catch (ExpectationFailedException) {
-            return;
+        } catch (ExpectationFailedException $e) {
+            $exception = $e;
         }
 
-        $this->fail('Assertion did not fail');
+        $this->assertNotNull($exception, 'Assertion did not fail');
     }
 
     public function testXml(): void
