@@ -232,23 +232,45 @@ final class RequestBuilderTest extends TestCase
         $this->assertSame(['HTTP_AUTHORIZATION' => 'foo'], $builder->getServer());
     }
 
-    public function testAuthorizationHeaderIsSetOnAuthLoginCall(): void
+    public function testAuthorizationHeaderIsSetOnAuthLoginWithDeprecatedFindUser(): void
     {
-        $user = new InMemoryUser('foo', 'bar');
-
         if (!method_exists(KernelBrowser::class, 'loginUser')) {
             $this->markTestSkipped('authLogin() only available for symfony/framework-bundle >= 5.1');
         }
 
-        $browser = $this->prophesize(KernelBrowser::class);
-        $browser->loginUser(Argument::any())
-            ->willReturn($browser->reveal());
+        $browser = $this->createMock(KernelBrowser::class);
+        $browser->expects($this->once())
+            ->method('loginUser')
+            ->willReturnSelf();
 
-        $this->createRequestBuilder('GET', '/users')
-            ->authLogin($user, $browser->reveal());
+        RequestBuilder::create(
+            static fn (...$params) => new InMemoryUser('foo', 'bar'),
+            static fn (...$params) => json_encode($params),
+            'GET',
+            '/users',
+            true,
+        )
+            ->authLogin('foo', $browser);
+    }
 
-        $browser->loginUser(Argument::any())
-            ->shouldHaveBeenCalled();
+    public function testAuthorizationHeaderIsSetOnAuthLoginCall(): void
+    {
+        if (!method_exists(KernelBrowser::class, 'loginUser')) {
+            $this->markTestSkipped('authLogin() only available for symfony/framework-bundle >= 5.1');
+        }
+
+        $browser = $this->createMock(KernelBrowser::class);
+        $browser->expects($this->never())
+            ->method('loginUser');
+
+        RequestBuilder::create(
+            static fn (...$params) => new InMemoryUser('foo', 'bar'),
+            static fn (...$params) => json_encode($params),
+            'GET',
+            '/users',
+            false,
+        )
+            ->authLogin('foo', $browser);
     }
 
     public function testFileValuesAreReturned(): void

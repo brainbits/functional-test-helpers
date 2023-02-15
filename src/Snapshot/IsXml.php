@@ -10,6 +10,9 @@ use Throwable;
 
 use function Safe\sprintf;
 
+use const LIBXML_NOERROR;
+use const LIBXML_NOWARNING;
+
 // phpcs:disable SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
 
 /** @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit */
@@ -37,12 +40,11 @@ final class IsXml extends Constraint
 
         try {
             $dom = new DOMDocument();
-            $dom->loadXML($other);
+
+            return $dom->loadXML($other, LIBXML_NOERROR | LIBXML_NOWARNING);
         } catch (Throwable) {
             return false;
         }
-
-        return true;
     }
 
     /**
@@ -62,7 +64,7 @@ final class IsXml extends Constraint
         try {
             $error = '';
             $dom = new DOMDocument();
-            $dom->loadXML($other);
+            $dom->loadXML($other, LIBXML_NOERROR | LIBXML_NOWARNING);
         } catch (Throwable $e) {
             $error = $e->getMessage();
         }

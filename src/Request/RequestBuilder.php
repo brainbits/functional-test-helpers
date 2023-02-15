@@ -22,7 +22,7 @@ use function urlencode;
 final class RequestBuilder
 {
     /** @var callable */
-    private $findUser;
+    private $loginUser;
     /** @var callable */
     private $createToken;
     /** @var mixed[] */
@@ -35,22 +35,31 @@ final class RequestBuilder
     private bool $changeHistory = true;
 
     private function __construct(
-        callable $findUser,
+        callable $loginUser,
         callable $createToken,
         private string $method,
         private string $uri,
     ) {
-        $this->findUser = $findUser;
+        $this->loginUser = $loginUser;
         $this->createToken = $createToken;
     }
 
     public static function create(
-        callable $findUser,
+        callable $loginUser,
         callable $createToken,
         string $method,
         string $uri,
+        bool $isDeprecatedFindUser = true,
     ): self {
-        return new self($findUser, $createToken, $method, $uri);
+        if ($isDeprecatedFindUser) {
+            $findUser = $loginUser;
+
+            $loginUser = static function (mixed $username, KernelBrowser $client) use ($findUser): void {
+                $client->loginUser($findUser($username));
+            };
+        }
+
+        return new self($loginUser, $createToken, $method, $uri);
     }
 
     public function uriAppend(string $suffix): self
@@ -191,20 +200,18 @@ final class RequestBuilder
         return $this;
     }
 
-    public function authToken(string $userIdentifier, mixed ...$additionalParams): self
+    public function authToken(string $identifier, mixed ...$additionalParams): self
     {
-        $token = ($this->createToken)($userIdentifier, ...$additionalParams);
+        $token = ($this->createToken)($identifier, ...$additionalParams);
 
         $this->server('HTTP_AUTHORIZATION', sprintf('Bearer %s', $token));
 
         return $this;
     }
 
-    public function authLogin(mixed $userId, KernelBrowser $client): self
+    public function authLogin(mixed $identifier, mixed ...$additionalParams): self
     {
-        $user = ($this->findUser)($userId);
-
-        $client->loginUser($user);
+        ($this->loginUser)($identifier, ...$additionalParams);
 
         return $this;
     }

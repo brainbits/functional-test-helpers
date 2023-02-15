@@ -216,10 +216,10 @@ trait SnapshotTrait
         $class = preg_replace('/(.)([[:upper:]])/u', '\1_\2', $class);
         $class = mb_strtolower($class);
 
-        if (method_exists($this, 'name')) {
-            $method = $this->name();
-        } else {
+        if (method_exists($this, 'getName')) {
             $method = $this->getName(false);
+        } else {
+            $method = $this->name();
         }
 
         if (strpos($method, 'test') === 0) {
@@ -229,10 +229,10 @@ trait SnapshotTrait
         $method = preg_replace('/(.)([[:upper:]])/u', '\1_\2', $method);
         $method = mb_strtolower($method);
 
-        if (method_exists($this, 'dataSetAsString')) {
-            $dataset = mb_strtolower($this->dataSetAsString());
-        } else {
+        if (method_exists($this, 'getDataSetAsString')) {
             $dataset = mb_strtolower($this->getDataSetAsString(false));
+        } else {
+            $dataset = mb_strtolower($this->dataSetAsString());
         }
 
         $matches = [];

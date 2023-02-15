@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\BrowserKit\AbstractBrowser;
 use Symfony\Component\HttpFoundation\Response;
 
+use function method_exists;
 use function Safe\sprintf;
 
 /** @mixin TestCase */
@@ -15,7 +16,7 @@ trait RequestTrait
 {
     private static AbstractBrowser|null $requestClient = null;
 
-    protected function findUser(): callable
+    protected function loginUser(): callable
     {
         return static fn () => null;
     }
@@ -25,13 +26,17 @@ trait RequestTrait
         return static fn () => null;
     }
 
-    /** @before */
+    /**
+     * @before
+     */
     protected function setUpRequest(): void
     {
         self::$requestClient = static::createClient();
     }
 
-    /** @after */
+    /**
+     * @after
+     */
     protected function tearDownRequest(): void
     {
         self::$requestClient = null;
@@ -51,11 +56,20 @@ trait RequestTrait
 
     final protected function build(string $method, string $uri): RequestBuilder
     {
+        if (method_exists($this, 'findUser')) {
+            $callable = $this->findUser();
+            $isFindUser = true;
+        } else {
+            $callable = $this->loginUser();
+            $isFindUser = false;
+        }
+
         return RequestBuilder::create(
-            $this->findUser(),
+            $callable,
             $this->createToken(),
             $method,
             $uri,
+            $isFindUser,
         );
     }
 
