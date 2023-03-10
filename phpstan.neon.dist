@@ -18,7 +18,8 @@ parameters:
         - '#Method .* has parameter .* with null as default value#'
         - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\.*Test::assertMatches.*Snapshot\(\) is protected, but since the containing class is final, it can be private.#'
         - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\.*Test::setUpSnapshot\(\) is protected, but since the containing class is final, it can be private.#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\ZipContents\\ZipContentsTraitTest::.* is protected, but since the containing class is final, it can be private#'
+        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\Request\\RequestTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
+        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\ZipContents\\ZipContentsTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
     ergebnis:
         classesAllowedToBeExtended:
             - Monolog\Handler\AbstractProcessingHandler

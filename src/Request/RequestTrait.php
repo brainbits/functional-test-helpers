@@ -6,7 +6,9 @@ namespace Brainbits\FunctionalTestHelpers\Request;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\BrowserKit\AbstractBrowser;
+use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Csrf\TokenStorage\SessionTokenStorage;
 
 use function method_exists;
 use function Safe\sprintf;
@@ -48,6 +50,44 @@ trait RequestTrait
             'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
             __CLASS__,
         ));
+    }
+
+    final public function generateCsrfToken(string $tokenId): string
+    {
+        $client = self::getRequestClient();
+
+        $cookie = $client->getCookieJar()->get('MOCKSESSID');
+
+        // create a new session object
+        $container = $client->getContainer();
+        $session = $container->get('session.factory')->createSession();
+
+        if ($cookie) {
+            // get the session id from the session cookie if it exists
+            $session->setId($cookie->getValue());
+            $session->start();
+        } else {
+            // or create a new session id and a session cookie
+            $session->start();
+            $session->save();
+
+            $sessionCookie = new Cookie(
+                $session->getName(),
+                $session->getId(),
+                null,
+                null,
+                'localhost',
+            );
+            $client->getCookieJar()->set($sessionCookie);
+        }
+
+        $container = $client->getContainer();
+        $tokenGenerator = $container->get('security.csrf.token_generator');
+        $csrfToken = $tokenGenerator->generateToken();
+        $session->set(SessionTokenStorage::SESSION_NAMESPACE . '/' . $tokenId, $csrfToken);
+        $session->save();
+
+        return $csrfToken;
     }
 
     final protected function build(string $method, string $uri): RequestBuilder
