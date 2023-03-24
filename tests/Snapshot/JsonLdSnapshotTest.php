@@ -7,11 +7,14 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Snapshot;
 use Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
+use function getenv;
 use function Safe\file_get_contents;
 use function Safe\file_put_contents;
+use function Safe\putenv;
 
 /** @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait */
 final class JsonLdSnapshotTest extends TestCase
@@ -197,6 +200,70 @@ JSON;
         }
 
         $this->fail('Assertion did not fail');
+    }
+
+    public function testSnapshotsAreNotCreatedForCreateSnapshotFalse(): void
+    {
+        $data = '<foo><bar>1</bar><baz>test</baz></foo>';
+
+        $prior = getenv('CREATE_SNAPSHOTS');
+        putenv('CREATE_SNAPSHOTS=false');
+
+        $thrownException = null;
+
+        try {
+            $this->assertMatchesXmlSnapshot($data);
+        } catch (AssertionFailedError $e) {
+            $thrownException = $e;
+        } finally {
+            putenv('CREATE_SNAPSHOTS=' . $prior);
+        }
+
+        $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
+        $this->assertSame(
+            'Snapshot json_ld_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml does not exist.',
+            $thrownException->getMessage(),
+        );
+    }
+
+    public function testSnapshotsAreNotCreatedForCreateSnapshotZero(): void
+    {
+        $data = '<foo><bar>1</bar><baz>test</baz></foo>';
+
+        $prior = getenv('CREATE_SNAPSHOTS');
+        putenv('CREATE_SNAPSHOTS=0');
+
+        $thrownException = null;
+
+        try {
+            $this->assertMatchesXmlSnapshot($data);
+        } catch (AssertionFailedError $e) {
+            $thrownException = $e;
+        } finally {
+            putenv('CREATE_SNAPSHOTS=' . $prior);
+        }
+
+        $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
+        $this->assertSame(
+            'Snapshot json_ld_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml does not exist.',
+            $thrownException->getMessage(),
+        );
+    }
+
+    public function testCreateSnapshotEnvIsNotProcessedForOtherValue(): void
+    {
+        $data = '<foo><bar>1</bar><baz>test</baz></foo>';
+
+        $prior = getenv('CREATE_SNAPSHOTS');
+        putenv('CREATE_SNAPSHOTS=true');
+
+        try {
+            $this->assertMatchesXmlSnapshot($data);
+        } catch (AssertionFailedError) {
+            $this->fail('Unexpected fail() was called');
+        } finally {
+            putenv('CREATE_SNAPSHOTS=' . $prior);
+        }
     }
 
     /**

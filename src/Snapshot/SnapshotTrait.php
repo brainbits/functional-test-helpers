@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use tidy;
 
+use function basename;
 use function dirname;
 use function getenv;
 use function is_string;
@@ -307,6 +308,13 @@ trait SnapshotTrait
 
         if (!getenv('UPDATE_SNAPSHOTS') && $filesystem->exists($fixtureFilename)) {
             return;
+        }
+
+        if (
+            (getenv('CREATE_SNAPSHOTS') === '0' || getenv('CREATE_SNAPSHOTS') === 'false') &&
+            !$filesystem->exists($fixtureFilename)
+        ) {
+            self::fail('Snapshot ' . basename($fixtureFilename) . ' does not exist.');
         }
 
         $filesystem->mkdir(dirname($fixtureFilename));
