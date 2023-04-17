@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd" backupGlobals="false" colors="true" bootstrap="vendor/autoload.php" extensionsDirectory="/usr/lib/tools/phpunit.d" cacheDirectory=".phpunit.cache">
-  <coverage>
-    <include>
-      <directory suffix=".php">src</directory>
-    </include>
-  </coverage>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.1/phpunit.xsd" backupGlobals="false" colors="true" bootstrap="vendor/autoload.php" extensionsDirectory="/usr/lib/tools/phpunit.d" cacheDirectory=".phpunit.cache">
+  <coverage/>
   <php>
     <ini name="error_reporting" value="-1"/>
   </php>
@@ -14,4 +10,9 @@
       <directory>tests</directory>
     </testsuite>
   </testsuites>
+  <source>
+    <include>
+      <directory suffix=".php">src</directory>
+    </include>
+  </source>
 </phpunit>

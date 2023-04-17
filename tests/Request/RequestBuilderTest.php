@@ -356,6 +356,29 @@ final class RequestBuilderTest extends TestCase
         $this->assertTrue($builder->getChangeHistory());
     }
 
+    public function testSessionValuesAreStored(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users')
+            ->sessionValue('username', 'tester')
+            ->sessionValue('amount', 123)
+            ->sessionValue('price', 999.9)
+            ->sessionValue('complex', [1, 'abc', 3.5, [1, 2, 3], ['a', 'b', 'c']]);
+
+        $this->assertSame([
+            'username' => 'tester',
+            'amount' => 123,
+            'price' => 999.9,
+            'complex' => [1, 'abc', 3.5, [1, 2, 3], ['a', 'b', 'c']],
+        ], $builder->getSessionValues());
+    }
+
+    public function testSessionValuesAreReturned(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users');
+
+        $this->assertSame([], $builder->getSessionValues());
+    }
+
     private function createRequestBuilder(string $method = 'GET', string $uri = '/foo'): RequestBuilder
     {
         return RequestBuilder::create(

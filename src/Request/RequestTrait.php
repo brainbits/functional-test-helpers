@@ -6,10 +6,11 @@ namespace Brainbits\FunctionalTestHelpers\Request;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\BrowserKit\AbstractBrowser;
-use Symfony\Component\BrowserKit\Cookie;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Csrf\TokenStorage\SessionTokenStorage;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
+use function assert;
 use function method_exists;
 use function Safe\sprintf;
 
@@ -52,42 +53,14 @@ trait RequestTrait
         ));
     }
 
-    final public function generateCsrfToken(string $tokenId): string
+    final public function generateCsrfToken(): string
     {
         $client = self::getRequestClient();
 
-        $cookie = $client->getCookieJar()->get('MOCKSESSID');
-
-        // create a new session object
-        $container = $client->getContainer();
-        $session = $container->get('session.factory')->createSession();
-
-        if ($cookie) {
-            // get the session id from the session cookie if it exists
-            $session->setId($cookie->getValue());
-            $session->start();
-        } else {
-            // or create a new session id and a session cookie
-            $session->start();
-            $session->save();
-
-            $sessionCookie = new Cookie(
-                $session->getName(),
-                $session->getId(),
-                null,
-                null,
-                'localhost',
-            );
-            $client->getCookieJar()->set($sessionCookie);
-        }
-
         $container = $client->getContainer();
         $tokenGenerator = $container->get('security.csrf.token_generator');
-        $csrfToken = $tokenGenerator->generateToken();
-        $session->set(SessionTokenStorage::SESSION_NAMESPACE . '/' . $tokenId, $csrfToken);
-        $session->save();
 
-        return $csrfToken;
+        return $tokenGenerator->generateToken();
     }
 
     final protected function build(string $method, string $uri): RequestBuilder
@@ -113,6 +86,10 @@ trait RequestTrait
     {
         $client = self::getRequestClient();
 
+        if ($requestBuilder->getSessionValues()) {
+            $this->applySessionValues($requestBuilder->getSessionValues());
+        }
+
         $client->request(
             $requestBuilder->getMethod(),
             $requestBuilder->getUri(),
@@ -124,5 +101,44 @@ trait RequestTrait
         );
 
         return $client->getResponse();
+    }
+
+    /** @param array<string, mixed> $sessionValues */
+    private function applySessionValues(array $sessionValues): void
+    {
+        $client = self::getRequestClient();
+        assert($client instanceof AbstractBrowser);
+
+        $cookie = $client->getCookieJar()->get('MOCKSESSID');
+
+        // create a new session object
+        $container = $client->getContainer();
+        $session = $container->get('session.factory')->createSession();
+        assert($session instanceof SessionInterface);
+
+        if ($cookie) {
+            // get the session id from the session cookie if it exists
+            $session->setId($cookie->getValue());
+            $session->start();
+        } else {
+            // or create a new session id and a session cookie
+            $session->start();
+            $session->save();
+
+            $sessionCookie = new Cookie(
+                $session->getName(),
+                $session->getId(),
+                null,
+                null,
+                'localhost',
+            );
+            $client->getCookieJar()->set($sessionCookie);
+        }
+
+        foreach ($sessionValues as $key => $value) {
+            $session->set($key, $value);
+        }
+
+        $session->save();
     }
 }

@@ -30,6 +30,8 @@ final class RequestBuilder
     /** @var mixed[] */
     private array $files = [];
     /** @var mixed[] */
+    private array $sessionValues = [];
+    /** @var mixed[] */
     private array $server = [];
     private string|null $content = null;
     private bool $changeHistory = true;
@@ -316,5 +318,18 @@ final class RequestBuilder
     public function getChangeHistory(): bool
     {
         return $this->changeHistory;
+    }
+
+    /** @return array<string, mixed> */
+    public function getSessionValues(): array
+    {
+        return $this->sessionValues;
+    }
+
+    public function sessionValue(string $key, mixed $value): self
+    {
+        $this->sessionValues[$key] = $value;
+
+        return $this;
     }
 }
