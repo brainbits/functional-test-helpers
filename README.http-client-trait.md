@@ -31,8 +31,12 @@ In your test, you can provide mock responses, which will be matched by the given
 ```php
 // MyTest.php
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\HttpClientMockTrait;
+
 public function testRequest(): void
 {
+    use HttpClientMockTrait;
+
     $this->mockRequest('GET', 'http://127.0.0.1/my/endpoint')
         ->willRespond($this->mockResponse()->json([]));
     
