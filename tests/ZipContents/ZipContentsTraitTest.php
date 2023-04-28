@@ -125,4 +125,31 @@ final class ZipContentsTraitTest extends TestCase
 
         self::assertZipHasFileWithSize('my-file.txt', 7, $zip);
     }
+
+    public function testAssertZipHasFileWithCrcForZipFileFails(): void
+    {
+        $zip = self::readZipFile(self::FILE);
+
+        try {
+            self::assertZipHasFileWithCrc('foo.txt', 'b22c9747', $zip, 'assertZipHasFileWithCrc');
+
+            self::fail('ExpectationFailedException was not thrown.');
+        } catch (ExpectationFailedException $e) {
+            self::assertStringContainsString('assertZipHasFileWithCrc', $e->getMessage());
+        }
+    }
+
+    public function testAssertZipHasFileWithCrcForZipFile(): void
+    {
+        $zip = self::readZipFile(self::FILE);
+
+        self::assertZipHasFileWithCrc('my-file.txt', 'b22c9747', $zip);
+    }
+
+    public function testAssertZipHasFileWithCrcForZipStream(): void
+    {
+        $zip = self::readZipStream(fopen(self::FILE, 'rb'), filesize(self::FILE));
+
+        self::assertZipHasFileWithCrc('my-file.txt', 'b22c9747', $zip);
+    }
 }

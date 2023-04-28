@@ -55,4 +55,17 @@ trait ZipContentsTrait
 
         Assert::assertSame($expectedSize, $file->getSize(), $message);
     }
+
+    final protected static function assertZipHasFileWithCrc(
+        string $expectedPath,
+        string $expectedCrc,
+        ZipInfo $zip,
+        string $message = '',
+    ): void {
+        self::assertZipHasFile($expectedPath, $zip, $message);
+
+        $file = $zip->getFile($expectedPath);
+
+        Assert::assertSame($expectedCrc, $file->getCrcAsHex(), $message);
+    }
 }
