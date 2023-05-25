@@ -40,6 +40,7 @@
         "symfony/mime": "^6.2",
         "symfony/security-core": "^5.3|^6.0",
         "symfony/security-csrf": "^6.2",
+        "symfony/uid": "^6.2",
         "thecodingmachine/phpstan-safe-rule": "^1.1",
         "thecodingmachine/phpstan-strict-rules": "^1.0"
     },
@@ -61,7 +62,8 @@
         "symfony/http-client": "For http client mock trait",
         "symfony/http-foundation": "For request trait",
         "symfony/framework-bundle": "For request trait, when using authLogin(). Requires version >= 5.1",
-        "symfony/security-core": "For request trait"
+        "symfony/security-core": "For request trait",
+        "symfony/uid": "For uuid trait"
     },
     "config": {
         "preferred-install": {
