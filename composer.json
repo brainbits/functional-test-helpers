@@ -16,7 +16,7 @@
         "brainbits/phpcs-standard": "^7.0",
         "brainbits/phpstan-rules": "^3.0",
         "dama/doctrine-test-bundle": "^6.0|^7.0",
-        "doctrine/dbal": "^3.4",
+        "doctrine/dbal": "^4.0",
         "doctrine/event-manager": "^1.1.1",
         "ergebnis/phpstan-rules": "^1.0",
         "jangregor/phpstan-prophecy": "^1.0",
