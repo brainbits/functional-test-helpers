@@ -15,7 +15,7 @@
         "ext-tidy": "*",
         "brainbits/phpcs-standard": "^7.0",
         "brainbits/phpstan-rules": "^3.0",
-        "dama/doctrine-test-bundle": "^6.0|^7.0",
+        "dama/doctrine-test-bundle": "8.0.2",
         "doctrine/dbal": "^3.4",
         "doctrine/event-manager": "^1.1.1",
         "ergebnis/phpstan-rules": "^1.0",
