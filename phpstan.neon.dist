@@ -1,5 +1,5 @@
 parameters:
-    level: 1
+    level: 6
     paths:
         - src
         - tests
@@ -19,6 +19,7 @@ parameters:
         - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\Uuid\\UuidTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
         - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\ZipContents\\ZipContentsTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
         - '#Safe\\DateTimeImmutable#'
+        - '#SchemaBuilder::foo\(\)#'
     ergebnis:
         classesAllowedToBeExtended:
             - Monolog\Handler\AbstractProcessingHandler

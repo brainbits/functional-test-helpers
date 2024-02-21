@@ -54,18 +54,18 @@ final class MockRequestBuilder
     /** @var array<string,string>  */
     private array $uriParams = [];
 
-    /** @var mixed[] */
+    /** @var mixed[]|null */
     private array|null $headers = null;
 
-    /** @var mixed[] */
+    /** @var mixed[]|null */
     private array|null $queryParams = null;
 
     private string|null $content = null;
 
-    /** @var mixed[] */
+    /** @var mixed[]|null */
     private array|null $multiparts = null;
 
-    /** @var callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string */
+    /** @var callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string|null */
     private mixed $that = null;
 
     private MockResponseCollection $responses;
@@ -73,8 +73,8 @@ final class MockRequestBuilder
     /** @var self[] */
     private array $calls = [];
 
-    /** @var callable */
-    public $onMatch;
+    /** @var callable|null */
+    public mixed $onMatch = null;
 
     public function __construct()
     {
@@ -127,13 +127,12 @@ final class MockRequestBuilder
         return $this->headers !== null;
     }
 
-    /** @return mixed[] */
+    /** @return mixed[]|null */
     public function getHeaders(): array|null
     {
         return $this->headers;
     }
 
-    /** @return mixed */
     public function hasHeader(string $key): bool
     {
         return array_key_exists($key, $this->headers);
@@ -201,7 +200,6 @@ final class MockRequestBuilder
         return json_decode($this->content, true);
     }
 
-    /** @param mixed[] $data */
     public function xml(string $data): self
     {
         if (!$this->isXmlString($data)) {
@@ -299,7 +297,7 @@ final class MockRequestBuilder
         return $this;
     }
 
-    /** @return mixed[] */
+    /** @return mixed[]|null */
     public function getMultiparts(): array|null
     {
         return $this->multiparts;

@@ -47,8 +47,6 @@ final class ZipContents
      *
      * @param resource $fh
      *
-     * @return FileInfo[]
-     *
      * @throws InvalidArchive
      */
     public function readStream($fh, int $size): ZipInfo

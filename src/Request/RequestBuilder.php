@@ -240,7 +240,7 @@ final class RequestBuilder
         return $this;
     }
 
-    /** @param UploadedFile|UploadedFile[] $files */
+    /** @param UploadedFile|UploadedFile[]|UploadedFile[][]|UploadedFile[][][]|UploadedFile[][][][] $files */
     public function file(string $key, UploadedFile|array $files): self
     {
         $this->server('CONTENT_TYPE', 'multipart/form-data');

@@ -14,13 +14,6 @@ use PHPUnit\Framework\TestCase;
 /** @covers \Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrategy */
 final class SqliteMemoryBasedSchemaStrategyTest extends TestCase
 {
-    private SqlitePlatform $platform;
-
-    protected function setUp(): void
-    {
-        $this->platform = new SqlitePlatform();
-    }
-
     public function testApplySchema(): void
     {
         $schemaBuilder = $this->createSchemaBuilder();

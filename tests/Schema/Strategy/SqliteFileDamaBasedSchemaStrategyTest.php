@@ -25,12 +25,8 @@ final class SqliteFileDamaBasedSchemaStrategyTest extends TestCase
 {
     private string|null $databasePath = null;
 
-    private SqlitePlatform $platform;
-
     protected function setUp(): void
     {
-        $this->platform = new SqlitePlatform();
-
         $this->databasePath = tempnam(sys_get_temp_dir(), 'SqliteFileBasedApplySchemaTest_') . '.db';
     }
 

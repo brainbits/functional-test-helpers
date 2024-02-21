@@ -10,6 +10,7 @@ use Riverline\MultiPartParser\StreamedPart;
 use function array_key_exists;
 use function assert;
 use function explode;
+use function is_array;
 use function is_callable;
 use function is_string;
 use function Safe\fopen;
@@ -60,22 +61,31 @@ final class MockRequestBuilderFactory
 
         // application/json; charset=utf-8
         if (strpos($contentType, 'application/json') === 0) {
-            $mockRequestBuilder->json(json_decode($body, true));
+            if (is_string($body)) {
+                $mockRequestBuilder->json(json_decode($body, true));
+            } elseif (is_callable($body)) {
+                $mockRequestBuilder->json(json_decode((string) $body(), true));
+            } elseif (is_array($body)) {
+                $mockRequestBuilder->json($body);
+            } else {
+                throw UnprocessableBody::create();
+            }
 
             return;
         }
 
-        if (
-            strpos($contentType, 'application/x-www-form-urlencoded') === 0
-            && preg_match('/[^=]+=[^=]*(&[^=]+=[^=]*)*/', (string) $body)
-        ) {
-            foreach (explode('&', $body) as $keyValue) {
-                [$key, $value] = explode('=', $keyValue);
+        if (strpos($contentType, 'application/x-www-form-urlencoded') === 0) {
+            assert(is_string($body));
 
-                $mockRequestBuilder->requestParam(urldecode($key), urldecode($value));
+            if (preg_match('/[^=]+=[^=]*(&[^=]+=[^=]*)*/', $body)) {
+                foreach (explode('&', $body) as $keyValue) {
+                    [$key, $value] = explode('=', $keyValue);
+
+                    $mockRequestBuilder->requestParam(urldecode($key), urldecode($value));
+                }
+
+                return;
             }
-
-            return;
         }
 
         // multipart/form-data; charset=utf-8; boundary=__X_PAW_BOUNDARY__
@@ -114,6 +124,18 @@ final class MockRequestBuilderFactory
             return;
         }
 
-        $mockRequestBuilder->content($body);
+        if (is_string($body)) {
+            $mockRequestBuilder->content($body);
+
+            return;
+        }
+
+        if (is_callable($body)) {
+            $mockRequestBuilder->content((string) $body());
+
+            return;
+        }
+
+        throw UnprocessableBody::create();
     }
 }

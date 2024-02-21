@@ -130,7 +130,6 @@ final class MockRequestMatch
         );
     }
 
-    /** @param mixed $value */
     public static function missingHeader(string $key, string $value): self
     {
         return new self(

@@ -15,6 +15,7 @@ use function sprintf;
 
 final class MysqlBasedSchemaStrategy implements SchemaStrategy
 {
+    /** @var ArrayObject<string, int|string> */
     public static ArrayObject $executedStatements;
 
     public function __construct(bool $resetExecutedStatements = false)

@@ -8,6 +8,5 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 
 interface MockResponseFactory
 {
-    /** @return mixed */
     public function fromRequestBuilder(MockRequestBuilder $requestBuilder): MockResponse;
 }

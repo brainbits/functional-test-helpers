@@ -40,15 +40,13 @@ trait UuidTrait
         return (string) Uuid::fromString($uuid);
     }
 
-    /** @param string $actual */
-    final protected static function assertIsUuid($actual, string $message = ''): void // phpcs:ignore
+    final protected static function assertIsUuid(mixed $actual, string $message = ''): void
     {
         self::assertIsString($actual, $message);
         self::assertTrue(Uuid::isValid($actual), $message);
     }
 
-    /** @param string $jsonData */
-    final protected static function assertAndReplaceUuidInJson($jsonData, string $key): string // phpcs:ignore
+    final protected static function assertAndReplaceUuidInJson(mixed $jsonData, string $key): string
     {
         self::assertJson($jsonData);
 
@@ -57,12 +55,8 @@ trait UuidTrait
         return json_encode($jsonData);
     }
 
-    /**
-     * @param mixed[] $arrayData
-     *
-     * @return mixed[]
-     */
-    final protected static function assertAndReplaceUuidInArray($arrayData, string $key): array // phpcs:ignore
+    /** @return mixed[] */
+    final protected static function assertAndReplaceUuidInArray(mixed $arrayData, string $key): array
     {
         self::assertIsArray($arrayData);
 
