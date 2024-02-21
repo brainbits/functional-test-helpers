@@ -7,7 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 use Stringable;
 
 use function Safe\json_encode;
-use function Safe\sprintf;
+use function sprintf;
 
 final class MockRequestMatch
 {
@@ -130,7 +130,6 @@ final class MockRequestMatch
         );
     }
 
-    /** @param mixed $value */
     public static function missingHeader(string $key, string $value): self
     {
         return new self(

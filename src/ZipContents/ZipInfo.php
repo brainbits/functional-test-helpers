@@ -12,6 +12,7 @@ use function array_key_exists;
 use function array_values;
 use function count;
 
+/** @implements IteratorAggregate<FileInfo> */
 final class ZipInfo implements Countable, IteratorAggregate
 {
     /** @param FileInfo[] $files */
@@ -43,7 +44,7 @@ final class ZipInfo implements Countable, IteratorAggregate
         return $this->comment;
     }
 
-    /** @return FileInfo[] */
+    /** @return list<FileInfo> */
     public function getFiles(): array
     {
         return array_values($this->files);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Request;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\BrowserKit\AbstractBrowser;
 use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 use function assert;
 use function method_exists;
-use function Safe\sprintf;
+use function sprintf;
 
 /** @mixin TestCase */
 trait RequestTrait
@@ -56,6 +57,7 @@ trait RequestTrait
     final public function generateCsrfToken(): string
     {
         $client = self::getRequestClient();
+        assert($client instanceof KernelBrowser);
 
         $container = $client->getContainer();
         $tokenGenerator = $container->get('security.csrf.token_generator');
@@ -65,7 +67,7 @@ trait RequestTrait
 
     final protected function build(string $method, string $uri): RequestBuilder
     {
-        if (method_exists($this, 'findUser')) {
+        if (method_exists($this, 'findUser')) { // @phpstan-ignore-line
             $callable = $this->findUser();
             $isFindUser = true;
         } else {
@@ -107,7 +109,7 @@ trait RequestTrait
     private function applySessionValues(array $sessionValues): void
     {
         $client = self::getRequestClient();
-        assert($client instanceof AbstractBrowser);
+        assert($client instanceof KernelBrowser);
 
         $cookie = $client->getCookieJar()->get('MOCKSESSID');
 

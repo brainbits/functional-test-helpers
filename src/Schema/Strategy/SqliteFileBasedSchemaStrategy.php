@@ -21,6 +21,7 @@ use function Safe\unlink;
 
 final class SqliteFileBasedSchemaStrategy implements SchemaStrategy
 {
+    /** @var ArrayObject<string, int|string> */
     public static ArrayObject $executedStatements;
 
     public function __construct(bool $resetExecutedStatements = false)

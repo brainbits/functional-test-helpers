@@ -8,7 +8,7 @@ use DOMDocument;
 use PHPUnit\Framework\Constraint\Constraint;
 use Throwable;
 
-use function Safe\sprintf;
+use function sprintf;
 
 use const LIBXML_NOERROR;
 use const LIBXML_NOWARNING;

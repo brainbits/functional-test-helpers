@@ -6,7 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Exception;
 
 use RuntimeException;
 
-use function Safe\sprintf;
+use function sprintf;
 
 final class InvalidMockRequest extends RuntimeException implements HttpClientMockException
 {

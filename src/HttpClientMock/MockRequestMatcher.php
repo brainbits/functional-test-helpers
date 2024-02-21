@@ -150,10 +150,7 @@ final class MockRequestMatcher
             $match->matchesContent($expectation->getContent());
         }
 
-        if (
-            $expectation->getMultiparts() !== null
-            && ($this->compare)($expectation->getMultiparts(), $realRequest->getMultiparts())
-        ) {
+        if ($expectation->getMultiparts() !== null) {
             $match->matchesMultiparts($expectation->getMultiparts());
         }
 

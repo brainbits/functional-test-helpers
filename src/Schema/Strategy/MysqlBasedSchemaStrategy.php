@@ -11,10 +11,11 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Identifier;
 
 use function count;
-use function Safe\sprintf;
+use function sprintf;
 
 final class MysqlBasedSchemaStrategy implements SchemaStrategy
 {
+    /** @var ArrayObject<string, int|string> */
     public static ArrayObject $executedStatements;
 
     public function __construct(bool $resetExecutedStatements = false)

@@ -21,12 +21,12 @@ use function Safe\json_decode;
 use function Safe\json_encode;
 use function Safe\preg_match;
 use function Safe\preg_replace;
-use function Safe\sprintf;
-use function Safe\substr;
+use function sprintf;
 use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
+use function substr;
 
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_LINE_TERMINATORS;
@@ -223,7 +223,7 @@ trait SnapshotTrait
         $class = preg_replace('/(.)([[:upper:]])/u', '\1_\2', $class);
         $class = mb_strtolower($class);
 
-        if (method_exists($this, 'getName')) {
+        if (method_exists($this, 'getName')) { // @phpstan-ignore-line
             $method = $this->getName(false);
         } else {
             $method = $this->name();
@@ -236,7 +236,7 @@ trait SnapshotTrait
         $method = preg_replace('/(.)([[:upper:]])/u', '\1_\2', $method);
         $method = mb_strtolower($method);
 
-        if (method_exists($this, 'getDataSetAsString')) {
+        if (method_exists($this, 'getDataSetAsString')) { // @phpstan-ignore-line
             $dataset = mb_strtolower($this->getDataSetAsString(false));
         } else {
             $dataset = mb_strtolower($this->dataSetAsString());

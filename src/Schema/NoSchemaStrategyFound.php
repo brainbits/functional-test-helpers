@@ -7,7 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Schema;
 use RuntimeException;
 
 use function Safe\json_encode;
-use function Safe\sprintf;
+use function sprintf;
 
 final class NoSchemaStrategyFound extends RuntimeException
 {

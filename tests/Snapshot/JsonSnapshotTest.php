@@ -6,7 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Snapshot;
 
 use Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait;
 use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
+use org\bovigo\vfs\vfsStreamContent;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
@@ -20,7 +20,7 @@ final class JsonSnapshotTest extends TestCase
 {
     use SnapshotTrait;
 
-    private vfsStreamDirectory $snapshotsDir;
+    private vfsStreamContent $snapshotsDir;
 
     public function setUp(): void
     {

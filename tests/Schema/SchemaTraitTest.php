@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 
 use function getenv;
 use function Safe\putenv;
-use function Safe\sprintf;
+use function sprintf;
 
 /** @covers \Brainbits\FunctionalTestHelpers\Schema\SchemaTrait */
 final class SchemaTraitTest extends TestCase

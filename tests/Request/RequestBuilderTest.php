@@ -330,7 +330,7 @@ final class RequestBuilderTest extends TestCase
 
         $files = ['foo' => 'bar'];
         $this->createRequestBuilder('GET', '/users')
-            ->file('invalid', $files);
+            ->file('invalid', $files); // @phpstan-ignore-line
     }
 
     public function testFilesCanBeSetByPath(): void

@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 use function Safe\filesize;
 use function Safe\fopen;
-use function Safe\sprintf;
+use function sprintf;
 
 /** @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContents */
 final class ZipContentsTest extends TestCase
@@ -32,8 +32,7 @@ final class ZipContentsTest extends TestCase
         $this->expectExceptionMessage('Valid stream is required, string given');
 
         $zipContents = new ZipContents();
-        $file = sprintf('%s/../files/test.zip', __DIR__);
-        $zipContents->readStream('foo', filesize(self::FILE));
+        $zipContents->readStream('foo', filesize(self::FILE)); // @phpstan-ignore-line
     }
 
     public function testItNeedsSize(): void
