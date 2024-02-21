@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 use function assert;
 use function method_exists;
-use function Safe\sprintf;
+use function sprintf;
 
 /** @mixin TestCase */
 trait RequestTrait

@@ -6,7 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Request;
 
 use RuntimeException;
 
-use function Safe\sprintf;
+use function sprintf;
 
 // phpcs:disable Generic.CodeAnalysis.UselessOverridingMethod.Found
 

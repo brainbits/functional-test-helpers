@@ -13,7 +13,7 @@ use function is_array;
 use function rawurlencode;
 use function Safe\array_walk_recursive;
 use function Safe\json_encode;
-use function Safe\sprintf;
+use function sprintf;
 use function str_replace;
 use function strpos;
 use function sys_get_temp_dir;

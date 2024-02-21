@@ -7,7 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Exception;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use RuntimeException;
 
-use function Safe\sprintf;
+use function sprintf;
 
 use const PHP_EOL;
 

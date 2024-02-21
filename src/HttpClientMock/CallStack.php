@@ -11,7 +11,7 @@ use Traversable;
 use function array_map;
 use function array_merge;
 use function count;
-use function Safe\sprintf;
+use function sprintf;
 
 use const PHP_EOL;
 

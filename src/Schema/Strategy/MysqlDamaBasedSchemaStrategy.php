@@ -12,7 +12,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Identifier;
 
 use function count;
-use function Safe\sprintf;
+use function sprintf;
 
 final class MysqlDamaBasedSchemaStrategy implements SchemaStrategy
 {

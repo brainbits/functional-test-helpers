@@ -14,16 +14,16 @@ use function function_exists;
 use function iconv_strlen;
 use function is_file;
 use function is_resource;
-use function mb_convert_encoding;
 use function ord;
 use function Safe\filesize;
 use function Safe\fopen;
 use function Safe\fread;
 use function Safe\iconv;
+use function Safe\mb_convert_encoding;
 use function Safe\rewind;
-use function Safe\substr;
 use function Safe\unpack;
 use function strlen;
+use function substr;
 use function time;
 
 final class ZipContents

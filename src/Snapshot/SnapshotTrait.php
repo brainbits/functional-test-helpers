@@ -21,12 +21,12 @@ use function Safe\json_decode;
 use function Safe\json_encode;
 use function Safe\preg_match;
 use function Safe\preg_replace;
-use function Safe\sprintf;
-use function Safe\substr;
+use function sprintf;
 use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
+use function substr;
 
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_LINE_TERMINATORS;

@@ -8,7 +8,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatch;
 use RuntimeException;
 
-use function Safe\sprintf;
+use function sprintf;
 
 use const PHP_EOL;
 

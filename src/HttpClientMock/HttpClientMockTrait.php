@@ -17,7 +17,7 @@ use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 use function assert;
 use function class_exists;
-use function Safe\sprintf;
+use function sprintf;
 use function ucfirst;
 
 /** @mixin TestCase */

@@ -7,7 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\ZipContents;
 use RuntimeException;
 
 use function gettype;
-use function Safe\sprintf;
+use function sprintf;
 
 final class InvalidArchive extends RuntimeException
 {

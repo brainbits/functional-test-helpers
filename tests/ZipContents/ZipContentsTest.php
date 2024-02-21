@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 use function Safe\filesize;
 use function Safe\fopen;
-use function Safe\sprintf;
+use function sprintf;
 
 /** @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContents */
 final class ZipContentsTest extends TestCase

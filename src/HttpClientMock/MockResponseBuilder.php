@@ -8,7 +8,7 @@ use function array_key_exists;
 use function count;
 use function Safe\json_decode;
 use function Safe\json_encode;
-use function Safe\sprintf;
+use function sprintf;
 use function str_repeat;
 use function str_replace;
 use function strtolower;
