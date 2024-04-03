@@ -279,11 +279,11 @@ final class MockRequestBuilder
         return (bool) preg_match('/[^=]+=[^=]*(&[^=]+=[^=]*)*/', (string) $this->content) && !$this->isJson();
     }
 
-    public function multipartFile(string $name, string $filename, string $mimetype, int $size): self
+    public function multipartFile(string $name, string|null $filename, string $mimetype, int $size): self
     {
         $this->multiparts ??= [];
         $this->multiparts[$name] = [
-            'type' => 'file',
+            'type' => $filename !== null ? 'file' : 'data',
             'filename' => $filename,
             'mimetype' => $mimetype,
             'size' => $size,
