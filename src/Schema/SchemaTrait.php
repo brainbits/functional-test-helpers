@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Schema;
 
-use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
@@ -45,8 +44,6 @@ trait SchemaTrait
                 'driver' => 'pdo_sqlite',
                 'memory' => true,
             ],
-            null,
-            new EventManager(),
         );
 
         $this->fixtureFromConnection($connection, $schemaBuilder, $dataBuilder, $buildData);
