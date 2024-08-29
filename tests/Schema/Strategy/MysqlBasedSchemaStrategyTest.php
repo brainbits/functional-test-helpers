@@ -206,7 +206,7 @@ final class MysqlBasedSchemaStrategyTest extends TestCase
                     $result = [];
 
                     // phpcs:ignore Generic.Files.LineLength.TooLong
-                    if ($query === 'SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table AND `TABLE_ROWS` > 0') {
+                    if ($query === 'SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table') {
                         $result = [['TABLE_NAME' => 'foo']];
                     }
 

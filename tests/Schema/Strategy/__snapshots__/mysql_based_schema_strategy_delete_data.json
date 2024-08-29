@@ -1,6 +1,6 @@
 [
     {
-        "query": "SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table AND `TABLE_ROWS` > 0",
+        "query": "SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table",
         "parameters": {
             "table": "database_name"
         },

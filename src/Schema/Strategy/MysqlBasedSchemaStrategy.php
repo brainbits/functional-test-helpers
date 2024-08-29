@@ -53,7 +53,7 @@ final class MysqlBasedSchemaStrategy implements SchemaStrategy
     public function deleteData(Connection $connection): void
     {
         $tablesWithRows = $connection->executeQuery(
-            'SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table AND `TABLE_ROWS` > 0',
+            'SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table',
             ['table' => $connection->getDatabase()],
         )->fetchFirstColumn();
 
