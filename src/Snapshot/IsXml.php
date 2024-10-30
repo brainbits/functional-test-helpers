@@ -6,6 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Snapshot;
 
 use DOMDocument;
 use PHPUnit\Framework\Constraint\Constraint;
+use PHPUnit\Util\Exporter;
 use Throwable;
 
 use function sprintf;
@@ -71,7 +72,7 @@ final class IsXml extends Constraint
 
         return sprintf(
             '%s is valid XML (%s)',
-            $this->exporter()->shortenedExport($other),
+            Exporter::shortenedExport($other),
             $error,
         );
     }
