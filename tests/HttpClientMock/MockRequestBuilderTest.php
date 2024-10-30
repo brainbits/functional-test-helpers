@@ -12,6 +12,9 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\File\File;
+
+use function Safe\file_get_contents;
 
 #[CoversClass(MockRequestBuilder::class)]
 final class MockRequestBuilderTest extends TestCase
@@ -287,5 +290,40 @@ final class MockRequestBuilderTest extends TestCase
         $mockRequestBuilder->basicAuthentication('username', 'password');
 
         $this->assertSame('Basic dXNlcm5hbWU6cGFzc3dvcmQ=', $mockRequestBuilder->getHeader('Authorization'));
+    }
+
+    public function testWithMultipart(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->multipart('key', 'mimetype', 'filename', 'content');
+
+        $this->assertTrue($mockRequestBuilder->hasMultiparts());
+        $this->assertSame(
+            [
+                'key' => [
+                    'mimetype' => 'mimetype',
+                    'filename' => 'filename',
+                    'content' => 'content',
+                ],
+            ],
+            $mockRequestBuilder->getMultiparts(),
+        );
+    }
+
+    public function testWithMultipartFromFile(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->multipartFromFile('key', new File(__DIR__ . '/../files/test.zip'));
+
+        $this->assertSame(
+            [
+                'key' => [
+                    'mimetype' => 'application/zip',
+                    'filename' => 'test.zip',
+                    'content' => file_get_contents(__DIR__ . '/../files/test.zip'),
+                ],
+            ],
+            $mockRequestBuilder->getMultiparts(),
+        );
     }
 }

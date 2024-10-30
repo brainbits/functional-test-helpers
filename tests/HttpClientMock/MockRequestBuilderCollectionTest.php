@@ -6,17 +6,18 @@ namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatch;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatch
- * @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher
- */
+#[CoversClass(MockRequestBuilder::class)]
+#[CoversClass(MockRequestBuilderCollection::class)]
+#[CoversClass(MockRequestMatch::class)]
+#[CoversClass(MockRequestMatcher::class)]
 final class MockRequestBuilderCollectionTest extends TestCase
 {
     private MockRequestBuilderCollection $collection;
@@ -82,6 +83,12 @@ final class MockRequestBuilderCollectionTest extends TestCase
                 ->uri('/bar')
                 ->content('content')
                 ->willRespond(new MockResponseBuilder()),
+
+            'postBarWithMultipart' => (new MockRequestBuilder())
+                ->method('POST')
+                ->uri('/barx')
+                ->multipart('key', 'application/octet-stream', null, 'content')
+                ->willRespond(new MockResponseBuilder()),
         ];
 
         $this->collection = new MockRequestBuilderCollection(new SymfonyMockResponseFactory());
@@ -134,6 +141,21 @@ final class MockRequestBuilderCollectionTest extends TestCase
                 '/bar',
                 ['body' => 'content', 'headers' => ['Content-Type: application/x-www-form-urlencoded']],
                 'postBarWithContent',
+            ],
+            'postBarWithMultipart' => [
+                'POST',
+                '/barx',
+                [
+                    'body' => <<<'BODY'
+                    --12345
+                    Content-Disposition: form-data; name="key"
+                    
+                    content
+                    --12345--
+                    BODY,
+                    'headers' => ['Content-Type: multipart/form-data; boundary=12345'],
+                ],
+                'postBarWithMultipart',
             ],
         ];
     }

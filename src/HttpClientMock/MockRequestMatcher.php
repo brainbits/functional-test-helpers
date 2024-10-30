@@ -98,10 +98,10 @@ final class MockRequestMatcher
         }
 
         if ($expectation->getMultiparts() !== null) {
-            if (!($this->compare)($expectation->getMultiparts(), $realRequest->getMultiparts())) {
+            if (!$this->isMultipartMatching($expectation, $realRequest)) {
                 return MockRequestMatch::mismatchingMultiparts(
                     $expectation->getMultiparts(),
-                    $realRequest->getMultiparts(),
+                    $this->reduceMultiparts($expectation, $realRequest),
                 );
             }
         }
@@ -164,6 +164,42 @@ final class MockRequestMatcher
         }
 
         return $expectation->getContent() === $realRequest->getContent();
+    }
+
+    /** @return array<string, array{mimetype?: string|null, filename?: string|null, content?: string|null}> */
+    private function reduceMultiparts(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): array
+    {
+        $realMultiparts = $realRequest->getMultiparts();
+        $expectationMultiparts = $expectation->getMultiparts();
+
+        $reducedMultiparts = $realMultiparts;
+        foreach ($expectationMultiparts as $key => $data) {
+            if (!($realMultiparts[$key] ?? false)) {
+                continue;
+            }
+
+            $reducedMultiparts[$key] = [];
+            foreach ($data as $name => $value) {
+                $reducedMultiparts[$key][$name] = $value !== null ? $realMultiparts[$key][$name] : null;
+            }
+        }
+
+        return $reducedMultiparts;
+    }
+
+    private function isMultipartMatching(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): bool
+    {
+        if (!$expectation->hasMultiparts() && !$realRequest->hasMultiparts()) {
+            return true;
+        }
+
+        if (!$expectation->hasMultiparts() || !$realRequest->hasMultiparts()) {
+            return false;
+        }
+
+        $realMultiparts = $this->reduceMultiparts($expectation, $realRequest);
+
+        return ($this->compare)($expectation->getMultiparts(), $realMultiparts);
     }
 
     private function isJsonContentMatching(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): bool

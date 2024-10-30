@@ -62,7 +62,7 @@ final class MockRequestBuilder
 
     private string|null $content = null;
 
-    /** @var mixed[]|null */
+    /** @var array<string, array{filename?: string|null, mimetype?: string|null, content?: string|null}>|null */
     private array|null $multiparts = null;
 
     /** @var callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string|null */
@@ -277,27 +277,43 @@ final class MockRequestBuilder
         return (bool) preg_match('/[^=]+=[^=]*(&[^=]+=[^=]*)*/', (string) $this->content) && !$this->isJson();
     }
 
-    public function multipartFile(string $name, string|null $filename, string $mimetype, int $size): self
-    {
+    public function multipart(
+        string $name,
+        string|null $mimetype = null,
+        string|null $filename = null,
+        string|null $content = null,
+    ): self {
         $this->multiparts ??= [];
-        $this->multiparts[$name] = [
-            'type' => $filename !== null ? 'file' : 'data',
-            'filename' => $filename,
-            'mimetype' => $mimetype,
-            'size' => $size,
-        ];
+        $this->multiparts[$name] = [];
+
+        if ($mimetype !== null) {
+            $this->multiparts[$name]['mimetype'] = $mimetype;
+        }
+
+        if ($filename !== null) {
+            $this->multiparts[$name]['filename'] = $filename;
+        }
+
+        if ($content !== null) {
+            $this->multiparts[$name]['content'] = $content;
+        }
 
         return $this;
     }
 
-    public function multipartFileFromFile(string $name, File $file): self
+    public function multipartFromFile(string $name, File $file): self
     {
-        $this->multipartFile($name, $file->getBasename(), $file->getMimeType(), $file->getSize());
+        $this->multipart(
+            $name,
+            mimetype: $file->getMimeType(),
+            filename: $file->getBasename(),
+            content: $file->getContent(),
+        );
 
         return $this;
     }
 
-    /** @return mixed[]|null */
+    /** @return array<string, array{filename?: string|null, mimetype?: string|null, content?: string|null}>|null */
     public function getMultiparts(): array|null
     {
         return $this->multiparts;

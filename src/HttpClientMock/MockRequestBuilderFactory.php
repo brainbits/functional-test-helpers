@@ -18,7 +18,6 @@ use function Safe\fwrite;
 use function Safe\json_decode;
 use function Safe\preg_match;
 use function Safe\rewind;
-use function strlen;
 use function strpos;
 use function urldecode;
 
@@ -113,11 +112,12 @@ final class MockRequestBuilderFactory
             $mp = new StreamedPart($stream);
             foreach ($mp->getParts() as $part) {
                 assert($part instanceof StreamedPart);
-                $mockRequestBuilder->multipartFile(
+
+                $mockRequestBuilder->multipart(
                     $part->getName(),
-                    $part->getFileName(),
-                    $part->getMimeType(),
-                    strlen($part->getBody()),
+                    mimetype: $part->getMimeType(),
+                    filename: $part->getFileName(),
+                    content: $part->getBody(),
                 );
             }
 
