@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 
 use Brainbits\FunctionalTestHelpers\Request\DataBuilder;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Request\DataBuilder */
+#[CoversClass(DataBuilder::class)]
 final class DataBuilderTest extends TestCase
 {
     public function testItEncapsulatesDataAsArray(): void

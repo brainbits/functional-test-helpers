@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\Uuid;
 
 use Brainbits\FunctionalTestHelpers\Uuid\UuidTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -12,7 +13,7 @@ use Throwable;
 
 use function Safe\json_encode;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Uuid\UuidTrait */
+#[CoversClass(UuidTrait::class)]
 final class UuidTraitTest extends TestCase
 {
     use UuidTrait;

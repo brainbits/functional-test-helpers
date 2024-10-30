@@ -13,9 +13,10 @@ use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileDamaBasedSchemaStr
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrategy;
 use DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver;
 use Doctrine\DBAL\Connection;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Schema\CreateSchemaStrategy */
+#[CoversClass(CreateSchemaStrategy::class)]
 final class CreateSchemaStrategyTest extends TestCase
 {
     public function testItUsesSqliteMemoryStrategyIfConfiguredByUrl(): void

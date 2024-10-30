@@ -9,10 +9,11 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder */
+#[CoversClass(MockRequestBuilder::class)]
 final class MockRequestBuilderTest extends TestCase
 {
     public function testWithoutAnythingSpecifiedARequestIsEmpty(): void

@@ -6,13 +6,14 @@ namespace Brainbits\FunctionalTestHelpers\Tests\ZipContents;
 
 use Brainbits\FunctionalTestHelpers\ZipContents\InvalidArchive;
 use Brainbits\FunctionalTestHelpers\ZipContents\ZipContents;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 use function Safe\filesize;
 use function Safe\fopen;
 use function sprintf;
 
-/** @covers \Brainbits\FunctionalTestHelpers\ZipContents\ZipContents */
+#[CoversClass(ZipContents::class)]
 final class ZipContentsTest extends TestCase
 {
     private const FILE = __DIR__ . '/../files/test.zip';

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Compare;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\Compare */
+#[CoversClass(Compare::class)]
 final class CompareTest extends TestCase
 {
     public function testCompareScalar(): void

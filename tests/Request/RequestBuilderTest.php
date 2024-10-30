@@ -6,6 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 
 use Brainbits\FunctionalTestHelpers\Request\InvalidRequest;
 use Brainbits\FunctionalTestHelpers\Request\RequestBuilder;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -16,7 +17,7 @@ use function current;
 use function method_exists;
 use function Safe\json_encode;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Request\RequestBuilder */
+#[CoversClass(RequestBuilder::class)]
 final class RequestBuilderTest extends TestCase
 {
     public function testItCanBeCreated(): void

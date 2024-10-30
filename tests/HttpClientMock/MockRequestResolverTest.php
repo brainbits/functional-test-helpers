@@ -10,9 +10,10 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver */
+#[CoversClass(MockRequestResolver::class)]
 final class MockRequestResolverTest extends TestCase
 {
     public function testEmptyCollection(): void

@@ -13,13 +13,14 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\Schema;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 use function func_get_arg;
 use function Safe\preg_match;
 use function str_starts_with;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Schema\Strategy\MysqlDamaBasedSchemaStrategy */
+#[CoversClass(MysqlDamaBasedSchemaStrategy::class)]
 final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 {
     use SnapshotTrait;

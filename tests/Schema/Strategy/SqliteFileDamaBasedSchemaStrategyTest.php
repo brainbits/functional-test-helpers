@@ -9,6 +9,7 @@ use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileDamaBasedSchemaStr
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\DBAL\Schema\Schema;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 use function file_exists;
@@ -20,7 +21,7 @@ use function sys_get_temp_dir;
 
 use const FILE_APPEND;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileDamaBasedSchemaStrategy */
+#[CoversClass(SqliteFileDamaBasedSchemaStrategy::class)]
 final class SqliteFileDamaBasedSchemaStrategyTest extends TestCase
 {
     private string|null $databasePath = null;

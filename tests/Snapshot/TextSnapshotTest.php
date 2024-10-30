@@ -8,6 +8,7 @@ use Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamContent;
 use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +16,7 @@ use function getenv;
 use function Safe\file_put_contents;
 use function Safe\putenv;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait */
+#[CoversClass(SnapshotTrait::class)]
 final class TextSnapshotTest extends TestCase
 {
     use SnapshotTrait;

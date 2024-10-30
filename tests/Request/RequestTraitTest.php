@@ -6,12 +6,13 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 
 use Brainbits\FunctionalTestHelpers\Request\RequestBuilder;
 use Brainbits\FunctionalTestHelpers\Request\RequestTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\BrowserKit\HttpBrowser;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Request\RequestBuilder */
+#[CoversClass(RequestTrait::class)]
 final class RequestTraitTest extends TestCase
 {
     use RequestTrait;

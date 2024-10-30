@@ -7,9 +7,10 @@ namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatch;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher */
+#[CoversClass(MockRequestMatcher::class)]
 final class MockRequestMatcherTest extends TestCase
 {
     private MockRequestMatcher $matcher;

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 use function implode;
 
 use const PHP_EOL;
 
-/** @covers \Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder */
+#[CoversClass(MockResponseBuilder::class)]
 final class MockResponseBuilderTest extends TestCase
 {
     public function testConvertableToStringWithJson(): void

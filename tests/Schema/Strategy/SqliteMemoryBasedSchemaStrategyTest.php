@@ -9,9 +9,10 @@ use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrat
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\DBAL\Schema\Schema;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/** @covers \Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrategy */
+#[CoversClass(SqliteMemoryBasedSchemaStrategy::class)]
 final class SqliteMemoryBasedSchemaStrategyTest extends TestCase
 {
     public function testApplySchema(): void
