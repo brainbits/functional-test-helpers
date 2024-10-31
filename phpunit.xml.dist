@@ -4,6 +4,8 @@
   <coverage/>
   <php>
     <ini name="error_reporting" value="-1"/>
+    <ini name="date.timezone" value="UTC"/>
+    <env name="TZ" value="UTC"/>
   </php>
   <testsuites>
     <testsuite name="Project Test Suite">
