@@ -29,6 +29,7 @@ parameters:
             enabled: false
         noExtends:
             classesAllowedToBeExtended:
+                - Archive7z\Archive7z
                 - Monolog\Handler\AbstractProcessingHandler
                 - PHPUnit\Framework\Constraint\Constraint
                 - RuntimeException
