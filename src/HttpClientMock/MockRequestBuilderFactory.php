@@ -57,13 +57,14 @@ final class MockRequestBuilderFactory
         array $headers,
     ): void {
         $contentType = (string) $mockRequestBuilder->getHeader('Content-Type');
+        $contentLength = $mockRequestBuilder->getHeader('Content-Length') ?? 0;
 
         // application/json; charset=utf-8
         if (strpos($contentType, 'application/json') === 0) {
             if (is_string($body)) {
                 $mockRequestBuilder->json(json_decode($body, true));
             } elseif (is_callable($body)) {
-                $mockRequestBuilder->json(json_decode((string) $body(), true));
+                $mockRequestBuilder->json(json_decode((string) $body((int) $contentLength), true));
             } elseif (is_array($body)) {
                 $mockRequestBuilder->json($body);
             } else {
