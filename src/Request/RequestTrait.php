@@ -20,6 +20,7 @@ use function sprintf;
 /** @mixin TestCase */
 trait RequestTrait
 {
+    /** @phpstan-ignore missingType.generics */
     private static AbstractBrowser|null $requestClient = null;
 
     protected function loginUser(): callable
@@ -44,6 +45,7 @@ trait RequestTrait
         self::$requestClient = null;
     }
 
+    /** @phpstan-ignore missingType.generics */
     protected static function getRequestClient(): AbstractBrowser
     {
         if (self::$requestClient) {
