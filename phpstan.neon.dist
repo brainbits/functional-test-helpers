@@ -12,13 +12,6 @@ parameters:
         - '#Constructor in .* has parameter .* with default value#'
         - '#In method "Brainbits\\FunctionalTestHelpers\\Snapshot\\IsXml::.*", caught "Throwable" must be rethrown. Either catch a more specific exception or add a "throw" clause in the "catch" block to propagate the exception.#'
         - '#In method "Brainbits\\FunctionalTestHelpers\\Tests\\Uuid\\UuidTraitTest::.*", caught "Throwable" must be rethrown. Either catch a more specific exception or add a "throw" clause in the "catch" block to propagate the exception.#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\.*Test::assertMatches.*Snapshot\(\) is protected, but since the containing class is final, it can be private.#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\.*Test::setUpSnapshot\(\) is protected, but since the containing class is final, it can be private.#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\Request\\RequestTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\Schema\\SchemaTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\SevenZipContents\\SevenZipContentsTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\Uuid\\UuidTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
-        - '#Method Brainbits\\FunctionalTestHelpers\\Tests\\ZipContents\\ZipContentsTraitTest::.*\(\) is protected, but since the containing class is final, it can be private#'
         - '#Safe\\DateTimeImmutable#'
         - '#SchemaBuilder::foo\(\)#'
     ergebnis:
