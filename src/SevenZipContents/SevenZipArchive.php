@@ -38,6 +38,10 @@ final class SevenZipArchive extends Archive7z
             }
         }
 
+        if (!$binary7z) {
+            $binary7z = null;
+        }
+
         self::$binary7z = self::makeBinary7z($binary7z);
 
         return self::$binary7z;

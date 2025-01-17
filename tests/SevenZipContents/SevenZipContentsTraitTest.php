@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Tests\SevenZipContents;
 
+use Archive7z\Exception;
+use Brainbits\FunctionalTestHelpers\SevenZipContents\SevenZipContents;
 use Brainbits\FunctionalTestHelpers\SevenZipContents\SevenZipContentsTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\ExpectationFailedException;
@@ -15,6 +17,18 @@ final class SevenZipContentsTraitTest extends TestCase
     use SevenZipContentsTrait;
 
     private const FILE = __DIR__ . '/../files/test.7z';
+
+    protected function setUp(): void
+    {
+        try {
+            $zipContents = new SevenZipContents();
+            $zipContents->readFile(self::FILE);
+        } catch (Exception $e) {
+            if ($e->getMessage() === 'Binary of 7-zip is not available') {
+                $this->markTestSkipped('Binary of 7-zip is not available');
+            }
+        }
+    }
 
     public function testAssertZipHasSizeForZipFileFails(): void
     {

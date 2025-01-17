@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Tests\SevenZipContents;
 
+use Archive7z\Exception;
 use Brainbits\FunctionalTestHelpers\SevenZipContents\InvalidArchive;
 use Brainbits\FunctionalTestHelpers\SevenZipContents\SevenZipArchive;
 use Brainbits\FunctionalTestHelpers\SevenZipContents\SevenZipContents;
@@ -23,6 +24,18 @@ use function sprintf;
 final class SevenZipContentsTest extends TestCase
 {
     private const FILE_7Z = __DIR__ . '/../files/test.7z';
+
+    protected function setUp(): void
+    {
+        try {
+            $zipContents = new SevenZipContents();
+            $zipContents->readFile(self::FILE_7Z);
+        } catch (Exception $e) {
+            if ($e->getMessage() === 'Binary of 7-zip is not available') {
+                $this->markTestSkipped('Binary of 7-zip is not available');
+            }
+        }
+    }
 
     public function testItNeedsFile(): void
     {
