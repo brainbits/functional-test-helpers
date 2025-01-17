@@ -301,11 +301,11 @@ final class MockRequestBuilder
         return $this;
     }
 
-    public function multipartFromFile(string $name, File $file): self
+    public function multipartFromFile(string $name, File $file, string|null $mimetype = null): self
     {
         $this->multipart(
             $name,
-            mimetype: $file->getMimeType(),
+            mimetype: $mimetype ?? $file->getMimeType(),
             filename: $file->getBasename(),
             content: $file->getContent(),
         );
