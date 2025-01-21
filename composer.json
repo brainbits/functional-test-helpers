@@ -16,7 +16,7 @@
         "brainbits/phpcs-standard": "^7.0",
         "brainbits/phpstan-rules": "^3.1.2",
         "dama/doctrine-test-bundle": "^8.0",
-        "doctrine/dbal": "^3.4",
+        "doctrine/dbal": "^4.0",
         "ergebnis/phpstan-rules": "^2.5.2",
         "gemorroj/archive7z": "^5.3",
         "jangregor/phpstan-prophecy": "^1.0.2",
