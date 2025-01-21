@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use DOMDocument;
+use PHPUnit\Framework\AssertionFailedError;
 
 use function is_callable;
 use function is_string;
@@ -107,7 +108,11 @@ final class MockRequestMatcher
         }
 
         if ($expectation->getThat() !== null) {
-            $reason = ($expectation->getThat())($expectation, $realRequest);
+            try {
+                $reason = ($expectation->getThat())($expectation, $realRequest);
+            } catch (AssertionFailedError $e) {
+                return MockRequestMatch::mismatchingThat($e->getMessage());
+            }
 
             if ($reason) {
                 return MockRequestMatch::mismatchingThat($reason);
