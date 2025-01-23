@@ -23,9 +23,15 @@ final class NoResponseMock extends RuntimeException implements HttpClientMockExc
         return new self('All responses have already been processed');
     }
 
-    public static function withRequest(self $decorated, MockRequestBuilder $request): self
+    public static function withRequest(self $decorated, MockRequestBuilder $requestBuilder): self
     {
-        $message = sprintf('%s for:%s%s%s', $decorated->getMessage(), PHP_EOL, $request, PHP_EOL);
+        $message = sprintf(
+            '%s for:%s%s%s',
+            $decorated->getMessage(),
+            PHP_EOL,
+            $requestBuilder,
+            PHP_EOL,
+        );
 
         return new self($message, $decorated->getCode(), $decorated->getPrevious());
     }

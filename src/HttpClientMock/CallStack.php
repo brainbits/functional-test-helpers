@@ -15,13 +15,13 @@ use function sprintf;
 
 use const PHP_EOL;
 
-/** @implements IteratorAggregate<MockRequestBuilder> */
+/** @implements IteratorAggregate<RealRequest> */
 final class CallStack implements Countable, IteratorAggregate
 {
-    /** @var MockRequestBuilder[] */
+    /** @var RealRequest[] */
     private array $calls;
 
-    public function __construct(MockRequestBuilder ...$calls)
+    public function __construct(RealRequest ...$calls)
     {
         $this->calls = $calls;
     }
@@ -33,7 +33,7 @@ final class CallStack implements Countable, IteratorAggregate
         return new self(...$requests);
     }
 
-    public function first(): MockRequestBuilder|null
+    public function first(): RealRequest|null
     {
         if (!count($this->calls)) {
             return null;
@@ -52,7 +52,7 @@ final class CallStack implements Countable, IteratorAggregate
         return count($this->calls);
     }
 
-    /** @return Traversable<MockRequestBuilder>|MockRequestBuilder[] */
+    /** @return Traversable<RealRequest> */
     public function getIterator(): Traversable
     {
         yield from $this->calls;

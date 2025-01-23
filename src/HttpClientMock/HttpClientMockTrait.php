@@ -7,18 +7,24 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 use ArrayObject;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\HttpClientMockException;
 use Monolog\Logger;
-use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
+use Throwable;
 
+use function array_map;
 use function assert;
-use function class_exists;
+use function explode;
+use function is_string;
+use function Safe\parse_url;
 use function sprintf;
+use function str_contains;
+use function trigger_deprecation;
 use function ucfirst;
+use function urldecode;
 
 /** @mixin TestCase */
 trait HttpClientMockTrait
@@ -27,6 +33,7 @@ trait HttpClientMockTrait
         EventDispatcherInterface $eventDispatcher,
         Logger ...$loggers,
     ): void {
+        /** @var ArrayObject<string, Throwable> $storage */
         $storage = new ArrayObject();
 
         $callbackHandlerFn = static function ($record) use (&$storage): void {
@@ -46,13 +53,7 @@ trait HttpClientMockTrait
             $storage['exception'] = $exception;
         };
 
-        if (class_exists(LogRecord::class)) {
-            // Used when Monolog >= 3.0 is installed
-            $callbackHandler = new CallbackHandler($callbackHandlerFn);
-        } else {
-            // Used when Monolog < 3.0 is installed
-            $callbackHandler = new LegacyCallbackHandler($callbackHandlerFn);
-        }
+        $callbackHandler = new CallbackHandler($callbackHandlerFn);
 
         foreach ($loggers as $logger) {
             $logger->pushHandler($callbackHandler);
@@ -111,7 +112,7 @@ trait HttpClientMockTrait
 
     protected function mockRequest(string|null $method = null, string|callable|null $uri = null): MockRequestBuilder // phpcs:ignore Generic.Files.LineLength.TooLong,SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing.NoSpaceBetweenTypeHintAndParameter
     {
-        if (!self::getContainer()) {
+        if (!self::getContainer()) { // @phpstan-ignore-line
             static::fail(sprintf(
                 'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
                 static::class,
@@ -129,8 +130,39 @@ trait HttpClientMockTrait
         assert($stack instanceof MockRequestBuilderCollection);
 
         $builder = (new MockRequestBuilder())
-            ->method($method)
-            ->uri($uri);
+            ->method($method);
+
+        // legacy start - remove in 8.0.0
+
+        if (is_string($uri) && str_contains($uri, '?')) {
+            trigger_deprecation(
+                'functional-test-helpers',
+                '7.0.0',
+                'Query parameters in uri is deprecated. Use %s instead',
+                'queryParam()',
+            );
+            $uriParts = parse_url($uri);
+            $uri = ($uriParts['scheme'] ?? false ? $uriParts['scheme'] . '://' : '') .
+                ($uriParts['host'] ?? false ? $uriParts['host'] : '') .
+                ($uriParts['path'] ?? '');
+
+            if ($uriParts['query'] ?? false) {
+                $queryParts = explode('&', $uriParts['query']);
+                $queryParts = array_map(static fn ($query) => explode('=', $query), $queryParts);
+
+                foreach ($queryParts as $queryPart) {
+                    if (!$queryPart[0]) {
+                        continue;
+                    }
+
+                    $builder->queryParam($queryPart[0], urldecode($queryPart[1] ?? ''));
+                }
+            }
+        }
+
+        // legacy end - remove in 8.0.0
+
+        $builder->uri($uri);
 
         $stack->addMockRequestBuilder($builder);
 
@@ -144,7 +176,7 @@ trait HttpClientMockTrait
 
     protected function callStack(): CallStack
     {
-        if (!self::getContainer()) {
+        if (!self::getContainer()) { // @phpstan-ignore-line
             static::fail(sprintf(
                 'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
                 static::class,
@@ -268,7 +300,6 @@ trait HttpClientMockTrait
         }
     }
 
-    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithContent(
         string $expected,
         MockRequestBuilder $actualRequest,
@@ -286,7 +317,6 @@ trait HttpClientMockTrait
         }
     }
 
-    /** @param mixed[] $expected */
     protected static function assertRequestMockIsCalledWithFile(
         string $expectedKey,
         string $expectedFilename,
@@ -318,17 +348,6 @@ trait HttpClientMockTrait
                     $message,
                     'Request not called with expected filename "%s": %s',
                     $expectedFilename,
-                    (string) $call,
-                ),
-            );
-
-            self::assertSame(
-                $expectedSize,
-                $multiparts[$expectedKey]['size'],
-                self::mockRequestMessage(
-                    $message,
-                    'Request not called with expected file size "%s": %s',
-                    $expectedSize,
                     (string) $call,
                 ),
             );
@@ -425,7 +444,7 @@ trait HttpClientMockTrait
 
     protected static function assertAllRequestMocksAreCalled(string $message = ''): void
     {
-        if (!self::getContainer()) {
+        if (!self::getContainer()) { // @phpstan-ignore-line
             static::fail(self::mockRequestMessage(
                 $message,
                 'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',

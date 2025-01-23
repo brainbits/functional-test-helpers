@@ -5,52 +5,51 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockRequest;
+use SplObjectStorage;
 
-use function array_pop;
 use function count;
+use function current;
+use function krsort;
 
 final class MockRequestResolver
 {
-    private MockRequestMatcher $matcher;
-
-    public function __construct()
-    {
-        $this->matcher = new MockRequestMatcher();
-    }
-
     public function __invoke(
         MockRequestBuilderCollection $requestBuilders,
-        MockRequestBuilder $realRequest,
+        RealRequest $realRequest,
     ): MockRequestBuilder {
-        $matches = [];
-        $bestScore = null;
-        $bestMatchingRequestBuilders = [];
+        $scoredMatchResults = [];
 
+        if (!count($requestBuilders)) {
+            throw NoMatchingMockRequest::noBuilders($realRequest);
+        }
+
+        $builders = new SplObjectStorage();
         foreach ($requestBuilders as $requestBuilder) {
-            $matches[] = $match = ($this->matcher)($requestBuilder, $realRequest);
-
-            if ($match->isMismatch() || ($bestScore !== null && $match->getScore() < $bestScore)) {
-                continue;
-            }
-
-            if ($bestScore === null || $match->getScore() > $bestScore) {
-                $bestMatchingRequestBuilders = [];
-                $bestScore = $match->getScore();
-            }
-
-            $bestMatchingRequestBuilders[] = $requestBuilder;
+            $matchResult = ($requestBuilder->getMatcher())($realRequest);
+            $scoredMatchResults[$matchResult->getScore()][] = $matchResult;
+            $builders[$matchResult] = $requestBuilder;
         }
 
-        if (count($bestMatchingRequestBuilders) === 0) {
-            throw NoMatchingMockRequest::fromMockRequest($realRequest, $matches);
+        krsort($scoredMatchResults);
+
+        $missedMatchResults = [];
+        if ($scoredMatchResults[0] ?? false) {
+            $missedMatchResults = $scoredMatchResults[0];
+            unset($scoredMatchResults[0]);
         }
 
-        foreach ($bestMatchingRequestBuilders as $requestBuilder) {
-            if ($requestBuilder->hasNextResponse()) {
-                return $requestBuilder;
+        if (count($scoredMatchResults) === 0) {
+            throw NoMatchingMockRequest::fromResults($realRequest, $missedMatchResults);
+        }
+
+        foreach ($scoredMatchResults as $matchResults) {
+            foreach ($matchResults as $matchResult) {
+                if ($builders[$matchResult]->hasNextResponse()) {
+                    return $builders[$matchResult];
+                }
             }
         }
 
-        return array_pop($bestMatchingRequestBuilders);
+        return $builders[current(current($scoredMatchResults))];
     }
 }

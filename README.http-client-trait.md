@@ -7,14 +7,10 @@ To use the mock http client, configure the `MockRequestBuilderCollection` as `mo
 Example symfony config:
 
 ```yaml
-# config/packages/http_client.yaml
+# config/packages/mock_request_builder.yaml
 when@test:
     services:
-        Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection:
-            arguments:
-                - '@Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory'
-
-        Brainbits\FunctionalTestHelpers\HttpClientMock\SymfonyMockResponseFactory: ~
+        Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection: ~
 ```
 
 ```yaml

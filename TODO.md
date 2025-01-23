@@ -1,5 +1,2 @@
 - Make firewall context configurable in RequestBuilder
 - Mark RequestBuilderFactory as Symfony specific
-- Remove json()-deprecation from MockRequestBuilder
-- Create better fail-description for missing MockRequestCollection in test case
-- Make match immutable

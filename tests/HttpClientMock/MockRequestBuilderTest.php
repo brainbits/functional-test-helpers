@@ -7,18 +7,32 @@ namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\AddMockResponseFailed;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MethodMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MultipartMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ThatMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriParams;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\XmlMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\File\File;
 
-use function Safe\file_get_contents;
+use const PHP_EOL;
 
 #[CoversClass(MockRequestBuilder::class)]
 final class MockRequestBuilderTest extends TestCase
 {
+    use RealRequestTrait;
+
     public function testWithoutAnythingSpecifiedARequestIsEmpty(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
@@ -26,118 +40,275 @@ final class MockRequestBuilderTest extends TestCase
         self::assertTrue($mockRequestBuilder->isEmpty());
     }
 
-    public function testWithRequestParametersARequestIsNotEmpty(): void
+    public function testWithMatcherIsNotEmpty(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->requestParam('one', '1');
+        $mockRequestBuilder->method('GET');
 
         self::assertFalse($mockRequestBuilder->isEmpty());
     }
 
-    public function testWithoutContentNoRequestParametersExists(): void
+    public function testMethod(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->method('GET');
 
-        self::assertFalse($mockRequestBuilder->hasRequestParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(new MockRequestMatcher(null, [new MethodMatcher('GET')]), $matcher);
     }
 
-    public function testWithNotDecodableContentNoRequestParametersExists(): void
+    public function testUri(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->content('no form data');
+        $mockRequestBuilder->uri('/query');
 
-        self::assertFalse($mockRequestBuilder->hasRequestParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new UriMatcher('/query', new UriParams())]),
+            $matcher,
+        );
     }
 
-    public function testWithJsonContentNoRequestParametersExists(): void
+    public function testUriWithUriParam(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->json(['value' => 'key=value']);
+        $mockRequestBuilder->uri('/query/{tpl}');
+        $mockRequestBuilder->uriParam('tpl', 'value');
 
-        self::assertFalse($mockRequestBuilder->hasRequestParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new UriMatcher('/query/{tpl}', new UriParams(['tpl' => 'value']))]),
+            $matcher,
+        );
     }
 
-    public function testRequestMayHaveOneRequestParameter(): void
+    public function testQueryParam(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->requestParam('one', '1');
+        $mockRequestBuilder->queryParam('filter', 'firstname');
 
-        self::assertTrue($mockRequestBuilder->hasRequestParams());
-        self::assertSame(['one' => '1'], $mockRequestBuilder->getRequestParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new QueryParamMatcher('filter', 'firstname', [])]),
+            $matcher,
+        );
     }
 
-    public function testRequestMayHaveMultipleRequestParameters(): void
+    public function testMultipleQueryParams(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->requestParam('one', '1');
-        $mockRequestBuilder->requestParam('two', '2');
-        $mockRequestBuilder->requestParam('three', '3');
+        $mockRequestBuilder->queryParam('filter', 'firstname');
+        $mockRequestBuilder->queryParam('orderBy', 'lastname');
 
-        self::assertTrue($mockRequestBuilder->hasRequestParams());
-        self::assertSame(['one' => '1', 'two' => '2', 'three' => '3'], $mockRequestBuilder->getRequestParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(
+                null,
+                [
+                    new QueryParamMatcher('filter', 'firstname', []),
+                    new QueryParamMatcher('orderBy', 'lastname', []),
+                ],
+            ),
+            $matcher,
+        );
     }
 
-    public function testRequestParameterValuesMayBeEmpty(): void
+    public function testXml(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->requestParam('one', '1');
-        $mockRequestBuilder->requestParam('empty', '');
-        $mockRequestBuilder->requestParam('three', '3');
+        $mockRequestBuilder->xml('<?xml version="1.0"?><root><first>abc</first></root>');
 
-        self::assertTrue($mockRequestBuilder->hasRequestParams());
-        self::assertSame(['one' => '1', 'empty' => '', 'three' => '3'], $mockRequestBuilder->getRequestParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new XmlMatcher('<?xml version="1.0"?><root><first>abc</first></root>')]),
+            $matcher,
+        );
     }
 
-    public function testUriIsOptional(): void
+    public function testXmlWithInvalidXmlThrowsException(): void
     {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->uri(null);
+        $this->expectException(InvalidMockRequest::class);
+        $this->expectExceptionMessage('No valid xml: foo');
 
-        self::assertFalse($mockRequestBuilder->hasUri(), 'no uri');
-        self::assertFalse($mockRequestBuilder->hasQueryParams(), 'no query parameters');
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->xml('foo');
     }
 
-    public function testParsesQueryParamsInUri(): void
+    public function testJson(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->uri('http://example.org?one=1&two=2');
+        $mockRequestBuilder->json(['firstname' => 'peter']);
 
-        self::assertSame(['one' => '1', 'two' => '2'], $mockRequestBuilder->getQueryParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new JsonMatcher(['firstname' => 'peter'])]),
+            $matcher,
+        );
     }
 
-    public function testSupportsEncodesQueryParamsInUri(): void
+    public function testWithBasicAuthentication(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->uri('http://example.org?space=%20&quote=%22');
+        $mockRequestBuilder->basicAuthentication('username', 'password');
 
-        self::assertSame(['space' => ' ', 'quote' => '"'], $mockRequestBuilder->getQueryParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new HeaderMatcher('Authorization', 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=')]),
+            $matcher,
+        );
     }
 
-    public function testSupportsQueryParamWithoutValue(): void
+    public function testWithMultipart(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->uri('http://example.org?key');
+        $mockRequestBuilder->multipart('key', 'mimetype', 'filename', 'content');
 
-        self::assertSame(['key' => ''], $mockRequestBuilder->getQueryParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            new MockRequestMatcher(null, [new MultipartMatcher('key', 'mimetype', 'filename', 'content')]),
+            $matcher,
+        );
     }
 
-    public function testSupportsQueryParams(): void
+    public function testWithMultipartFromFile(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->queryParam('one', '1');
-        $mockRequestBuilder->queryParam('two', '2');
-        $mockRequestBuilder->queryParam('three', '%s %s %s', 'a', 'b', 'c');
+        $mockRequestBuilder->multipartFromFile('key', new File(__DIR__ . '/../files/test.txt'));
 
-        self::assertSame(['one' => '1', 'two' => '2', 'three' => 'a b c'], $mockRequestBuilder->getQueryParams());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            // phpcs:ignore Generic.Files.LineLength.TooLong
+            new MockRequestMatcher(null, [new MultipartMatcher('key', 'text/plain', 'test.txt', 'this is a txt file' . PHP_EOL)]),
+            $matcher,
+        );
     }
 
-    public function testIgnoresEmptyQueryString(): void
+    public function testThat(): void
     {
         $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->uri('http://example.org?');
+        $mockRequestBuilder->that(static fn ($request) => true);
 
-        self::assertNull($mockRequestBuilder->getQueryParams());
-        self::assertSame('http://example.org', $mockRequestBuilder->getUri());
+        $matcher = $mockRequestBuilder->getMatcher();
+
+        self::assertEquals(
+            // phpcs:ignore Generic.Files.LineLength.TooLong
+            new MockRequestMatcher(null, [new ThatMatcher(static fn ($request) => true)]),
+            $matcher,
+        );
+    }
+
+    public function testAssertMethod(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertMethod(function (string $method): void {
+            $this->assertSame('POST', $method);
+        });
+
+        $mockRequestBuilder->assert($this->createRealRequest(method: 'POST'));
+    }
+
+    public function testAssertMethodFails(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertUri(function (string $method): void {
+            $this->assertSame('does-not-match', $method);
+        });
+
+        try {
+            $mockRequestBuilder->assert($this->createRealRequest(method: 'POST'));
+        } catch (AssertionFailedError) {
+            return;
+        }
+
+        $this->fail('Expected assertion error was not thrown');
+    }
+
+    public function testAssertUri(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertUri(function (string $uri): void {
+            $this->assertSame('/query', $uri);
+        });
+
+        $mockRequestBuilder->assert($this->createRealRequest(uri: '/query'));
+    }
+
+    public function testAssertUriFails(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertUri(function (string $content): void {
+            $this->assertSame('does-not-match', $content);
+        });
+
+        try {
+            $mockRequestBuilder->assert($this->createRealRequest(uri: '/query'));
+        } catch (AssertionFailedError) {
+            return;
+        }
+
+        $this->fail('Expected assertion error was not thrown');
+    }
+
+    public function testAssertContent(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertContent(function (string $content): void {
+            $this->assertSame('this is content', $content);
+        });
+
+        $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
+    }
+
+    public function testAssertContentFails(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertContent(function (string $content): void {
+            $this->assertSame('does-not-match', $content);
+        });
+
+        try {
+            $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
+        } catch (AssertionFailedError) {
+            return;
+        }
+
+        $this->fail('Expected assertion error was not thrown');
+    }
+
+    public function testAssertThat(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertThat(function (RealRequest $realRequest): void {
+            $this->assertSame('this is content', $realRequest->getContent());
+        });
+
+        $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
+    }
+
+    public function testAssertThatFails(): void
+    {
+        $mockRequestBuilder = new MockRequestBuilder();
+        $mockRequestBuilder->assertThat(function (RealRequest $realRequest): void {
+            $this->assertSame('does-not-match', $realRequest->getContent());
+        });
+
+        try {
+            $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
+        } catch (AssertionFailedError) {
+            return;
+        }
+
+        $this->fail('Expected assertion error was not thrown');
     }
 
     public function testEmptyResponsesThrowsException(): void
@@ -227,103 +398,5 @@ final class MockRequestBuilderTest extends TestCase
             ->resetResponses();
 
         self::assertFalse($mockRequestBuilder->hasResponse());
-    }
-
-    public function testXmlStringsAreDetectedAsXml(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->content('<root><first>abc</first></root>');
-
-        self::assertTrue($mockRequestBuilder->isXml());
-        self::assertFalse($mockRequestBuilder->isEmpty());
-        self::assertFalse($mockRequestBuilder->isJson());
-    }
-
-    public function testXmlStringsAreAccessibleAsSimpleXmlObjects(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->content('<root><first>abc</first></root>');
-
-        self::assertSame('abc', (string) $mockRequestBuilder->getXml()->first);
-    }
-
-    public function testXmlStringsWithNamespacesAreAccessibleAsSimpleXmlObjects(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->content('<root xmlns="http://example.org/xml"><first>abc</first></root>');
-
-        $xml = $mockRequestBuilder->getXml(['x' => 'http://example.org/xml']);
-
-        self::assertSame('abc', (string) $xml->xpath('//x:first')[0]);
-    }
-
-    public function testWithJsonContent(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->json(['value' => 'key=value']);
-
-        self::assertTrue($mockRequestBuilder->isJson());
-        self::assertSame(['value' => 'key=value'], $mockRequestBuilder->getJson());
-    }
-
-    public function testWithInvalidXmlThrowsException(): void
-    {
-        $this->expectException(InvalidMockRequest::class);
-        $this->expectExceptionMessage('No valid xml: foo');
-
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->xml('foo');
-    }
-
-    public function testWithXmlContent(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->xml('<foo/>');
-
-        self::assertTrue($mockRequestBuilder->isXml());
-        self::assertXmlStringEqualsXmlString('<?xml version="1.0"?><foo/>', $mockRequestBuilder->getXml()->saveXML());
-    }
-
-    public function testWithBasicAuthentication(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->basicAuthentication('username', 'password');
-
-        $this->assertSame('Basic dXNlcm5hbWU6cGFzc3dvcmQ=', $mockRequestBuilder->getHeader('Authorization'));
-    }
-
-    public function testWithMultipart(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->multipart('key', 'mimetype', 'filename', 'content');
-
-        $this->assertTrue($mockRequestBuilder->hasMultiparts());
-        $this->assertSame(
-            [
-                'key' => [
-                    'mimetype' => 'mimetype',
-                    'filename' => 'filename',
-                    'content' => 'content',
-                ],
-            ],
-            $mockRequestBuilder->getMultiparts(),
-        );
-    }
-
-    public function testWithMultipartFromFile(): void
-    {
-        $mockRequestBuilder = new MockRequestBuilder();
-        $mockRequestBuilder->multipartFromFile('key', new File(__DIR__ . '/../files/test.zip'));
-
-        $this->assertSame(
-            [
-                'key' => [
-                    'mimetype' => 'application/zip',
-                    'filename' => 'test.zip',
-                    'content' => file_get_contents(__DIR__ . '/../files/test.zip'),
-                ],
-            ],
-            $mockRequestBuilder->getMultiparts(),
-        );
     }
 }

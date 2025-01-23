@@ -4,24 +4,26 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
+use Countable;
 use IteratorAggregate;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Traversable;
 
 use function array_map;
+use function count;
 use function is_callable;
 
 /** @implements IteratorAggregate<MockRequestBuilder> */
-final class MockRequestBuilderCollection implements IteratorAggregate
+final class MockRequestBuilderCollection implements IteratorAggregate, Countable
 {
-    private MockRequestBuilderFactory $requestFactory;
+    private RealRequestFactory $requestFactory;
     private MockRequestResolver $requestResolver;
     /** @var MockRequestBuilder[] */
     private array $requestBuilders = [];
 
-    public function __construct(private MockResponseFactory $responseFactory)
+    public function __construct()
     {
-        $this->requestFactory = new MockRequestBuilderFactory();
+        $this->requestFactory = new RealRequestFactory();
         $this->requestResolver = new MockRequestResolver();
     }
 
@@ -31,13 +33,14 @@ final class MockRequestBuilderCollection implements IteratorAggregate
         $realRequest = ($this->requestFactory)($method, $url, $options);
 
         $requestBuilder = ($this->requestResolver)($this, $realRequest);
+        $requestBuilder->assert($realRequest);
         $requestBuilder->called($realRequest);
 
         if ($requestBuilder->onMatch && is_callable($requestBuilder->onMatch)) { // @phpstan-ignore-line
             ($requestBuilder->onMatch)($realRequest);
         }
 
-        return $this->responseFactory->fromRequestBuilder($requestBuilder);
+        return $requestBuilder->getResponse($realRequest);
     }
 
     public function addMockRequestBuilder(MockRequestBuilder $mockRequestBuilder): void
@@ -59,5 +62,10 @@ final class MockRequestBuilderCollection implements IteratorAggregate
     public function getIterator(): Traversable
     {
         yield from $this->requestBuilders;
+    }
+
+    public function count(): int
+    {
+        return count($this->requestBuilders);
     }
 }

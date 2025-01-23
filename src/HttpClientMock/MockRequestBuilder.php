@@ -5,73 +5,48 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\AddMockResponseFailed;
-use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
-use DOMDocument;
-use Safe\Exceptions\JsonException;
-use SimpleXMLElement;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\CatchAllMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ContentMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Matcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MethodMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MultipartMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\RequestParamMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ThatMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriParams;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\XmlMatcher;
+use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\File\File;
 use Throwable;
 
-use function array_key_exists;
-use function array_keys;
-use function array_map;
-use function array_values;
 use function base64_encode;
 use function count;
-use function error_reporting;
-use function explode;
+use function implode;
 use function is_array;
-use function is_callable;
-use function is_string;
-use function libxml_get_errors;
-use function libxml_use_internal_errors;
-use function Safe\json_decode;
-use function Safe\json_encode;
-use function Safe\preg_match;
-use function Safe\simplexml_load_string;
 use function sprintf;
-use function str_contains;
-use function str_repeat;
-use function str_replace;
-use function strpos;
 use function strtolower;
-use function substr;
 use function trim;
-use function ucwords;
-use function urldecode;
-use function urlencode;
-
-use const PHP_EOL;
 
 final class MockRequestBuilder
 {
-    private string|null $method = null;
-
-    /** @var string|callable|null  */
-    private mixed $uri = null;
-
-    /** @var array<string,string>  */
-    private array $uriParams = [];
-
-    /** @var mixed[]|null */
-    private array|null $headers = null;
-
-    /** @var mixed[]|null */
-    private array|null $queryParams = null;
-
-    private string|null $content = null;
-
-    /** @var array<string, array{filename?: string|null, mimetype?: string|null, content?: string|null}>|null */
-    private array|null $multiparts = null;
-
-    /** @var callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string|null */
-    private mixed $that = null;
+    public string|null $name = null;
 
     private MockResponseCollection $responses;
 
-    /** @var self[] */
+    /** @var Matcher[]|array<Matcher[]> */
+    private array $matchers = [];
+
+    /** @var array<callable> */
+    private array $assertions = [];
+
+    /** @var RealRequest[]  */
     private array $calls = [];
+
+    private UriParams $uriParams;
 
     /** @var callable|null */
     public mixed $onMatch = null;
@@ -79,68 +54,66 @@ final class MockRequestBuilder
     public function __construct()
     {
         $this->responses = new MockResponseCollection();
+        $this->uriParams = new UriParams();
     }
 
-    public function method(string|null $method): self
+    public function getMatcher(): MockRequestMatcher
     {
-        $this->method = $method;
+        $matchers = [];
+        foreach ($this->matchers as $matcher) {
+            if (is_array($matcher)) {
+                foreach ($matcher as $nestedMatcher) {
+                    $matchers[] = $nestedMatcher;
+                }
+            } else {
+                $matchers[] = $matcher;
+            }
+        }
+
+        if (!count($this->matchers)) {
+            $matchers[] = new CatchAllMatcher();
+        }
+
+        return new MockRequestMatcher($this->name, $matchers);
+    }
+
+    public function getResponse(RealRequest $realRequest): MockResponse
+    {
+        $responseBuilder = $this->nextResponse();
+
+        if ($responseBuilder instanceof Throwable) {
+            throw $responseBuilder;
+        }
+
+        return $responseBuilder->getResponse($realRequest);
+    }
+
+    public function name(string $name): self
+    {
+        $this->name = $name;
 
         return $this;
     }
 
-    public function uri(string|callable|null $uri): self // phpcs:ignore Generic.Files.LineLength.TooLong,SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing.NoSpaceBetweenTypeHintAndParameter
+    public function method(string|callable $method): self
     {
-        if ($uri === null) {
-            $this->uri = null;
+        $this->matchers['method'] = new MethodMatcher($method);
 
-            return $this;
-        }
+        return $this;
+    }
 
-        if (is_callable($uri)) {
-            $this->uri = $uri;
-
-            return $this;
-        }
-
-        $queryParamStart = strpos($uri, '?');
-
-        if ($queryParamStart === false) {
-            $this->uri = $uri;
-        } else {
-            $this->uri = substr($uri, 0, $queryParamStart);
-            $this->applyEncodedQueryParams(substr($uri, $queryParamStart + 1));
-        }
+    public function uri(string|callable $uri): self
+    {
+        $this->matchers['uri'] = new UriMatcher($uri, $this->uriParams);
 
         return $this;
     }
 
     public function header(string $key, string $value): self
     {
-        $this->headers ??= [];
-        $this->headers[strtolower($key)] = $value;
+        $this->matchers['headers'][strtolower($key)] = new HeaderMatcher($key, $value);
 
         return $this;
-    }
-
-    public function hasHeaders(): bool
-    {
-        return $this->headers !== null;
-    }
-
-    /** @return mixed[]|null */
-    public function getHeaders(): array|null
-    {
-        return $this->headers;
-    }
-
-    public function hasHeader(string $key): bool
-    {
-        return array_key_exists($key, $this->headers);
-    }
-
-    public function getHeader(string $key): mixed
-    {
-        return $this->headers[strtolower($key)] ?? null;
     }
 
     public function basicAuthentication(string $username, string $password): self
@@ -150,131 +123,92 @@ final class MockRequestBuilder
         return $this->header('Authorization', sprintf('Basic %s', $token));
     }
 
-    public function content(string $content): self
+    public function content(string|callable $content): self
     {
-        $this->content = $content;
+        $this->matchers['content'] = new ContentMatcher($content);
 
         return $this;
     }
 
-    public function getContent(): string|null
+    /** @param callable(string $method, self $requestBuilder): void $assert */
+    public function assertMethod(callable $assert): self
     {
-        return $this->content;
-    }
-
-    public function hasContent(): bool
-    {
-        return $this->content !== null;
-    }
-
-    /** @param mixed[] $data */
-    public function json(array $data): self
-    {
-        $this->content(json_encode($data));
+        // phpcs:ignore Generic.Files.LineLength.TooLong
+        $this->assertions[] = static fn (RealRequest $realRequest, self $requestBuilder) => $assert($realRequest->getMethod(), $requestBuilder);
 
         return $this;
     }
 
-    public function isJson(): bool
+    /** @param callable(string $uri, self $requestBuilder): void $assert */
+    public function assertUri(callable $assert): self
     {
-        if (!$this->hasContent()) {
-            return false;
-        }
-
-        try {
-            json_decode($this->content, true);
-        } catch (JsonException) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /** @return mixed[] */
-    public function getJson(): array|null
-    {
-        if (!$this->isJson()) {
-            return null;
-        }
-
-        return json_decode($this->content, true);
-    }
-
-    public function xml(string $data): self
-    {
-        if (!$this->isXmlString($data)) {
-            throw InvalidMockRequest::notXml($data);
-        }
-
-        $this->content($data);
+        // phpcs:ignore Generic.Files.LineLength.TooLong
+        $this->assertions[] = static fn (RealRequest $realRequest, self $requestBuilder) => $assert($realRequest->getUri(), $requestBuilder);
 
         return $this;
     }
 
-    public function isXml(): bool
+    /** @param callable(string $content, self $requestBuilder): void $assert */
+    public function assertContent(callable $assert): self
     {
-        if (!$this->hasContent()) {
-            return false;
-        }
+        // phpcs:ignore Generic.Files.LineLength.TooLong
+        $this->assertions[] = static fn (RealRequest $realRequest, self $requestBuilder) => $assert($realRequest->getContent(), $requestBuilder);
 
-        return $this->isXmlString($this->getContent());
+        return $this;
     }
 
-    /** @param array<string, string> $namespaces */
-    public function getXml(array $namespaces = []): SimpleXMLElement|null
+    /** @param callable(RealRequest $realRequest, self $requestBuilder): void $assert */
+    public function assertThat(callable $assert): self
     {
-        if (!$this->isXml()) {
-            return null;
+        $this->assertions[] = $assert;
+
+        return $this;
+    }
+
+    public function assert(RealRequest $realRequest): void
+    {
+        foreach ($this->assertions as $assertion) {
+            $assertion($realRequest, $this);
         }
+    }
 
-        $xml = simplexml_load_string($this->content);
+    /** @param mixed[]|callable $data */
+    public function json(array|callable $data): self
+    {
+        $this->matchers['json'] = new JsonMatcher($data);
 
-        foreach ($namespaces as $prefix => $namespace) {
-            $xml->registerXPathNamespace($prefix, $namespace);
-        }
+        return $this;
+    }
 
-        return $xml;
+    public function xml(string|callable $xml): self
+    {
+        $this->matchers['xml'] = new XmlMatcher($xml);
+
+        return $this;
     }
 
     public function queryParam(string $key, string $value, string ...$placeholders): self
     {
-        $this->queryParams ??= [];
-        $this->queryParams[$key] = sprintf($value, ...$placeholders);
+        $this->matchers['queryParams'] ??= [];
+        $this->matchers['queryParams'][$key] = new QueryParamMatcher($key, $value, $placeholders);
 
         return $this;
     }
 
-    /** @return string[] */
-    public function getQueryParams(): array|null
-    {
-        return $this->queryParams;
-    }
-
-    public function hasQueryParams(): bool
-    {
-        return $this->queryParams !== null;
-    }
-
     public function requestParam(string $key, string $value): self
     {
+        $this->matchers['requestParams'] ??= [];
+        $this->matchers['requestParams'][$key] = new RequestParamMatcher($key, $value);
+
+        /*
         if ((string) $this->content !== '') {
             $this->content .= '&';
         }
 
         $this->content .= sprintf('%s=%s', urlencode($key), urlencode($value));
+        */
 
         return $this;
-    }
-
-    /** @return string[] */
-    public function getRequestParams(): array
-    {
-        return $this->parseEncodedParams((string) $this->content);
-    }
-
-    public function hasRequestParams(): bool
-    {
-        return (bool) preg_match('/[^=]+=[^=]*(&[^=]+=[^=]*)*/', (string) $this->content) && !$this->isJson();
     }
 
     public function multipart(
@@ -283,20 +217,8 @@ final class MockRequestBuilder
         string|null $filename = null,
         string|null $content = null,
     ): self {
-        $this->multiparts ??= [];
-        $this->multiparts[$name] = [];
-
-        if ($mimetype !== null) {
-            $this->multiparts[$name]['mimetype'] = $mimetype;
-        }
-
-        if ($filename !== null) {
-            $this->multiparts[$name]['filename'] = $filename;
-        }
-
-        if ($content !== null) {
-            $this->multiparts[$name]['content'] = $content;
-        }
+        $this->matchers['multiparts'] ??= [];
+        $this->matchers['multiparts'][$name] = new MultipartMatcher($name, $mimetype, $filename, $content);
 
         return $this;
     }
@@ -313,70 +235,19 @@ final class MockRequestBuilder
         return $this;
     }
 
-    /** @return array<string, array{filename?: string|null, mimetype?: string|null, content?: string|null}>|null */
-    public function getMultiparts(): array|null
-    {
-        return $this->multiparts;
-    }
-
-    public function hasMultiparts(): bool
-    {
-        return is_array($this->multiparts) && count($this->multiparts) > 0;
-    }
-
-    public function uriParam(string $key, mixed $value): self
-    {
-        $this->uriParams[$key] = (string) $value;
-
-        return $this;
-    }
-
-    public function getMethod(): string|null
-    {
-        return $this->method;
-    }
-
-    public function hasUri(): bool
-    {
-        return $this->uri !== null;
-    }
-
-    public function getUri(): string|callable|null
-    {
-        if (is_string($this->uri)) {
-            return $this->replaceUriParams($this->uri, $this->uriParams);
-        }
-
-        return $this->uri;
-    }
-
-    public function hasUriParams(): bool
-    {
-        return (bool) $this->uriParams;
-    }
-
-    /** @return array<string,string> */
-    public function getUriParams(): array
-    {
-        return $this->uriParams;
-    }
-
-    /** @param callable(MockRequestBuilder $expectation, MockRequestBuilder $realRequest): ?string $that */
+    /** @param callable(RealRequest $realRequest): ?bool $that */
     public function that(callable $that): self
     {
-        $this->that = $that;
+        $this->matchers['that'] = new ThatMatcher($that);
 
         return $this;
     }
 
-    public function hasThat(): bool
+    public function uriParam(string $key, string $value): self
     {
-        return $this->that !== null;
-    }
+        $this->uriParams->set($key, $value);
 
-    public function getThat(): callable|null
-    {
-        return $this->that;
+        return $this;
     }
 
     public function onMatch(callable $fn): self
@@ -458,39 +329,52 @@ final class MockRequestBuilder
 
     public function __toString(): string
     {
-        $string = '';
+        $parts = [];
 
-        if ($this->method) {
-            $string .= $this->method . ' ';
+        if ($this->matchers['method'] ?? false) {
+            $parts[] = $this->matchers['method'];
         }
 
-        if ($this->uri) {
-            if (is_callable($this->uri)) {
-                $string .= '<callable> ';
-            } else {
-                $string .= $this->uri . ' ';
+        if ($this->matchers['uri'] ?? false) {
+            $parts[] = $this->matchers['uri'];
+        }
+
+        if ($this->matchers['headers'] ?? false) {
+            foreach ($this->matchers['headers'] as $header) {
+                $parts[] = (string) $header;
             }
         }
 
-        if ($this->headers) {
-            foreach ($this->headers as $key => $value) {
-                $key = str_replace('-', ' ', $key);
-                $key = ucwords($key);
-                $key = str_replace(' ', '-', $key);
-
-                $string .= sprintf('%s%s: %s', PHP_EOL, $key, $value);
+        if ($this->matchers['queryParams'] ?? false) {
+            foreach ($this->matchers['queryParams'] as $queryParam) {
+                $parts[] = (string) $queryParam;
             }
         }
 
-        if ($this->hasContent()) {
-            $string .= ($string ? str_repeat(PHP_EOL, 2) : '');
-            $string .= $this->content;
+        if ($this->matchers['requestParams'] ?? false) {
+            foreach ($this->matchers['requestParams'] as $requestParam) {
+                $parts[] = (string) $requestParam;
+            }
         }
 
-        return trim($string);
+        if ($this->matchers['multiparts'] ?? false) {
+            foreach ($this->matchers['multiparts'] as $multipart) {
+                $parts[] = (string) $multipart;
+            }
+        }
+
+        if ($this->matchers['json'] ?? false) {
+            $parts[] = (string) $this->matchers['json'];
+        } elseif ($this->matchers['xml'] ?? false) {
+            $parts[] = (string) $this->matchers['xml'];
+        } elseif ($this->matchers['content'] ?? false) {
+            $parts[] = (string) $this->matchers['content'];
+        }
+
+        return trim(implode(' && ', $parts));
     }
 
-    public function called(self $request): self
+    public function called(RealRequest $request): self
     {
         $this->calls[] = $request;
 
@@ -504,68 +388,6 @@ final class MockRequestBuilder
 
     public function isEmpty(): bool
     {
-        return $this->method === null &&
-               $this->uri === null &&
-               $this->headers === null &&
-               $this->content === null &&
-               $this->multiparts === null;
-    }
-
-    /** @param array<string,string> $uriParams */
-    private static function replaceUriParams(string $uri, array $uriParams): mixed
-    {
-        $keys = array_keys($uriParams);
-        $values = array_values($uriParams);
-        $placeholders = array_map(static fn ($key) => sprintf('{%s}', $key), $keys);
-
-        return str_replace($placeholders, $values, $uri);
-    }
-
-    private function applyEncodedQueryParams(string $encodedParams): void
-    {
-        foreach ($this->parseEncodedParams($encodedParams) as $key => $value) {
-            $this->queryParam($key, $value);
-        }
-    }
-
-    /** @return string[] */
-    private function parseEncodedParams(string $encodedParams): array
-    {
-        if ($encodedParams === '') {
-            return [];
-        }
-
-        $params = [];
-
-        foreach (explode('&', $encodedParams) as $keyValue) {
-            if (str_contains($keyValue, '=')) {
-                [$key, $value] = explode('=', (string) $keyValue);
-            } else {
-                $key = $keyValue;
-                $value = '';
-            }
-
-            $params[urldecode((string) $key)] = urldecode((string) $value);
-        }
-
-        return $params;
-    }
-
-    private function isXmlString(string $data): bool
-    {
-        $document = new DOMDocument();
-        $internal = libxml_use_internal_errors(true);
-        $reporting = error_reporting(0);
-
-        try {
-            $document->loadXML($data);
-
-            $errors = libxml_get_errors();
-        } finally {
-            libxml_use_internal_errors($internal);
-            error_reporting($reporting);
-        }
-
-        return count($errors) === 0;
+        return !$this->matchers;
     }
 }

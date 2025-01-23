@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 
-use function array_key_exists;
+use Symfony\Component\HttpClient\Response\MockResponse;
+
 use function count;
-use function Safe\json_decode;
 use function Safe\json_encode;
 use function sprintf;
 use function str_repeat;
@@ -23,6 +23,8 @@ final class MockResponseBuilder
     private array $headers = [];
     private string|null $content = null;
     private int|null $code = null;
+    /** @var callable|null */
+    private mixed $callback = null;
 
     public function content(string|null $content): self
     {
@@ -83,70 +85,48 @@ final class MockResponseBuilder
         return $this;
     }
 
-    /** @return mixed[] */
-    public function getHeaders(): array
+    /** @param callable(RealRequest $realRequest):MockResponse $callback */
+    public function fromCallback(callable $callback): self
     {
-        return $this->headers;
+        $this->callback = $callback;
+
+        return $this;
     }
 
-    public function hasHeaders(): bool
+    public function getResponse(RealRequest $realRequest): MockResponse
     {
-        return count($this->headers) > 0;
-    }
-
-    public function getHeader(string $key): string|null
-    {
-        if ($this->hasHeader($key)) {
-            return $this->headers[strtolower($key)];
+        if ($this->callback) {
+            return ($this->callback)($realRequest);
         }
 
-        return null;
-    }
+        $info = [];
 
-    public function hasHeader(string $key): bool
-    {
-        return array_key_exists(strtolower($key), $this->headers);
-    }
-
-    public function getContent(): string|null
-    {
-        return $this->content;
-    }
-
-    public function hasContent(): bool
-    {
-        return $this->content !== null;
-    }
-
-    /** @return mixed[]|null */
-    public function getJson(): array|null
-    {
-        if ($this->content === null) {
-            return null;
+        if ($this->code) {
+            $info['http_code'] = $this->code;
         }
 
-        return json_decode($this->content, true);
-    }
+        if (count($this->headers)) {
+            $info['response_headers'] = $this->headers;
+        }
 
-    public function getCode(): int|null
-    {
-        return $this->code;
-    }
+        $body = (string) $this->content;
 
-    public function hasCode(): bool
-    {
-        return $this->code !== null;
+        return new MockResponse($body, $info);
     }
 
     public function __toString(): string
     {
-        $string = '';
-
-        if ($this->hasCode()) {
-            $string .= sprintf('HTTP Code: %d', $this->getCode());
+        if ($this->callback) {
+            return 'callable(realRequest)';
         }
 
-        if ($this->hasHeaders()) {
+        $string = '';
+
+        if ($this->code) {
+            $string .= sprintf('HTTP Code: %d', $this->code);
+        }
+
+        if (count($this->headers)) {
             foreach ($this->headers as $key => $value) {
                 $key = str_replace('-', ' ', $key);
                 $key = ucwords($key);
@@ -156,7 +136,7 @@ final class MockResponseBuilder
             }
         }
 
-        if ($this->hasContent()) {
+        if ($this->content) {
             $string .= ($string ? str_repeat(PHP_EOL, 2) : '');
             $string .= $this->content;
         }
