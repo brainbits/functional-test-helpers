@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\ZipContents;
 
 use Brainbits\FunctionalTestHelpers\ZipContents\ZipContentsTrait;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
 use function Safe\filesize;
 use function Safe\fopen;
 
-#[CoversClass(ZipContentsTrait::class)]
 final class ZipContentsTraitTest extends TestCase
 {
     use ZipContentsTrait;

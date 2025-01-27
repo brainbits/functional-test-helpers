@@ -7,11 +7,9 @@ namespace Brainbits\FunctionalTestHelpers\Tests\SevenZipContents;
 use Archive7z\Exception;
 use Brainbits\FunctionalTestHelpers\SevenZipContents\SevenZipContents;
 use Brainbits\FunctionalTestHelpers\SevenZipContents\SevenZipContentsTrait;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(SevenZipContentsTrait::class)]
 final class SevenZipContentsTraitTest extends TestCase
 {
     use SevenZipContentsTrait;

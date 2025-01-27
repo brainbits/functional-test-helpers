@@ -10,7 +10,6 @@ use Brainbits\FunctionalTestHelpers\Schema\SchemaTrait;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStrategy;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +17,6 @@ use function getenv;
 use function Safe\putenv;
 use function sprintf;
 
-#[CoversClass(SchemaTrait::class)]
 final class SchemaTraitTest extends TestCase
 {
     use SchemaTrait;
