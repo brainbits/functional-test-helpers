@@ -9,6 +9,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 
+use function sprintf;
+
 #[CoversClass(MockRequestBuilderFactory::class)]
 final class MockRequestBuilderFactoryTest extends TestCase
 {
@@ -52,13 +54,17 @@ final class MockRequestBuilderFactoryTest extends TestCase
 
     public function testBuildsRequestWithCallableInBody(): void
     {
+        $size = 1;
         $body = $this->getMockBuilder(StreamInterface::class)->getMock();
-        $body->method('read')
+        $body
+            ->expects(self::once())
+            ->method('read')
+            ->with($size)
             ->willReturn('{"foo": "bar"}');
 
         $options = [
             'headers' => [
-                'Content-Length: 1',
+                sprintf('Content-Length: %d', $size),
                 'Content-Type: application/json',
             ],
             'body' => static fn (int $size) => $body->read($size),

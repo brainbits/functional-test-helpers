@@ -132,7 +132,7 @@ final class MockRequestBuilderFactory
         }
 
         if (is_callable($body)) {
-            $mockRequestBuilder->content((string) $body());
+            $mockRequestBuilder->content((string) $body((int) $contentLength));
 
             return;
         }
