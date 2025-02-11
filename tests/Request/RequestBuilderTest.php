@@ -14,7 +14,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\User\InMemoryUser;
 
 use function current;
-use function method_exists;
 use function Safe\json_encode;
 
 #[CoversClass(RequestBuilder::class)]
@@ -232,10 +231,6 @@ final class RequestBuilderTest extends TestCase
 
     public function testAuthorizationHeaderIsSetOnAuthLoginWithDeprecatedFindUser(): void
     {
-        if (!method_exists(KernelBrowser::class, 'loginUser')) {
-            $this->markTestSkipped('authLogin() only available for symfony/framework-bundle >= 5.1');
-        }
-
         $browser = $this->createMock(KernelBrowser::class);
         $browser->expects($this->once())
             ->method('loginUser')
@@ -253,10 +248,6 @@ final class RequestBuilderTest extends TestCase
 
     public function testAuthorizationHeaderIsSetOnAuthLoginCall(): void
     {
-        if (!method_exists(KernelBrowser::class, 'loginUser')) {
-            $this->markTestSkipped('authLogin() only available for symfony/framework-bundle >= 5.1');
-        }
-
         $browser = $this->createMock(KernelBrowser::class);
         $browser->expects($this->never())
             ->method('loginUser');
