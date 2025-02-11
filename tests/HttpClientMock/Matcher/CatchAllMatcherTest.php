@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock\Matcher;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\CatchAllMatcher;
-use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
 use Brainbits\FunctionalTestHelpers\Tests\HttpClientMock\RealRequestTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +23,6 @@ final class CatchAllMatcherTest extends TestCase
 
         $result = $matcher($realRequest);
 
-        self::assertInstanceOf(Hit::class, $result);
         self::assertScore(1, $result);
         self::assertMatcher('catchAll', $result);
     }

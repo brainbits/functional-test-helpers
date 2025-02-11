@@ -18,7 +18,7 @@ final readonly class ContentMatcher implements Matcher
         $this->content = $content;
     }
 
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
         $expectedContent = $this->content;
         $realContent = $realRequest->getContent();

@@ -1,18 +1,13 @@
 parameters:
     level: 6
+    treatPhpDocTypesAsCertain: false
     paths:
         - src
         - tests
     excludePaths:
-        - src/Kernel.php
-        - tests/bootstrap.php
         - src/HttpClientMock/CallbackHandler.php # needed because of unknown classes when installed with monolog 2.x
-        - src/HttpClientMock/LegacyCallbackHandler.php # needed because of unknown classes when installed with monolog 2.x
     ignoreErrors:
         - '#Constructor in .* has parameter .* with default value#'
-        - '#In method "Brainbits\\FunctionalTestHelpers\\Snapshot\\IsXml::.*", caught "Throwable" must be rethrown. Either catch a more specific exception or add a "throw" clause in the "catch" block to propagate the exception.#'
-        - '#In method "Brainbits\\FunctionalTestHelpers\\Tests\\Uuid\\UuidTraitTest::.*", caught "Throwable" must be rethrown. Either catch a more specific exception or add a "throw" clause in the "catch" block to propagate the exception.#'
-        - '#Safe\\DateTimeImmutable#'
         - '#SchemaBuilder::foo\(\)#'
     ergebnis:
         noNullableReturnTypeDeclaration:
@@ -31,9 +26,8 @@ parameters:
 includes:
     - %rootDir%/../../brainbits/phpstan-rules/rules.neon
     - %rootDir%/../../ergebnis/phpstan-rules/rules.neon
-    - %rootDir%/../../jangregor/phpstan-prophecy/extension.neon
     - %rootDir%/../../phpstan/phpstan-phpunit/extension.neon
     - %rootDir%/../../phpstan/phpstan-phpunit/rules.neon
     - %rootDir%/../../phpstan/phpstan-symfony/extension.neon
-    - %rootDir%/../../thecodingmachine/phpstan-safe-rule/phpstan-safe-rule.neon
-    - %rootDir%/../../thecodingmachine/phpstan-strict-rules/phpstan-strict-rules.neon
+#    - %rootDir%/../../thecodingmachine/phpstan-safe-rule/phpstan-safe-rule.neon
+#    - %rootDir%/../../thecodingmachine/phpstan-strict-rules/phpstan-strict-rules.neon

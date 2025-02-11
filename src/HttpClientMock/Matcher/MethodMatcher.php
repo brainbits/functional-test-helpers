@@ -19,7 +19,7 @@ final readonly class MethodMatcher implements Matcher
         $this->method = $method;
     }
 
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
         $expectedMethod = $this->method;
         $realMethod = $realRequest->getMethod();

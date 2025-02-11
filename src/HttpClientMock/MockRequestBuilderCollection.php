@@ -36,7 +36,7 @@ final class MockRequestBuilderCollection implements IteratorAggregate, Countable
         $requestBuilder->assert($realRequest);
         $requestBuilder->called($realRequest);
 
-        if ($requestBuilder->onMatch && is_callable($requestBuilder->onMatch)) { // @phpstan-ignore-line
+        if ($requestBuilder->onMatch && is_callable($requestBuilder->onMatch)) {
             ($requestBuilder->onMatch)($realRequest);
         }
 
@@ -58,7 +58,7 @@ final class MockRequestBuilderCollection implements IteratorAggregate, Countable
         return CallStack::fromCallStacks(...$callStacks);
     }
 
-    /** @return Traversable<MockRequestBuilder>|MockRequestBuilder[] */
+    /** @return Traversable<MockRequestBuilder> */
     public function getIterator(): Traversable
     {
         yield from $this->requestBuilders;

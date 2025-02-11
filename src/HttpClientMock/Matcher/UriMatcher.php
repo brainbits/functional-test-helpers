@@ -24,7 +24,7 @@ final readonly class UriMatcher implements Matcher
         $this->uri = $uri;
     }
 
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
         $realUri = $realRequest->getUri();
 

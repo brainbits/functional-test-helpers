@@ -15,7 +15,7 @@ final readonly class ThatMatcher implements Matcher
         $this->that = $that;
     }
 
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
         if (($this->that)($realRequest) === false) {
             return Mismatch::mismatchingThat('returned false');

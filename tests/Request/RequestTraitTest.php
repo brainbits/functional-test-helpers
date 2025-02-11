@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 
-use Brainbits\FunctionalTestHelpers\Request\RequestBuilder;
 use Brainbits\FunctionalTestHelpers\Request\RequestTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\BrowserKit\HttpBrowser;
@@ -19,7 +18,6 @@ final class RequestTraitTest extends TestCase
     {
         $builder = $this->build('POST', 'http://foo');
 
-        $this->assertInstanceOf(RequestBuilder::class, $builder);
         $this->assertSame('POST', $builder->getMethod());
         $this->assertSame('http://foo', $builder->getUri());
     }

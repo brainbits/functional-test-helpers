@@ -21,7 +21,7 @@ final readonly class JsonMatcher implements Matcher
         $this->json = $json;
     }
 
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
         $expectedJson = $this->json;
         $realJson = $realRequest->getJson();

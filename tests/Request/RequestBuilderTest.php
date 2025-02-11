@@ -19,18 +19,6 @@ use function Safe\json_encode;
 #[CoversClass(RequestBuilder::class)]
 final class RequestBuilderTest extends TestCase
 {
-    public function testItCanBeCreated(): void
-    {
-        $builder = RequestBuilder::create(
-            static fn (...$params) => $params,
-            static fn (...$params) => $params,
-            'POST',
-            '/test',
-        );
-
-        $this->assertInstanceOf(RequestBuilder::class, $builder);
-    }
-
     public function testMethodIsReturned(): void
     {
         $builder = $this->createRequestBuilder('POST');

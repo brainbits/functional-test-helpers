@@ -8,7 +8,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
 
 final readonly class CatchAllMatcher implements Matcher
 {
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit
     {
         return Hit::catchAll();
     }

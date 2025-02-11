@@ -28,7 +28,7 @@ final readonly class XmlMatcher implements Matcher
         $this->xml = $xml;
     }
 
-    public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing
+    public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
         $expectedXml = $this->xml;
         $realXml = $realRequest->getContent();

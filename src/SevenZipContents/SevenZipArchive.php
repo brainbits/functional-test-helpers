@@ -31,7 +31,7 @@ final class SevenZipArchive extends Archive7z
         $binary7z = null;
         foreach (self::EXECUTABLES as $executable) {
             $resultCode = 0;
-            $binary7z = exec('which ' . escapeshellarg($executable), result_code: $resultCode); // @phpstan-ignore-line
+            $binary7z = exec('which ' . escapeshellarg($executable), result_code: $resultCode);
 
             if ($resultCode === 0 && is_string($binary7z) && $binary7z !== '' && file_exists($binary7z)) {
                 break;

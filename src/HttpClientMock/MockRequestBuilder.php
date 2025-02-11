@@ -306,7 +306,7 @@ final class MockRequestBuilder
         return !$this->responses->isEmpty();
     }
 
-    public function nextResponse(): MockResponseBuilder|Throwable|null
+    public function nextResponse(): MockResponseBuilder|Throwable
     {
         try {
             return $this->responses->next();
