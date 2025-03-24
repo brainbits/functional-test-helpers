@@ -10,6 +10,10 @@ parameters:
         - '#Constructor in .* has parameter .* with default value#'
         - '#SchemaBuilder::foo\(\)#'
     ergebnis:
+        noAssignByReference:
+            enabled: false
+        noParameterPassedByReference:
+            enabled: false
         noNullableReturnTypeDeclaration:
             enabled: false
         noParameterWithNullableTypeDeclaration:

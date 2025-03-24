@@ -316,7 +316,7 @@ final class MockRequestBuilderTest extends TestCase
         $this->expectException(NoResponseMock::class);
         $this->expectExceptionMessage('No response configured for:');
 
-        $mockRequestBuilder = (new MockRequestBuilder());
+        $mockRequestBuilder = new MockRequestBuilder();
 
         $mockRequestBuilder->nextResponse();
     }

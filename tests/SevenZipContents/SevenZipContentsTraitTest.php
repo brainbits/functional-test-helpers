@@ -14,7 +14,7 @@ final class SevenZipContentsTraitTest extends TestCase
 {
     use SevenZipContentsTrait;
 
-    private const FILE = __DIR__ . '/../files/test.7z';
+    private const string FILE = __DIR__ . '/../files/test.7z';
 
     protected function setUp(): void
     {

@@ -15,7 +15,7 @@ final class ZipContentsTraitTest extends TestCase
 {
     use ZipContentsTrait;
 
-    private const FILE = __DIR__ . '/../files/test.zip';
+    private const string FILE = __DIR__ . '/../files/test.zip';
 
     public function testAssertZipHasSizeForZipFileFails(): void
     {

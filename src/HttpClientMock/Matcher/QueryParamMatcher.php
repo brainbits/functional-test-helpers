@@ -7,6 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
 
 use function sprintf;
+use function vsprintf;
 
 final readonly class QueryParamMatcher implements Matcher
 {
@@ -15,7 +16,7 @@ final readonly class QueryParamMatcher implements Matcher
     /** @param array<string> $placeholders */
     public function __construct(private string $key, string $value, array $placeholders)
     {
-        $this->value = sprintf($value, ...$placeholders);
+        $this->value = vsprintf($value, $placeholders);
     }
 
     public function __invoke(RealRequest $realRequest): Hit|Mismatch|Missing

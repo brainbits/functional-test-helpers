@@ -23,7 +23,7 @@ use function sprintf;
 #[CoversClass(SevenZipContents::class)]
 final class SevenZipContentsTest extends TestCase
 {
-    private const FILE_7Z = __DIR__ . '/../files/test.7z';
+    private const string FILE_7Z = __DIR__ . '/../files/test.7z';
 
     protected function setUp(): void
     {

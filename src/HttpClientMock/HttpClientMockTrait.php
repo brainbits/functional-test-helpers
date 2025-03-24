@@ -25,6 +25,7 @@ use function str_contains;
 use function trigger_deprecation;
 use function ucfirst;
 use function urldecode;
+use function vsprintf;
 
 /** @mixin TestCase */
 trait HttpClientMockTrait
@@ -476,7 +477,7 @@ trait HttpClientMockTrait
         string $messageTemplate,
         mixed ...$values,
     ): string {
-        $message = sprintf($messageTemplate, ...$values);
+        $message = vsprintf($messageTemplate, $values);
 
         return $userMessage !== ''
             ? ucfirst($userMessage) . '. ' . $message

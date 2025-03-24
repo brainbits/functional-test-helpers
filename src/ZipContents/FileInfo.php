@@ -18,30 +18,30 @@ use function trim;
 
 final class FileInfo
 {
-    private const COMPRESSION_STORED = 0;
-    private const COMPRESSION_SHRUNK = 1;
-    private const COMPRESSION_REDUCED_FACTOR_1 = 2;
-    private const COMPRESSION_REDUCED_FACTOR_2 = 3;
-    private const COMPRESSION_REDUCED_FACTOR_3 = 4;
-    private const COMPRESSION_REDUCED_FACTOR_4 = 5;
-    private const COMPRESSION_IMPLODED = 6;
-    private const COMPRESSION_DEFLATED = 8;
-    private const COMPRESSION_DEFLATE64 = 9;
-    private const COMPRESSION_PKZIP = 10;
-    private const COMPRESSION_BZIP2 = 12;
-    private const COMPRESSION_LZMA = 14;
-    private const COMPRESSION_CMPSC = 16;
-    private const COMPRESSION_TERSE = 18;
-    private const COMPRESSION_LZ77 = 19;
-    private const COMPRESSION_ZSTD = 93;
-    private const COMPRESSION_MP3 = 94;
-    private const COMPRESSION_XZ = 95;
-    private const COMPRESSION_JPEG = 96;
-    private const COMPRESSION_WAVPACK = 97;
-    private const COMPRESSION_PPMD = 98;
-    private const COMPRESSION_AEX = 99;
+    private const int COMPRESSION_STORED = 0;
+    private const int COMPRESSION_SHRUNK = 1;
+    private const int COMPRESSION_REDUCED_FACTOR_1 = 2;
+    private const int COMPRESSION_REDUCED_FACTOR_2 = 3;
+    private const int COMPRESSION_REDUCED_FACTOR_3 = 4;
+    private const int COMPRESSION_REDUCED_FACTOR_4 = 5;
+    private const int COMPRESSION_IMPLODED = 6;
+    private const int COMPRESSION_DEFLATED = 8;
+    private const int COMPRESSION_DEFLATE64 = 9;
+    private const int COMPRESSION_PKZIP = 10;
+    private const int COMPRESSION_BZIP2 = 12;
+    private const int COMPRESSION_LZMA = 14;
+    private const int COMPRESSION_CMPSC = 16;
+    private const int COMPRESSION_TERSE = 18;
+    private const int COMPRESSION_LZ77 = 19;
+    private const int COMPRESSION_ZSTD = 93;
+    private const int COMPRESSION_MP3 = 94;
+    private const int COMPRESSION_XZ = 95;
+    private const int COMPRESSION_JPEG = 96;
+    private const int COMPRESSION_WAVPACK = 97;
+    private const int COMPRESSION_PPMD = 98;
+    private const int COMPRESSION_AEX = 99;
 
-    private const COMPRESSION_MAP = [
+    private const array COMPRESSION_MAP = [
         self::COMPRESSION_STORED => 'stored (no compression)',
         self::COMPRESSION_SHRUNK => 'Shrunk',
         self::COMPRESSION_REDUCED_FACTOR_1 => 'Reduced with compression factor 1',

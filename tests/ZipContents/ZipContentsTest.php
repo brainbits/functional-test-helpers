@@ -16,7 +16,7 @@ use function sprintf;
 #[CoversClass(ZipContents::class)]
 final class ZipContentsTest extends TestCase
 {
-    private const FILE = __DIR__ . '/../files/test.zip';
+    private const string FILE = __DIR__ . '/../files/test.zip';
 
     public function testItNeedsFile(): void
     {

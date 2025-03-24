@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ZipInfo::class)]
 final class ZipInfoTest extends TestCase
 {
-    private const FILE = __DIR__ . '/../files/test.zip';
+    private const string FILE = __DIR__ . '/../files/test.zip';
 
     public function testZipFile(): void
     {
