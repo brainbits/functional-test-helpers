@@ -187,10 +187,11 @@ final class MockRequestBuilder
         return $this;
     }
 
-    public function queryParam(string $key, string $value, string ...$placeholders): self
+    /** @param string|mixed[] $value */
+    public function queryParam(string $key, string|array $value, string ...$placeholders): self
     {
         $this->matchers['queryParams'] ??= [];
-        $this->matchers['queryParams'][$key] = new QueryParamMatcher($key, $value, $placeholders);
+        $this->matchers['queryParams'][] = new QueryParamMatcher($key, $value, $placeholders);
 
         return $this;
     }
@@ -198,7 +199,7 @@ final class MockRequestBuilder
     public function requestParam(string $key, string $value): self
     {
         $this->matchers['requestParams'] ??= [];
-        $this->matchers['requestParams'][$key] = new RequestParamMatcher($key, $value);
+        $this->matchers['requestParams'][] = new RequestParamMatcher($key, $value);
 
         /*
         if ((string) $this->content !== '') {
@@ -218,7 +219,7 @@ final class MockRequestBuilder
         string|null $content = null,
     ): self {
         $this->matchers['multiparts'] ??= [];
-        $this->matchers['multiparts'][$name] = new MultipartMatcher($name, $mimetype, $filename, $content);
+        $this->matchers['multiparts'][] = new MultipartMatcher($name, $mimetype, $filename, $content);
 
         return $this;
     }

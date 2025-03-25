@@ -8,6 +8,7 @@ use PHPUnit\Util\Json;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
 
+use function is_array;
 use function Safe\json_encode;
 
 use const PHP_EOL;
@@ -131,13 +132,17 @@ final readonly class Mismatch
         );
     }
 
-    public static function mismatchingQueryParam(string $key, string $value, string $otherValue): self
+    /**
+     * @param string|mixed[] $value
+     * @param string|mixed[] $otherValue
+     */
+    public static function mismatchingQueryParam(string $key, string|array $value, string|array $otherValue): self
     {
         return new self(
             'queryParam',
             $key,
-            $value,
-            $otherValue,
+            is_array($value) ? json_encode($value) : $value,
+            is_array($otherValue) ? json_encode($otherValue) : $otherValue,
         );
     }
 
