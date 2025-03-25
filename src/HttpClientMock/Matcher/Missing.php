@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 
+use function is_array;
+use function Safe\json_encode;
+
 final readonly class Missing
 {
     public int $score;
@@ -22,12 +25,13 @@ final readonly class Missing
         );
     }
 
-    public static function missingQueryParam(string $key, string $expected): self
+    /** @param string|mixed[] $expected */
+    public static function missingQueryParam(string $key, string|array $expected): self
     {
         return new self(
             'queryParam',
             $key,
-            $expected,
+            is_array($expected) ? json_encode($expected) : $expected,
         );
     }
 
