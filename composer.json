@@ -16,7 +16,7 @@
         "brainbits/phpcs-standard": "^8.0.0",
         "brainbits/phpstan-rules": "^4.0",
         "dama/doctrine-test-bundle": "^8.2",
-        "doctrine/dbal": "^3.9",
+        "doctrine/dbal": "^4.0",
         "ergebnis/phpstan-rules": "^2.8",
         "gemorroj/archive7z": "^5.7",
         "mikey179/vfsstream": "^1.6.12",
