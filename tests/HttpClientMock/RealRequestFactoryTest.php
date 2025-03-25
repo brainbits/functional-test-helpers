@@ -32,6 +32,26 @@ final class RealRequestFactoryTest extends TestCase
         self::assertSame(['foo' => 'bar'], $request->getJson());
     }
 
+    public function testBuildsRequestWithMultipleQueryParams(): void
+    {
+        $options = ['query_params' => ['name' => ['abc', 'def']]];
+        $request = ($this->realRequestFactory)('POST', 'https://service.com', $options);
+
+        self::assertSame('POST', $request->getMethod());
+        self::assertSame('https://service.com', $request->getUri());
+        self::assertSame(['name' => ['abc', 'def']], $request->getQueryParams());
+    }
+
+    public function testBuildsRequestWithMultipleQueryParamsInUri(): void
+    {
+        $options = [];
+        $request = ($this->realRequestFactory)('POST', 'https://service.com?name[]=abc&name[]=def', $options);
+
+        self::assertSame('POST', $request->getMethod());
+        self::assertSame('https://service.com', $request->getUri());
+        self::assertSame(['name' => ['abc', 'def']], $request->getQueryParams());
+    }
+
     public function testBuildsRequestWithJsonInBody(): void
     {
         $options = [

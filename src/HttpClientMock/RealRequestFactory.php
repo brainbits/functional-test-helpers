@@ -8,6 +8,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\UnprocessableBody;
 use Riverline\MultiPartParser\StreamedPart;
 
 use function array_key_exists;
+use function array_merge;
 use function assert;
 use function explode;
 use function is_array;
@@ -19,6 +20,8 @@ use function Safe\json_decode;
 use function Safe\preg_match;
 use function Safe\rewind;
 use function str_contains;
+use function str_ends_with;
+use function str_replace;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -157,7 +160,18 @@ final class RealRequestFactory
                 $value = '';
             }
 
-            $params[urldecode((string) $key)] = urldecode((string) $value);
+            $key = urldecode($key);
+            $value = urldecode($value);
+
+            if (str_ends_with($key, '[]')) {
+                $key = str_replace('[]', '', $key);
+                $value = array_merge(
+                    $params[$key] ?? [],
+                    [$value],
+                );
+            }
+
+            $params[$key] = $value;
         }
 
         return $params;
