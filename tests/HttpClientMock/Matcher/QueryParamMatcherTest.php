@@ -47,6 +47,45 @@ final class QueryParamMatcherTest extends TestCase
         self::assertMatcher('queryParam', $result);
     }
 
+    public function testMatchQueryParamWithFirstArrayValue(): void
+    {
+        $matcher = new QueryParamMatcher('name[]', 'abc', []);
+
+        $realRequest = $this->createRealRequest(queryParams: ['name' => ['abc', 'def']]);
+
+        $result = $matcher($realRequest);
+
+        self::assertInstanceOf(Hit::class, $result);
+        self::assertScore(5, $result);
+        self::assertMatcher('queryParam', $result);
+    }
+
+    public function testMatchQueryParamWithSecondArrayValue(): void
+    {
+        $matcher = new QueryParamMatcher('name[]', 'def', []);
+
+        $realRequest = $this->createRealRequest(queryParams: ['name' => ['abc', 'def']]);
+
+        $result = $matcher($realRequest);
+
+        self::assertInstanceOf(Hit::class, $result);
+        self::assertScore(5, $result);
+        self::assertMatcher('queryParam', $result);
+    }
+
+    public function testMatchQueryParamWithArrayValue(): void
+    {
+        $matcher = new QueryParamMatcher('name', ['abc', 'def'], []);
+
+        $realRequest = $this->createRealRequest(queryParams: ['name' => ['abc', 'def']]);
+
+        $result = $matcher($realRequest);
+
+        self::assertInstanceOf(Hit::class, $result);
+        self::assertScore(5, $result);
+        self::assertMatcher('queryParam', $result);
+    }
+
     public function testMatchQueryParamWithPlaceholder(): void
     {
         $matcher = new QueryParamMatcher('filter', '%s%s', ['last', 'name']);

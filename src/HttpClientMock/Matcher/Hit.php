@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 
+use function is_array;
+use function Safe\json_encode;
+
 final readonly class Hit
 {
     private function __construct(
@@ -34,9 +37,10 @@ final readonly class Hit
         return new self('header', $key, 5, $value);
     }
 
-    public static function matchesQueryParam(string $key, string $value): self
+    /** @param string|mixed[] $value */
+    public static function matchesQueryParam(string $key, string|array $value): self
     {
-        return new self('queryParam', $key, 5, $value);
+        return new self('queryParam', $key, 5, is_array($value) ? json_encode($value) : $value);
     }
 
     public static function matchesRequestParam(string $key, string $value): self

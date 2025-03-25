@@ -73,6 +73,21 @@ final class MockRequestBuilderCollectionTest extends TestCase
                 ->queryParam('two', '2')
                 ->willRespond(new MockResponseBuilder()),
 
+            'get_uri_array_param1' => (new MockRequestBuilder())
+                ->name('get_uri_array_param1')
+                ->method('GET')
+                ->uri('/uri')
+                ->queryParam('name[]', 'abc')
+                ->queryParam('name[]', 'def')
+                ->willRespond(new MockResponseBuilder()),
+
+            'get_uri_array_param2' => (new MockRequestBuilder())
+                ->name('get_uri_array_param2')
+                ->method('GET')
+                ->uri('/uri')
+                ->queryParam('test', ['123', '456'])
+                ->willRespond(new MockResponseBuilder()),
+
             'post_uri_json' => (new MockRequestBuilder())
                 ->name('post_uri_json')
                 ->method('POST')
@@ -127,7 +142,7 @@ final class MockRequestBuilderCollectionTest extends TestCase
     #[DataProvider('requests')]
     public function testRequestMatching(string $method, string $uri, array $options, string $index): void
     {
-        $x = ($this->collection)($method, $uri, $options);
+        ($this->collection)($method, $uri, $options);
 
         $expectedMockRequestBuilder = $this->builders[$index];
 
@@ -236,6 +251,8 @@ final class MockRequestBuilderCollectionTest extends TestCase
             'getUri' => ['GET', '/uri', [], 'get_uri'],
             'getUriWithOneParam' => ['GET', '/uri?one=1', [], 'get_uri_param'],
             'getUriWithTwoParams' => ['GET', '/uri?one=1&two=2', [], 'get_uri_params'],
+            'getUriWithArrayParam1' => ['GET', '/uri?name[]=abc&name[]=def', [], 'get_uri_array_param1'],
+            'getUriWithArrayParam2' => ['GET', '/uri?test[]=123&test[]=456', [], 'get_uri_array_param2'],
             'postUri' => ['POST', '/uri', [], 'post'],
             'postUriJson' => ['POST', '/uri', ['json' => ['json' => 'data']], 'post_uri_json'],
             'postUriXml' => [

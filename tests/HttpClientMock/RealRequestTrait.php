@@ -11,7 +11,7 @@ trait RealRequestTrait
     /**
      * @param array<string, string>                                                                      $headers
      * @param mixed[]                                                                                    $json
-     * @param array<string, string>                                                                      $queryParams
+     * @param array<string, string|mixed[]>                                                              $queryParams
      * @param array<string, string>                                                                      $requestParams
      * @param array<string, array{name: string, filename?: string, mimetype?: string, content?: string}> $multiparts
      */
