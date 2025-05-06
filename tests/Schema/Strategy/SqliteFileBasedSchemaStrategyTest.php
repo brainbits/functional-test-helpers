@@ -7,7 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileBasedSchemaStrategy;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\SqlitePlatform;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -144,7 +144,7 @@ final class SqliteFileBasedSchemaStrategyTest extends TestCase
             public function foo(): void
             {
                 $table = $this->schema->createTable('foo');
-                $table->addColumn('bar', 'string');
+                $table->addColumn('bar', 'string', ['length' => 255]);
             }
         };
     }

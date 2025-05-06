@@ -12,11 +12,18 @@ use Doctrine\DBAL\Cache\ArrayResult;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Result;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\MySQLSchemaManager;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+use function array_keys;
+use function array_map;
+use function array_values;
 use function func_get_arg;
+use function func_get_args;
 use function Safe\preg_match;
 use function str_starts_with;
 
@@ -26,11 +33,13 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
     use SnapshotTrait;
 
     private MySQLPlatform $platform;
+    private MySQLSchemaManager&MockObject $schemaManager;
     private SchemaBuilder $schemaBuilder;
 
     protected function setUp(): void
     {
         $this->platform = new MySQLPlatform();
+        $this->schemaManager = $this->createMock(MySQLSchemaManager::class);
 
         $this->schemaBuilder = $this->createSchemaBuilder();
         $this->schemaBuilder->foo();
@@ -40,6 +49,22 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
     {
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
+
+        $this->schemaManager->expects($this->any())
+            ->method('listTableNames')
+            ->willReturnCallback(
+                static function () use ($queryLog) {
+                    $result = [];
+
+                    $queryLog[] = [
+                        'function' => 'listTableNames()',
+                        'parameters' => func_get_args(),
+                        'result' => $result,
+                    ];
+
+                    return $result;
+                },
+            );
 
         $connection = $this->createMock(Connection::class);
         $connection->expects($this->any())
@@ -52,10 +77,15 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
             ->method('getDatabasePlatform')
             ->willReturn($this->platform);
         $connection->expects($this->any())
+            ->method('createSchemaManager')
+            ->willReturn($this->schemaManager);
+        $connection->expects($this->any())
             ->method('executeStatement')
             ->willReturnCallback(
-                static function () use ($queryLog): void {
+                static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
+
+                    return 0;
                 },
             );
         $connection->expects($this->any())
@@ -68,7 +98,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 
                     $queryLog[] = ['query' => $query, 'parameters' => $parameters, 'result' => $result];
 
-                    return new Result(new ArrayResult($result), $connection);
+                    return new Result(self::createArrayResult($result), $connection);
                 },
             );
 
@@ -83,6 +113,57 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
 
+        $this->schemaManager->expects($this->once())
+            ->method('listTableNames')
+            ->willReturnCallback(static function () use ($queryLog) {
+                $result = ['old_table_1', 'old_table_2'];
+
+                $queryLog[] = ['function' => 'listTableNames()', 'parameters' => func_get_args(), 'result' => $result];
+
+                return $result;
+            });
+
+        $this->schemaManager->expects($this->exactly(2))
+            ->method('listTableForeignKeys')
+            ->willReturnCallback(static function ($tableName) use ($queryLog) {
+                $result = [];
+
+                if ($tableName === 'old_table_1') {
+                    $result = [
+                        new ForeignKeyConstraint([], '', [], 'constraint_1'),
+                        new ForeignKeyConstraint([], '', [], 'constraint_2'),
+                    ];
+                }
+
+                $queryLog[] = [
+                    'function' => 'listTableForeignKeys()',
+                    'parameters' => func_get_args(),
+                    'result' => array_map(static fn ($fk) => $fk->getName(), $result),
+                ];
+
+                return $result;
+            });
+
+        $this->schemaManager->expects($this->any())
+            ->method('dropForeignKey')
+            ->willReturnCallback(static function ($tableName) use ($queryLog) {
+                $result = [];
+
+                $queryLog[] = ['function' => 'dropForeignKey()', 'parameters' => func_get_args(), 'result' => $result];
+
+                return $result;
+            });
+
+        $this->schemaManager->expects($this->any())
+            ->method('dropTable')
+            ->willReturnCallback(static function ($tableName) use ($queryLog) {
+                $result = [];
+
+                $queryLog[] = ['function' => 'dropTable()', 'parameters' => func_get_args(), 'result' => $result];
+
+                return $result;
+            });
+
         $connection = $this->createMock(Connection::class);
         $connection->expects($this->any())
             ->method('quoteIdentifier')
@@ -94,10 +175,15 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
             ->method('getDatabasePlatform')
             ->willReturn($this->platform);
         $connection->expects($this->any())
+            ->method('createSchemaManager')
+            ->willReturn($this->schemaManager);
+        $connection->expects($this->any())
             ->method('executeStatement')
             ->willReturnCallback(
-                static function () use ($queryLog): void {
+                static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
+
+                    return 0;
                 },
             );
         $connection->expects($this->any())
@@ -118,7 +204,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 
                     $queryLog[] = ['query' => $query, 'parameters' => $parameters, 'result' => $result];
 
-                    return new Result(new ArrayResult($result), $connection);
+                    return new Result(self::createArrayResult($result), $connection);
                 },
             );
 
@@ -133,6 +219,22 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
 
+        $this->schemaManager->expects($this->any())
+            ->method('listTableNames')
+            ->willReturnCallback(
+                static function () use ($queryLog) {
+                    $result = [];
+
+                    $queryLog[] = [
+                        'function' => 'listTableNames()',
+                        'parameters' => func_get_args(),
+                        'result' => $result,
+                    ];
+
+                    return $result;
+                },
+            );
+
         $connection = $this->createMock(Connection::class);
         $connection->expects($this->any())
             ->method('quoteIdentifier')
@@ -144,10 +246,15 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
             ->method('getDatabasePlatform')
             ->willReturn(new MySQLPlatform());
         $connection->expects($this->any())
+            ->method('createSchemaManager')
+            ->willReturn($this->schemaManager);
+        $connection->expects($this->any())
             ->method('executeStatement')
             ->willReturnCallback(
-                static function () use ($queryLog): void {
+                static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
+
+                    return 0;
                 },
             );
         $connection->expects($this->any())
@@ -160,7 +267,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 
                     $queryLog[] = ['query' => $query, 'parameters' => $parameters, 'result' => $result];
 
-                    return new Result(new ArrayResult($result), $connection);
+                    return new Result(self::createArrayResult($result), $connection);
                 },
             );
 
@@ -194,8 +301,10 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
         $connection->expects($this->any())
             ->method('executeStatement')
             ->willReturnCallback(
-                static function () use ($queryLog): void {
+                static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
+
+                    return 0;
                 },
             );
         $connection->expects($this->any())
@@ -214,7 +323,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 
                     $queryLog[] = ['query' => $query, 'parameters' => $parameters, 'result' => $result];
 
-                    return new Result(new ArrayResult($result), $connection);
+                    return new Result(self::createArrayResult($result), $connection);
                 },
             );
 
@@ -248,7 +357,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
             {
                 $table = $this->schema->createTable('foo');
                 $table->addColumn('id', 'integer', ['autoincrement' => true]);
-                $table->addColumn('bar', 'string');
+                $table->addColumn('bar', 'string', ['length' => 255]);
             }
         };
     }
@@ -256,5 +365,14 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
     private function snapshotPath(): string
     {
         return __DIR__;
+    }
+
+    /** @param mixed[] $result */
+    private static function createArrayResult(array $result): ArrayResult
+    {
+        $columnNames = array_keys($result[0] ?? []);
+        $rows = array_map(array_values(...), $result);
+
+        return new ArrayResult($columnNames, $rows);
     }
 }

@@ -1,52 +1,66 @@
 [
     {
-        "query": "SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'",
+        "function": "listTableNames()",
         "parameters": [],
         "result": [
-            {
-                "name": "old_table_1"
-            },
-            {
-                "name": "old_table_2"
-            }
+            "old_table_1",
+            "old_table_2"
         ]
     },
     {
         "statement": "SET foreign_key_checks = 0"
     },
     {
-        "query": "SELECT k.CONSTRAINT_NAME, k.COLUMN_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME /*!50116 , c.UPDATE_RULE, c.DELETE_RULE */ FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE k /*!50116 INNER JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS c ON c.CONSTRAINT_NAME = k.CONSTRAINT_NAME AND c.TABLE_NAME = k.TABLE_NAME */ WHERE k.TABLE_NAME = 'old_table_1' AND k.TABLE_SCHEMA = DATABASE() /*!50116 AND c.CONSTRAINT_SCHEMA = DATABASE() */ORDER BY k.ORDINAL_POSITION",
-        "parameters": [],
+        "function": "listTableForeignKeys()",
+        "parameters": [
+            "old_table_1"
+        ],
         "result": [
-            {
-                "name": "constraint_1"
-            },
-            {
-                "name": "constraint_2"
-            }
+            "constraint_1",
+            "constraint_2"
         ]
     },
     {
-        "statement": "ALTER TABLE old_table_1 DROP FOREIGN KEY constraint_1"
-    },
-    {
-        "statement": "ALTER TABLE old_table_1 DROP FOREIGN KEY constraint_2"
-    },
-    {
-        "statement": "DROP TABLE old_table_1"
-    },
-    {
-        "query": "SELECT k.CONSTRAINT_NAME, k.COLUMN_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME /*!50116 , c.UPDATE_RULE, c.DELETE_RULE */ FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE k /*!50116 INNER JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS c ON c.CONSTRAINT_NAME = k.CONSTRAINT_NAME AND c.TABLE_NAME = k.TABLE_NAME */ WHERE k.TABLE_NAME = 'old_table_2' AND k.TABLE_SCHEMA = DATABASE() /*!50116 AND c.CONSTRAINT_SCHEMA = DATABASE() */ORDER BY k.ORDINAL_POSITION",
-        "parameters": [],
+        "function": "dropForeignKey()",
+        "parameters": [
+            "constraint_1",
+            "old_table_1"
+        ],
         "result": []
     },
     {
-        "statement": "DROP TABLE old_table_2"
+        "function": "dropForeignKey()",
+        "parameters": [
+            "constraint_2",
+            "old_table_1"
+        ],
+        "result": []
+    },
+    {
+        "function": "dropTable()",
+        "parameters": [
+            "old_table_1"
+        ],
+        "result": []
+    },
+    {
+        "function": "listTableForeignKeys()",
+        "parameters": [
+            "old_table_2"
+        ],
+        "result": []
+    },
+    {
+        "function": "dropTable()",
+        "parameters": [
+            "old_table_2"
+        ],
+        "result": []
     },
     {
         "statement": "SET foreign_key_checks = 1"
     },
     {
-        "statement": "CREATE TABLE foo (id INT AUTO_INCREMENT NOT NULL, bar VARCHAR(255) NOT NULL) DEFAULT CHARACTER SET utf8 COLLATE `utf8_unicode_ci` ENGINE = InnoDB"
+        "statement": "CREATE TABLE foo (id INT AUTO_INCREMENT NOT NULL, bar VARCHAR(255) NOT NULL)"
     }
 ]

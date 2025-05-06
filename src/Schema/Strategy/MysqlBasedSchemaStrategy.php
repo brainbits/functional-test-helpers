@@ -31,7 +31,7 @@ final class MysqlBasedSchemaStrategy implements SchemaStrategy
     {
         $platform = $connection->getDatabasePlatform();
 
-        $existingTables = $connection->executeQuery($platform->getListTablesSQL())->fetchFirstColumn();
+        $existingTables = $connection->createSchemaManager()->listTableNames();
 
         if (count($existingTables) > 0) {
             if (count(self::$executedStatements) === 0) {
@@ -107,25 +107,20 @@ final class MysqlBasedSchemaStrategy implements SchemaStrategy
         }
     }
 
-    /** @param list<string> $tables */
-    private function dropTables(array $tables, Connection $connection): void
+    /** @param list<string> $tableNames */
+    private function dropTables(array $tableNames, Connection $connection): void
     {
-        $platform = $connection->getDatabasePlatform();
+        $schemaManager = $connection->createSchemaManager();
 
         try {
             $connection->executeStatement('SET foreign_key_checks = 0');
 
-            foreach ($tables as $table) {
-                $listForeignKeysSql = $platform->getListTableForeignKeysSQL($table);
-                $foreignKeys = $connection->executeQuery($listForeignKeysSql)->fetchFirstColumn();
-
-                foreach ($foreignKeys as $foreignKey) {
-                    $dropForeignKeySQL = $platform->getDropForeignKeySQL($foreignKey, $table);
-                    $connection->executeStatement($dropForeignKeySQL);
+            foreach ($tableNames as $tableName) {
+                foreach ($schemaManager->listTableForeignKeys($tableName) as $foreignKey) {
+                    $schemaManager->dropForeignKey($foreignKey->getName(), $tableName);
                 }
 
-                $dropTableSQL = $platform->getDropTableSQL($table);
-                $connection->executeStatement($dropTableSQL);
+                $schemaManager->dropTable($tableName);
             }
         } finally {
             $connection->executeStatement('SET foreign_key_checks = 1');
