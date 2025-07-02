@@ -13,6 +13,7 @@ use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpClient\Response\MockResponse;
 
 #[CoversClass(MockRequestBuilder::class)]
 #[CoversClass(MockRequestBuilderCollection::class)]
@@ -235,6 +236,51 @@ final class MockRequestBuilderCollectionTest extends TestCase
         }
 
         $this->fail('Expected assertion was not thrown');
+    }
+
+    public function testReset(): void
+    {
+        $collection = new MockRequestBuilderCollection();
+        $collection->addMockRequestBuilder(
+            (new MockRequestBuilder())
+                ->method('GET')
+                ->willRespond(new MockResponseBuilder()),
+        );
+
+        self::assertCount(1, $collection);
+
+        $collection->reset();
+
+        self::assertCount(0, $collection);
+    }
+
+    public function testResetPreventsStaleCallbacks(): void
+    {
+        $collection = new MockRequestBuilderCollection();
+
+        $collection->addMockRequestBuilder(
+            (new MockRequestBuilder())
+                ->method('GET')
+                ->uri('/test')
+                ->onMatch(static function (): void {
+                    // This callback should not be called after reset
+                })
+                ->willRespond(new MockResponseBuilder()),
+        );
+
+        $collection->reset();
+
+        $collection->addMockRequestBuilder(
+            (new MockRequestBuilder())
+                ->method('GET')
+                ->uri('/test')
+                ->willRespond(new MockResponseBuilder()),
+        );
+
+        // This should not throw "Value of type null is not callable" error
+        $response = $collection('GET', '/test', []);
+
+        self::assertInstanceOf(MockResponse::class, $response);
     }
 
     /** @return mixed[] */
