@@ -7,6 +7,8 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 use ArrayObject;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\HttpClientMockException;
 use Monolog\Logger;
+use PHPUnit\Framework\Attributes\After;
+use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
@@ -22,15 +24,67 @@ use function is_string;
 use function Safe\parse_url;
 use function sprintf;
 use function str_contains;
-use function trigger_deprecation;
+use function trigger_error;
 use function ucfirst;
 use function urldecode;
 use function vsprintf;
 
+use const E_USER_DEPRECATED;
+
 /** @mixin TestCase */
 trait HttpClientMockTrait
 {
-    protected function registerNoMatchingMockRequestAsserts(
+    /** @var list<MockRequestBuilder> */
+    protected array $createdMockRequestBuilders = [];
+    /** @var list<string> */
+    protected array $mockRequestLoggerNames = ['monolog.logger'];
+
+    #[Before]
+    final protected function setUpMockRequestBuilder(): void
+    {
+        $container = static::getContainer();
+        $eventDispatcher = $container->get('event_dispatcher');
+        assert($eventDispatcher instanceof EventDispatcherInterface);
+
+        $loggerNames = $this->mockRequestLoggerNames;
+
+        $this->registerNoMatchingMockRequestListeners(
+            $eventDispatcher,
+            ...array_map(
+                static function ($loggerName) {
+                    $logger = static::getContainer()->get($loggerName);
+                    assert($logger instanceof Logger);
+
+                    return $logger;
+                },
+                $loggerNames,
+            ),
+        );
+    }
+
+    #[After]
+    protected function assertNoFailedMockRequests(): void
+    {
+        $mockRequestBuilders = $this->createdMockRequestBuilders;
+        $this->createdMockRequestBuilders = [];
+
+        foreach ($mockRequestBuilders as $mockRequestBuilder) {
+            foreach ($mockRequestBuilder->getFailedAssertions() as $failedAssertion) {
+                throw $failedAssertion;
+            }
+        }
+    }
+
+    protected function registerNoMatchingMockRequestAsserts(): void
+    {
+        // legacy start - remove in 8.0.0
+
+        trigger_error('no matching mock request listeners are now automatically registered', E_USER_DEPRECATED);
+
+        // legacy end - remove in 8.0.0
+    }
+
+    protected function registerNoMatchingMockRequestListeners(
         EventDispatcherInterface $eventDispatcher,
         Logger ...$loggers,
     ): void {
@@ -130,18 +184,13 @@ trait HttpClientMockTrait
         $stack = self::getContainer()->get(MockRequestBuilderCollection::class);
         assert($stack instanceof MockRequestBuilderCollection);
 
-        $builder = (new MockRequestBuilder())
+        $this->createdMockRequestBuilders[] = $builder = (new MockRequestBuilder())
             ->method($method);
 
         // legacy start - remove in 8.0.0
 
         if (is_string($uri) && str_contains($uri, '?')) {
-            trigger_deprecation(
-                'functional-test-helpers',
-                '7.0.0',
-                'Query parameters in uri is deprecated. Use %s instead',
-                'queryParam()',
-            );
+            trigger_error('Query parameters in uri is deprecated. Use queryParam() instead', E_USER_DEPRECATED);
             $uriParts = parse_url($uri);
             $uri = ($uriParts['scheme'] ?? false ? $uriParts['scheme'] . '://' : '') .
                 ($uriParts['host'] ?? false ? $uriParts['host'] : '') .
