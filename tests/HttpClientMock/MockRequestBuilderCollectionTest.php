@@ -9,9 +9,9 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
-use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(MockRequestBuilder::class)]
@@ -173,7 +173,7 @@ final class MockRequestBuilderCollectionTest extends TestCase
     {
         $collection = new MockRequestBuilderCollection();
         $collection->addMockRequestBuilder(
-            (new MockRequestBuilder())
+            $builder = (new MockRequestBuilder())
                 ->assertContent(function (string $content): void {
                     $this->assertSame('this is content', $content);
                 })
@@ -181,33 +181,36 @@ final class MockRequestBuilderCollectionTest extends TestCase
         );
 
         $collection('GET', '/query', ['body' => 'this is content']);
+
+        $this->assertSame([], $builder->getFailedAssertions());
     }
 
     public function testAssertContentFails(): void
     {
         $collection = new MockRequestBuilderCollection();
         $collection->addMockRequestBuilder(
-            (new MockRequestBuilder())
+            $builder = (new MockRequestBuilder())
                 ->assertContent(function (string $content): void {
                     $this->assertSame('this is content', $content);
                 })
                 ->willRespond(new MockResponseBuilder()),
         );
 
-        try {
-            $collection('GET', '/query', ['body' => 'does-not-match']);
-        } catch (AssertionFailedError) {
-            return;
-        }
+        $collection('GET', '/query', ['body' => 'does-not-match']);
 
-        $this->fail('Expected assertion was not thrown');
+        $failedAssertions = $builder->getFailedAssertions();
+        $this->assertCount(1, $failedAssertions);
+        $this->assertInstanceOf(
+            ExpectationFailedException::class,
+            $failedAssertions[0],
+        );
     }
 
     public function testAssertThat(): void
     {
         $collection = new MockRequestBuilderCollection();
         $collection->addMockRequestBuilder(
-            (new MockRequestBuilder())
+            $builder = (new MockRequestBuilder())
                 ->assertThat(function (RealRequest $realRequest): void {
                     $this->assertSame('this is content', $realRequest->getContent());
                 })
@@ -215,26 +218,29 @@ final class MockRequestBuilderCollectionTest extends TestCase
         );
 
         $collection('GET', '/query', ['body' => 'this is content']);
+
+        $this->assertSame([], $builder->getFailedAssertions());
     }
 
     public function testAssertThatFails(): void
     {
         $collection = new MockRequestBuilderCollection();
         $collection->addMockRequestBuilder(
-            (new MockRequestBuilder())
+            $builder = (new MockRequestBuilder())
                 ->assertThat(function (RealRequest $realRequest): void {
                     $this->assertSame('this is content', $realRequest->getContent());
                 })
                 ->willRespond(new MockResponseBuilder()),
         );
 
-        try {
-            $collection('GET', '/query', ['body' => 'does-not-match']);
-        } catch (AssertionFailedError) {
-            return;
-        }
+        $collection('GET', '/query', ['body' => 'does-not-match']);
 
-        $this->fail('Expected assertion was not thrown');
+        $failedAssertions = $builder->getFailedAssertions();
+        $this->assertCount(1, $failedAssertions);
+        $this->assertInstanceOf(
+            ExpectationFailedException::class,
+            $failedAssertions[0],
+        );
     }
 
     /** @return mixed[] */

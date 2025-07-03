@@ -8,11 +8,12 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\AddMockResponseFail
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\InvalidMockRequest;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MatchResult;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MethodMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MultipartMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamMatcher;
-use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ThatMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriParams;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\XmlMatcher;
@@ -20,8 +21,8 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
-use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\File\File;
@@ -200,10 +201,11 @@ final class MockRequestBuilderTest extends TestCase
 
         $matcher = $mockRequestBuilder->getMatcher();
 
+        $result = $matcher(new RealRequest('GET', '/test', [], null, null, [], [], []));
+
         self::assertEquals(
-            // phpcs:ignore Generic.Files.LineLength.TooLong
-            new MockRequestMatcher(null, [new ThatMatcher(static fn ($request) => true)]),
-            $matcher,
+            MatchResult::create(null)->withResult(Hit::matchesThat()),
+            $result,
         );
     }
 
@@ -215,6 +217,8 @@ final class MockRequestBuilderTest extends TestCase
         });
 
         $mockRequestBuilder->assert($this->createRealRequest(method: 'POST'));
+
+        $this->assertSame([], $mockRequestBuilder->getFailedAssertions());
     }
 
     public function testAssertMethodFails(): void
@@ -224,13 +228,14 @@ final class MockRequestBuilderTest extends TestCase
             $this->assertSame('does-not-match', $method);
         });
 
-        try {
-            $mockRequestBuilder->assert($this->createRealRequest(method: 'POST'));
-        } catch (AssertionFailedError) {
-            return;
-        }
+        $mockRequestBuilder->assert($this->createRealRequest(method: 'POST'));
 
-        $this->fail('Expected assertion error was not thrown');
+        $failedAssertions = $mockRequestBuilder->getFailedAssertions();
+        $this->assertCount(1, $failedAssertions);
+        $this->assertInstanceOf(
+            ExpectationFailedException::class,
+            $failedAssertions[0],
+        );
     }
 
     public function testAssertUri(): void
@@ -241,6 +246,8 @@ final class MockRequestBuilderTest extends TestCase
         });
 
         $mockRequestBuilder->assert($this->createRealRequest(uri: '/query'));
+
+        $this->assertSame([], $mockRequestBuilder->getFailedAssertions());
     }
 
     public function testAssertUriFails(): void
@@ -250,13 +257,14 @@ final class MockRequestBuilderTest extends TestCase
             $this->assertSame('does-not-match', $content);
         });
 
-        try {
-            $mockRequestBuilder->assert($this->createRealRequest(uri: '/query'));
-        } catch (AssertionFailedError) {
-            return;
-        }
+        $mockRequestBuilder->assert($this->createRealRequest(uri: '/query'));
 
-        $this->fail('Expected assertion error was not thrown');
+        $failedAssertions = $mockRequestBuilder->getFailedAssertions();
+        $this->assertCount(1, $failedAssertions);
+        $this->assertInstanceOf(
+            ExpectationFailedException::class,
+            $failedAssertions[0],
+        );
     }
 
     public function testAssertContent(): void
@@ -267,6 +275,8 @@ final class MockRequestBuilderTest extends TestCase
         });
 
         $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
+
+        $this->assertSame([], $mockRequestBuilder->getFailedAssertions());
     }
 
     public function testAssertContentFails(): void
@@ -276,13 +286,14 @@ final class MockRequestBuilderTest extends TestCase
             $this->assertSame('does-not-match', $content);
         });
 
-        try {
-            $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
-        } catch (AssertionFailedError) {
-            return;
-        }
+        $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
 
-        $this->fail('Expected assertion error was not thrown');
+        $failedAssertions = $mockRequestBuilder->getFailedAssertions();
+        $this->assertCount(1, $failedAssertions);
+        $this->assertInstanceOf(
+            ExpectationFailedException::class,
+            $failedAssertions[0],
+        );
     }
 
     public function testAssertThat(): void
@@ -293,6 +304,8 @@ final class MockRequestBuilderTest extends TestCase
         });
 
         $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
+
+        $this->assertSame([], $mockRequestBuilder->getFailedAssertions());
     }
 
     public function testAssertThatFails(): void
@@ -302,13 +315,14 @@ final class MockRequestBuilderTest extends TestCase
             $this->assertSame('does-not-match', $realRequest->getContent());
         });
 
-        try {
-            $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
-        } catch (AssertionFailedError) {
-            return;
-        }
+        $mockRequestBuilder->assert($this->createRealRequest(content: 'this is content'));
 
-        $this->fail('Expected assertion error was not thrown');
+        $failedAssertions = $mockRequestBuilder->getFailedAssertions();
+        $this->assertCount(1, $failedAssertions);
+        $this->assertInstanceOf(
+            ExpectationFailedException::class,
+            $failedAssertions[0],
+        );
     }
 
     public function testEmptyResponsesThrowsException(): void

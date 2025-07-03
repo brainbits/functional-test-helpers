@@ -11,24 +11,34 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriParams;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
+use Monolog\Logger;
+use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 final class HttpClientMockTraitTest extends TestCase
 {
     use HttpClientMockTrait;
 
     private static MockRequestBuilderCollection|null $collection = null;
+    private static EventDispatcherInterface|null $dispatcher = null;
+    private static Logger|null $logger = null;
 
-    public function setUp(): void
+    #[Before(100)]
+    public function createContainerServices(): void
     {
         self::$collection = new MockRequestBuilderCollection();
+        self::$dispatcher = $this->createMock(EventDispatcherInterface::class);
+        self::$logger = $this->createMock(Logger::class);
     }
 
     public static function getContainer(): Container
     {
         $container = new Container();
         $container->set(MockRequestBuilderCollection::class, self::$collection);
+        $container->set('event_dispatcher', self::$dispatcher);
+        $container->set('monolog.logger', self::$logger);
 
         return $container;
     }

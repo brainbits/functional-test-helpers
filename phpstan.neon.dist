@@ -10,6 +10,8 @@ parameters:
         - '#Constructor in .* has parameter .* with default value#'
         - '#SchemaBuilder::foo\(\)#'
     ergebnis:
+        noNamedArgument:
+            enabled: false
         noAssignByReference:
             enabled: false
         noParameterPassedByReference:

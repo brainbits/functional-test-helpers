@@ -51,6 +51,9 @@ final class MockRequestBuilder
     /** @var callable|null */
     public mixed $onMatch = null;
 
+    /** @var list<Throwable> */
+    private array $failedAssertions = [];
+
     public function __construct()
     {
         $this->responses = new MockResponseCollection();
@@ -165,10 +168,20 @@ final class MockRequestBuilder
         return $this;
     }
 
+    /** @return list<Throwable> */
+    public function getFailedAssertions(): array
+    {
+        return $this->failedAssertions;
+    }
+
     public function assert(RealRequest $realRequest): void
     {
         foreach ($this->assertions as $assertion) {
-            $assertion($realRequest, $this);
+            try {
+                $assertion($realRequest, $this);
+            } catch (Throwable $e) {
+                $this->failedAssertions[] = $e;
+            }
         }
     }
 
