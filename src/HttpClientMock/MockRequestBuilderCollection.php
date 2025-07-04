@@ -68,4 +68,9 @@ final class MockRequestBuilderCollection implements IteratorAggregate, Countable
     {
         return count($this->requestBuilders);
     }
+
+    public function reset(): void
+    {
+        $this->requestBuilders = [];
+    }
 }
