@@ -33,7 +33,7 @@ trait RequestTrait
         return static fn () => null;
     }
 
-    #[Before]
+    #[Before(12)]
     protected function setUpRequest(): void
     {
         self::$requestClient = static::createClient();

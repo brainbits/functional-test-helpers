@@ -39,7 +39,7 @@ trait HttpClientMockTrait
     /** @var list<string> */
     protected array $mockRequestLoggerNames = ['monolog.logger'];
 
-    #[Before]
+    #[Before(-12)]
     final protected function setUpMockRequestBuilder(): void
     {
         $container = static::getContainer();
