@@ -20,7 +20,7 @@ use function sprintf;
 /** @mixin TestCase */
 trait RequestTrait
 {
-    /** @phpstan-ignore missingType.generics */
+    /** @var AbstractBrowser<covariant object, covariant object>|null */
     private static AbstractBrowser|null $requestClient = null;
 
     protected function loginUser(): callable
@@ -45,7 +45,7 @@ trait RequestTrait
         self::$requestClient = null;
     }
 
-    /** @phpstan-ignore missingType.generics */
+    /** @return AbstractBrowser<covariant object, covariant object> */
     protected static function getRequestClient(): AbstractBrowser
     {
         if (self::$requestClient) {
@@ -71,7 +71,7 @@ trait RequestTrait
 
     final protected function build(string $method, string $uri): RequestBuilder
     {
-        if (method_exists($this, 'findUser')) { // @phpstan-ignore-line
+        if (method_exists($this, 'findUser')) {
             $callable = $this->findUser();
             $isFindUser = true;
         } else {

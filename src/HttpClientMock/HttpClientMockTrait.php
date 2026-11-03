@@ -167,13 +167,6 @@ trait HttpClientMockTrait
 
     protected function mockRequest(string|null $method = null, string|callable|null $uri = null): MockRequestBuilder // phpcs:ignore Generic.Files.LineLength.TooLong,SlevomatCodingStandard.TypeHints.ParameterTypeHintSpacing.NoSpaceBetweenTypeHintAndParameter
     {
-        if (!self::getContainer()) { // @phpstan-ignore-line
-            static::fail(sprintf(
-                'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
-                static::class,
-            ));
-        }
-
         if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(sprintf(
                 '%s not found, did you forget to include it in your test services?',
@@ -226,13 +219,6 @@ trait HttpClientMockTrait
 
     protected function callStack(): CallStack
     {
-        if (!self::getContainer()) { // @phpstan-ignore-line
-            static::fail(sprintf(
-                'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
-                static::class,
-            ));
-        }
-
         if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(sprintf(
                 '%s not found, did you forget to include it in your test services?',
@@ -494,14 +480,6 @@ trait HttpClientMockTrait
 
     protected static function assertAllRequestMocksAreCalled(string $message = ''): void
     {
-        if (!self::getContainer()) { // @phpstan-ignore-line
-            static::fail(self::mockRequestMessage(
-                $message,
-                'A client must be set to make assertions on it. Did you forget to call "%s::createClient()"?',
-                static::class,
-            ));
-        }
-
         if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
             static::fail(self::mockRequestMessage(
                 $message,

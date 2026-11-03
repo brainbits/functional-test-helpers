@@ -15,7 +15,6 @@ use function dirname;
 use function getenv;
 use function is_string;
 use function mb_strtolower;
-use function method_exists;
 use function rtrim;
 use function Safe\array_walk_recursive;
 use function Safe\json_decode;
@@ -224,11 +223,7 @@ trait SnapshotTrait
         $class = preg_replace('/(.)([[:upper:]])/u', '\1_\2', $class);
         $class = mb_strtolower($class);
 
-        if (method_exists($this, 'getName')) { // @phpstan-ignore-line
-            $method = $this->getName(false);
-        } else {
-            $method = $this->name();
-        }
+        $method = $this->name();
 
         if (strpos($method, 'test') === 0) {
             $method = substr($method, strlen('test'));
@@ -237,11 +232,7 @@ trait SnapshotTrait
         $method = preg_replace('/(.)([[:upper:]])/u', '\1_\2', $method);
         $method = mb_strtolower($method);
 
-        if (method_exists($this, 'getDataSetAsString')) { // @phpstan-ignore-line
-            $dataset = mb_strtolower($this->getDataSetAsString(false));
-        } else {
-            $dataset = mb_strtolower($this->dataSetAsString());
-        }
+        $dataset = mb_strtolower($this->dataSetAsString());
 
         $matches = [];
         preg_match('/"([^"]+)"/', $dataset, $matches);
