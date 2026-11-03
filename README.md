@@ -9,6 +9,14 @@
 A collection of test helper traits for symfony projects. 
 Please look at the respective READMEs for details.
 
+## Requirements
+
+- PHP 8.4 or newer
+- PHPUnit 13 or newer
+- Symfony 8 or newer
+
+Projects on older PHP, PHPUnit or Symfony versions can keep using the 7.1.x releases.
+
 - [Console Trait](README.console-trait.md) for command tests
 - [HTTP Client Trait](README.http-client-trait.md) for mocking http client
 - [Request Trait](README.request-trait.md) for test requests

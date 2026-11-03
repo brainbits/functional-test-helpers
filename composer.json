@@ -43,7 +43,16 @@
         "thecodingmachine/phpstan-safe-rule": "^1.4"
     },
     "conflict": {
-        "sebastian/diff": "<8.3"
+        "sebastian/diff": "<8.3",
+        "symfony/browser-kit": "<8.0",
+        "symfony/console": "<8.0",
+        "symfony/event-dispatcher": "<8.0",
+        "symfony/filesystem": "<8.0",
+        "symfony/framework-bundle": "<8.0",
+        "symfony/http-client": "<8.0",
+        "symfony/http-foundation": "<8.0",
+        "symfony/http-kernel": "<8.0",
+        "symfony/uid": "<8.0"
     },
     "suggest": {
         "ext-dom": "For mocking xml requests",
@@ -61,7 +70,7 @@
         "symfony/browser-kit": "For request trait",
         "symfony/console": "For console trait",
         "symfony/filesystem": "For request trait",
-        "symfony/framework-bundle": "For request trait, when using authLogin(). Requires version >= 7.0",
+        "symfony/framework-bundle": "For request trait, when using authLogin(). Requires version >= 8.0",
         "symfony/http-client": "For http client mock trait",
         "symfony/http-foundation": "For request trait",
         "symfony/security-core": "For request trait",
