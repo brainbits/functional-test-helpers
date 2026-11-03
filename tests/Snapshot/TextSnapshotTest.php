@@ -15,6 +15,8 @@ use function getenv;
 use function Safe\file_put_contents;
 use function Safe\putenv;
 
+use const PHP_EOL;
+
 final class TextSnapshotTest extends TestCase
 {
     use SnapshotTrait;
@@ -67,12 +69,12 @@ final class TextSnapshotTest extends TestCase
         $data = 'Lorem ipsum dolor sit amet';
 
         file_put_contents(
-            $this->snapshotsDir->url() . '/text_snapshot_named_text_assertion_fails.txt',
+            $this->snapshotsDir->url() . '/text_snapshot_named_text_assertion_fails_postfix.txt',
             'foo bar',
         );
 
         try {
-            $this->assertMatchesTextSnapshot($data);
+            $this->assertMatchesNamedTextSnapshot($data, 'postfix');
         } catch (ExpectationFailedException) {
             return;
         }
@@ -98,10 +100,10 @@ final class TextSnapshotTest extends TestCase
         }
 
         $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
-        $this->assertSame(
-            'Snapshot text_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml does not exist.',
-            $thrownException->getMessage(),
-        );
+        $filename = 'text_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml';
+        $message = $thrownException->getMessage();
+        $this->assertStringStartsWith('Snapshot ' . $filename . ' does not exist.' . PHP_EOL, $message);
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/' . $filename, $message);
     }
 
     public function testSnapshotsAreNotCreatedForCreateSnapshotZero(): void
@@ -122,10 +124,10 @@ final class TextSnapshotTest extends TestCase
         }
 
         $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
-        $this->assertSame(
-            'Snapshot text_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml does not exist.',
-            $thrownException->getMessage(),
-        );
+        $filename = 'text_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml';
+        $message = $thrownException->getMessage();
+        $this->assertStringStartsWith('Snapshot ' . $filename . ' does not exist.' . PHP_EOL, $message);
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/' . $filename, $message);
     }
 
     public function testCreateSnapshotEnvIsNotProcessedForOtherValue(): void

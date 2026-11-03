@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Snapshot;
 
 use DOMDocument;
+use LibXMLError;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Util\Exporter;
 use Throwable;
 
+use function array_map;
+use function implode;
+use function libxml_clear_errors;
+use function libxml_get_errors;
+use function libxml_use_internal_errors;
 use function sprintf;
+use function trim;
 
 use const LIBXML_NOERROR;
 use const LIBXML_NOWARNING;
@@ -62,12 +69,22 @@ final class IsXml extends Constraint
             return 'an empty string is valid XML';
         }
 
+        $useInternalErrors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+
         try {
-            $error = '';
             $dom = new DOMDocument();
-            $dom->loadXML($other, LIBXML_NOERROR | LIBXML_NOWARNING);
+            $dom->loadXML($other);
+
+            $error = implode('; ', array_map(
+                static fn (LibXMLError $error): string => sprintf('line %d: %s', $error->line, trim($error->message)),
+                libxml_get_errors(),
+            ));
         } catch (Throwable $e) {
             $error = $e->getMessage();
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($useInternalErrors);
         }
 
         return sprintf(

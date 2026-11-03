@@ -16,6 +16,8 @@ use function Safe\file_get_contents;
 use function Safe\file_put_contents;
 use function Safe\putenv;
 
+use const PHP_EOL;
+
 final class JsonLdSnapshotTest extends TestCase
 {
     use SnapshotTrait;
@@ -27,6 +29,12 @@ final class JsonLdSnapshotTest extends TestCase
         $root = vfsStream::setup('root', null, ['__snapshots__' => []]);
 
         $this->snapshotsDir = $root->getChild('__snapshots__');
+    }
+
+    public function testScalarJsonLd(): void
+    {
+        $this->assertMatchesJsonLdSnapshot('"foo"');
+        $this->assertFileExists($this->snapshotsDir->url() . '/json_ld_snapshot_scalar_json_ld.json');
     }
 
     public function testInvalidJson(): void
@@ -188,12 +196,12 @@ JSON;
         $data = '{"a":1,"b":[1,2,3],"c":{"foo":"bar","baz":99}}';
 
         file_put_contents(
-            $this->snapshotsDir->url() . '/json_ld_snapshot_named_json_ld_assertion_fails.json',
+            $this->snapshotsDir->url() . '/json_ld_snapshot_named_json_ld_assertion_fails_postfix.json',
             '{}',
         );
 
         try {
-            $this->assertMatchesJsonLdSnapshot($data);
+            $this->assertMatchesNamedJsonLdSnapshot($data, 'postfix');
         } catch (ExpectationFailedException) {
             return;
         }
@@ -219,10 +227,10 @@ JSON;
         }
 
         $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
-        $this->assertSame(
-            'Snapshot json_ld_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml does not exist.',
-            $thrownException->getMessage(),
-        );
+        $filename = 'json_ld_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml';
+        $message = $thrownException->getMessage();
+        $this->assertStringStartsWith('Snapshot ' . $filename . ' does not exist.' . PHP_EOL, $message);
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/' . $filename, $message);
     }
 
     public function testSnapshotsAreNotCreatedForCreateSnapshotZero(): void
@@ -243,10 +251,10 @@ JSON;
         }
 
         $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
-        $this->assertSame(
-            'Snapshot json_ld_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml does not exist.',
-            $thrownException->getMessage(),
-        );
+        $filename = 'json_ld_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml';
+        $message = $thrownException->getMessage();
+        $this->assertStringStartsWith('Snapshot ' . $filename . ' does not exist.' . PHP_EOL, $message);
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/' . $filename, $message);
     }
 
     public function testCreateSnapshotEnvIsNotProcessedForOtherValue(): void
