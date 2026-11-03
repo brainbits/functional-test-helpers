@@ -6,7 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 
 use PHPUnit\Util\Json;
 use SebastianBergmann\Diff\Differ;
-use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
+use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 
 use function is_array;
 use function Safe\json_encode;
@@ -72,9 +72,11 @@ final readonly class Mismatch
         $diff = null;
         if ($otherContent) {
             $differ = new Differ(
-                new UnifiedDiffOutputBuilder(
-                    '--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL,
-                ),
+                new StrictUnifiedDiffOutputBuilder([
+                    'header' => '--- Expected' . PHP_EOL . '+++ Actual' . PHP_EOL,
+                    'addLineNumbers' => false,
+                    'emitNoLineEndEofWarning' => false,
+                ]),
             );
             $diff = $differ->diff(Json::prettify($content), Json::prettify($otherContent));
         }
