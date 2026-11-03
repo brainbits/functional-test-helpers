@@ -35,6 +35,13 @@ final class RequestBuilder
     private array $server = [];
     private string|null $content = null;
     private bool $changeHistory = true;
+    private object|null $loginAsUser = null;
+    private string|null $loginFirewall = null;
+    /** @var array<string, mixed> */
+    private array $loginTokenAttributes = [];
+    private bool $logout = false;
+    /** @var array<string, string> token id => field */
+    private array $csrfTokens = [];
 
     private function __construct(
         callable $loginUser,
@@ -324,6 +331,71 @@ final class RequestBuilder
     public function getSessionValues(): array
     {
         return $this->sessionValues;
+    }
+
+    /**
+     * Logs the user in on the request client when the request is sent, via KernelBrowser::loginUser().
+     * The login stays active for later requests of the same client, use logout() to end it.
+     *
+     * @param array<string, mixed> $tokenAttributes
+     */
+    public function loginAs(object $user, string|null $firewall = null, array $tokenAttributes = []): self
+    {
+        $this->loginAsUser = $user;
+        $this->loginFirewall = $firewall;
+        $this->loginTokenAttributes = $tokenAttributes;
+        $this->logout = false;
+
+        return $this;
+    }
+
+    /**
+     * Removes all cookies of the request client (including the session of an earlier login) before the request is sent.
+     */
+    public function logout(): self
+    {
+        $this->loginAsUser = null;
+        $this->logout = true;
+
+        return $this;
+    }
+
+    public function getLoginUser(): object|null
+    {
+        return $this->loginAsUser;
+    }
+
+    public function getLoginFirewall(): string|null
+    {
+        return $this->loginFirewall;
+    }
+
+    /** @return array<string, mixed> */
+    public function getLoginTokenAttributes(): array
+    {
+        return $this->loginTokenAttributes;
+    }
+
+    public function isLogout(): bool
+    {
+        return $this->logout;
+    }
+
+    /**
+     * Stores a CSRF token for the given token id in the session and sends it in the given request parameter,
+     * so stateful CSRF protection (e.g. Symfony forms) accepts the request.
+     */
+    public function csrfToken(string $tokenId, string $field = '_token'): self
+    {
+        $this->csrfTokens[$tokenId] = $field;
+
+        return $this;
+    }
+
+    /** @return array<string, string> */
+    public function getCsrfTokens(): array
+    {
+        return $this->csrfTokens;
     }
 
     public function sessionValue(string $key, mixed $value): self

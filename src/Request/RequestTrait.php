@@ -13,8 +13,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 use function assert;
+use function bin2hex;
 use function method_exists;
+use function random_bytes;
 use function sprintf;
+use function str_starts_with;
 
 /** @mixin TestCase */
 trait RequestTrait
@@ -57,6 +60,15 @@ trait RequestTrait
         ));
     }
 
+    /**
+     * The firewall used by RequestBuilder::loginAs() if none is given. Override it for another firewall.
+     */
+    protected function loginFirewall(): string
+    {
+        return 'main';
+    }
+
+    /** @deprecated Use RequestBuilder::csrfToken(), which stores the token in the session. Removed in 8.0. */
     final public function generateCsrfToken(): string
     {
         $client = self::getRequestClient();
@@ -95,15 +107,41 @@ trait RequestTrait
     final protected function request(RequestBuilder $requestBuilder): Response
     {
         $client = self::getRequestClient();
+        assert($client instanceof KernelBrowser);
 
-        if ($requestBuilder->getSessionValues()) {
-            $this->applySessionValues($requestBuilder->getSessionValues());
+        if ($requestBuilder->isLogout()) {
+            $client->getCookieJar()->clear();
+        }
+
+        $loginUser = $requestBuilder->getLoginUser();
+        if ($loginUser !== null) {
+            $client->loginUser(
+                $loginUser,
+                $requestBuilder->getLoginFirewall() ?? $this->loginFirewall(),
+                $requestBuilder->getLoginTokenAttributes(),
+            );
+        }
+
+        $sessionValues = $requestBuilder->getSessionValues();
+        $parameters = $requestBuilder->getParameters();
+
+        foreach ($requestBuilder->getCsrfTokens() as $tokenId => $field) {
+            $token = bin2hex(random_bytes(16));
+            $namespace = str_starts_with($requestBuilder->getUri(), 'https://') ? 'https-' : '';
+
+            // the session key SessionTokenStorage reads the token from
+            $sessionValues['_csrf/' . $namespace . $tokenId] = $token;
+            $parameters[$field] = $token;
+        }
+
+        if ($sessionValues) {
+            $this->applySessionValues($sessionValues);
         }
 
         $client->request(
             $requestBuilder->getMethod(),
             $requestBuilder->getUri(),
-            $requestBuilder->getParameters(),
+            $parameters,
             $requestBuilder->getFiles(),
             $requestBuilder->getServer(),
             $requestBuilder->getContent(),

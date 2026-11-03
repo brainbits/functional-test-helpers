@@ -9,6 +9,7 @@ use Brainbits\FunctionalTestHelpers\Request\RequestBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\User\InMemoryUser;
@@ -367,5 +368,28 @@ final class RequestBuilderTest extends TestCase
             $method,
             $uri,
         );
+    }
+
+    public function testLoginAs(): void
+    {
+        $user = new stdClass();
+        $builder = $this->createRequestBuilder('GET', '/users')->loginAs($user, 'admin', ['foo' => 'bar']);
+
+        self::assertSame($user, $builder->getLoginUser());
+        self::assertSame('admin', $builder->getLoginFirewall());
+        self::assertSame(['foo' => 'bar'], $builder->getLoginTokenAttributes());
+        self::assertFalse($builder->isLogout());
+
+        $builder->logout();
+
+        self::assertNull($builder->getLoginUser());
+        self::assertTrue($builder->isLogout());
+    }
+
+    public function testCsrfToken(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')->csrfToken('form')->csrfToken('delete', 'token');
+
+        self::assertSame(['form' => '_token', 'delete' => 'token'], $builder->getCsrfTokens());
     }
 }

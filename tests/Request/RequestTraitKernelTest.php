@@ -32,6 +32,36 @@ final class RequestTraitKernelTest extends WebTestCase
         $this->assertSame(['foo' => 'bar'], $data['session']);
     }
 
+    public function testCsrfTokenIsAcceptedByTheTokenManager(): void
+    {
+        $response = $this->request($this->build('POST', '/csrf')->csrfToken('form'));
+
+        $this->assertSame(['valid' => true], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testCsrfTokenForHttps(): void
+    {
+        $response = $this->request($this->build('POST', 'https://localhost/csrf')->csrfToken('form'));
+
+        $this->assertSame(['valid' => true], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testMissingCsrfTokenIsRejected(): void
+    {
+        $response = $this->request($this->build('POST', '/csrf'));
+
+        $this->assertSame(['valid' => false], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testLogoutRemovesTheSession(): void
+    {
+        $this->request($this->build('GET', '/dump')->sessionValue('foo', 'bar'));
+
+        $response = $this->request($this->build('GET', '/dump')->logout());
+
+        $this->assertNull(json_decode((string) $response->getContent(), true)['session']);
+    }
+
     protected static function getKernelClass(): string
     {
         return TestKernel::class;

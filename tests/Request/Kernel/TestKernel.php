@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 use function md5_file;
 use function sys_get_temp_dir;
@@ -53,6 +55,13 @@ final class TestKernel extends Kernel
         ]);
     }
 
+    public function csrf(Request $request, CsrfTokenManagerInterface $tokenManager): JsonResponse
+    {
+        $token = new CsrfToken('form', (string) $request->request->get('_token'));
+
+        return new JsonResponse(['valid' => $tokenManager->isTokenValid($token)]);
+    }
+
     protected function configureContainer(ContainerConfigurator $container): void
     {
         $container->extension('framework', [
@@ -61,17 +70,20 @@ final class TestKernel extends Kernel
             'http_method_override' => false,
             'session' => ['storage_factory_id' => 'session.storage.factory.mock_file'],
             'router' => ['utf8' => true],
+            'csrf_protection' => ['enabled' => true],
         ]);
 
         $container->services()
             ->set('logger', NullLogger::class)
             ->set(self::class)
             ->public()
+            ->autowire()
             ->tag('controller.service_arguments');
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
         $routes->add('dump', '/dump')->controller([self::class, 'dump']);
+        $routes->add('csrf', '/csrf')->controller([self::class, 'csrf']);
     }
 }
