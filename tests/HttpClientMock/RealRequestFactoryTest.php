@@ -139,4 +139,22 @@ final class RealRequestFactoryTest extends TestCase
             $request->getMultiparts(),
         );
     }
+
+    public function testScalarAndArrayQueryParamWithTheSameNameDoNotCrash(): void
+    {
+        $request = ($this->realRequestFactory)('GET', 'https://service.com?a=1&a[]=2', []);
+
+        self::assertSame(['a' => ['1', '2']], $request->getQueryParams());
+    }
+
+    public function testFormBodyKeyWithoutValueDoesNotCrash(): void
+    {
+        $options = [
+            'headers' => ['Content-Type: application/x-www-form-urlencoded'],
+            'body' => 'a=1&flag',
+        ];
+        $request = ($this->realRequestFactory)('POST', 'https://service.com', $options);
+
+        self::assertSame(['a' => '1', 'flag' => ''], $request->getRequestParams());
+    }
 }

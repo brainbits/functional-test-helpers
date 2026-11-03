@@ -82,6 +82,12 @@ final class RealRequestFactory
 
                 if (preg_match('/[^=]+=[^=]*(&[^=]+=[^=]*)*/', $body)) {
                     foreach (explode('&', $body) as $keyValue) {
+                        if (!str_contains($keyValue, '=')) {
+                            $requestParams[urldecode($keyValue)] = '';
+
+                            continue;
+                        }
+
                         [$key, $value] = explode('=', $keyValue);
 
                         $requestParams[urldecode($key)] = urldecode($value);
@@ -166,7 +172,7 @@ final class RealRequestFactory
             if (str_ends_with($key, '[]')) {
                 $key = str_replace('[]', '', $key);
                 $value = array_merge(
-                    $params[$key] ?? [],
+                    (array) ($params[$key] ?? []),
                     [$value],
                 );
             }
