@@ -2,7 +2,7 @@
 
 To use snapshot tests, use the `SnapshotTrait` in your test class.
 
-Optionally modify the default path of the `__snapshot__` directories appropriate to your
+Optionally modify the default path of the `__snapshots__` directories appropriate to your
 PSR-4 autoload configuration in `composer.json` by overwriting the `snapshotPath()` method.
 
 ```php
@@ -16,7 +16,7 @@ abstract class FunctionalTestCase extends WebTestCase
     use SnapshotTrait;
 
     /**
-     * Overwrite Snapshot::snapshotPath() to locate __snapshot__ directory next to the test classes.
+     * Overwrite Snapshot::snapshotPath() to locate __snapshots__ directory next to the test classes.
      */
     private function snapshotPath(): string
     {
@@ -48,25 +48,45 @@ public function testJsonFactoryCreatesJsonCorrectly()
 }
 ```
 
+## Snapshot Assertions
+
+Each assertion has a named variant (e.g. `assertMatchesNamedJsonSnapshot($actual, 'suffix')`) for
+several snapshots of the same type in one test.
+
+* Array `assertMatchesArraySnapshot()` (stored as JSON)
+* JSON `assertMatchesJsonSnapshot()`
+* JSON-LD `assertMatchesJsonLdSnapshot()` (blank node ids below `/.well-known/genid/` are normalized)
+* XML `assertMatchesXmlSnapshot()`
+* HTML `assertMatchesHtmlSnapshot()` (formatted with tidy)
+* Text `assertMatchesTextSnapshot()`
+
+## Environment variables
+
+The variables are read from `getenv()` first, then from `$_SERVER` and `$_ENV`, so values from
+`phpunit.xml` and Symfony's `.env.test` are picked up too. `0`, `false`, `no` and `off` (case-insensitive)
+count as disabled, an empty value counts as not set.
+
+| Variable | Effect |
+|---|---|
+| `UPDATE_SNAPSHOTS` | Rewrite existing snapshot files with the actual values. |
+| `CREATE_SNAPSHOTS` | Set to `0` or `false` to fail instead of creating missing snapshots. Snapshots are created by default. |
+| `SKIP_SNAPSHOT_TESTS` | Mark tests as skipped when they reach a snapshot assertion. |
+
 ## Recreate/Update Snapshots
 
 To recreate/update snapshot files run PHPUnit with the environment variable `UPDATE_SNAPSHOTS`.
 
-### Snapshot Assertions
-* Array `assertMatchesArraySnapshot()`
-* JSON `assertMatchesJsonSnapshot()`
-* XML `assertMatchesXmlSnapshot()`
-
 ```shell
 UPDATE_SNAPSHOTS=1 phpunit
-UPDATE_SNAPSHOTS=1 phpunit tests/Functinoal/MyTest.php
+UPDATE_SNAPSHOTS=1 phpunit tests/Functional/MyTest.php
 ```
 
 ## Usage in CI
 
-When running in continuous integration you maybe want to disable snapshot generation by setting `CREATE_SNAPSHOTS` to `0` or `false`.
+When running in continuous integration you probably want to disable snapshot generation by setting
+`CREATE_SNAPSHOTS` to `0` or `false`. A missing snapshot then fails the test instead of being created silently.
 
 ```shell
 CREATE_SNAPSHOTS=0 phpunit
-CREATE_SNAPSHOTS=false phpunit tests/Functinoal/MyTest.php
+CREATE_SNAPSHOTS=false phpunit tests/Functional/MyTest.php
 ```
