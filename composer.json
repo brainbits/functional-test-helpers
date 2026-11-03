@@ -42,6 +42,9 @@
         "symfony/uid": "^7.0",
         "thecodingmachine/phpstan-safe-rule": "^1.4"
     },
+    "conflict": {
+        "sebastian/diff": "<8.3"
+    },
     "suggest": {
         "ext-dom": "For mocking xml requests",
         "ext-iconv": "For asserting zip files",
