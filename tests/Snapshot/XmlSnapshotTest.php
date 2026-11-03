@@ -15,6 +15,8 @@ use function getenv;
 use function Safe\file_put_contents;
 use function Safe\putenv;
 
+use const PHP_EOL;
+
 final class XmlSnapshotTest extends TestCase
 {
     use SnapshotTrait;
@@ -41,6 +43,8 @@ final class XmlSnapshotTest extends TestCase
         }
 
         $this->assertNotNull($exception, 'Assertion did not fail');
+        $this->assertStringContainsString("'test' is valid XML (line 1: Start tag expected", $exception->getMessage());
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/', $exception->getMessage());
     }
 
     public function testXml(): void
@@ -82,12 +86,12 @@ final class XmlSnapshotTest extends TestCase
         $data = '<foo><bar>1</bar><baz>test</baz></foo>';
 
         file_put_contents(
-            $this->snapshotsDir->url() . '/xml_snapshot_named_xml_assertion_fails.xml',
+            $this->snapshotsDir->url() . '/xml_snapshot_named_xml_assertion_fails_postfix.xml',
             '<root/>',
         );
 
         try {
-            $this->assertMatchesXmlSnapshot($data);
+            $this->assertMatchesNamedXmlSnapshot($data, 'postfix');
         } catch (ExpectationFailedException) {
             return;
         }
@@ -113,10 +117,10 @@ final class XmlSnapshotTest extends TestCase
         }
 
         $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
-        $this->assertSame(
-            'Snapshot xml_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml does not exist.',
-            $thrownException->getMessage(),
-        );
+        $filename = 'xml_snapshot_snapshots_are_not_created_for_create_snapshot_false.xml';
+        $message = $thrownException->getMessage();
+        $this->assertStringStartsWith('Snapshot ' . $filename . ' does not exist.' . PHP_EOL, $message);
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/' . $filename, $message);
     }
 
     public function testSnapshotsAreNotCreatedForCreateSnapshotZero(): void
@@ -137,10 +141,10 @@ final class XmlSnapshotTest extends TestCase
         }
 
         $this->assertInstanceOf(AssertionFailedError::class, $thrownException, 'Snapshot test did not fail.');
-        $this->assertSame(
-            'Snapshot xml_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml does not exist.',
-            $thrownException->getMessage(),
-        );
+        $filename = 'xml_snapshot_snapshots_are_not_created_for_create_snapshot_zero.xml';
+        $message = $thrownException->getMessage();
+        $this->assertStringStartsWith('Snapshot ' . $filename . ' does not exist.' . PHP_EOL, $message);
+        $this->assertStringContainsString('Snapshot: vfs://root/__snapshots__/' . $filename, $message);
     }
 
     public function testCreateSnapshotEnvIsNotProcessedForOtherValue(): void

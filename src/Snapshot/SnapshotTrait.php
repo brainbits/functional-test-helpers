@@ -13,6 +13,9 @@ use tidy;
 use function basename;
 use function dirname;
 use function getenv;
+use function in_array;
+use function is_array;
+use function is_bool;
 use function is_string;
 use function mb_strtolower;
 use function rtrim;
@@ -26,7 +29,9 @@ use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
+use function trim;
 
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_LINE_TERMINATORS;
@@ -65,7 +70,7 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedTextSnapshot(string $actual, string $name, string $message = ''): void
     {
-        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
             self::markTestSkipped('Skipping snapshot tests');
         }
 
@@ -92,13 +97,13 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedJsonSnapshot(string $actual, string $name, string $message = ''): void
     {
-        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
             self::markTestSkipped('Skipping snapshot tests');
         }
 
-        self::assertJson($actual, $message);
-
         $fixtureFilename = $this->snapshotFilename('json', $name);
+
+        self::assertJson($actual, $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatJson($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -112,13 +117,13 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedJsonLdSnapshot(string $actual, string $name, string $message = ''): void
     {
-        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
             self::markTestSkipped('Skipping snapshot tests');
         }
 
-        self::assertJson($actual, $message);
-
         $fixtureFilename = $this->snapshotFilename('json', $name);
+
+        self::assertJson($actual, $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatJsonLd($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -137,13 +142,13 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedXmlSnapshot(string $actual, string $name, string $message = ''): void
     {
-        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
             self::markTestSkipped('Skipping snapshot tests');
         }
 
-        self::assertThat($actual, new IsXml(), $message);
-
         $fixtureFilename = $this->snapshotFilename('xml', $name);
+
+        self::assertThat($actual, new IsXml(), $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatXml($actual);
 
         $this->snapshotDump($fixtureFilename, $actual);
@@ -162,7 +167,7 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedHtmlSnapshot(string $actual, string $name, string $message = ''): void
     {
-        if (getenv('SKIP_SNAPSHOT_TESTS')) {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
             self::markTestSkipped('Skipping snapshot tests');
         }
 
@@ -260,15 +265,17 @@ trait SnapshotTrait
     {
         $data = json_decode($string, true);
 
-        array_walk_recursive(
-            $data,
-            static function (&$item, $key): void {
-                // phpcs:ignore
-                if ($key === '@id' && is_string($item) && str_contains($item, '/.well-known/genid/')) {
-                    $item = 'snapshot-normalized-id';
-                }
-            },
-        );
+        if (is_array($data)) {
+            array_walk_recursive(
+                $data,
+                static function (&$item, $key): void {
+                    // phpcs:ignore
+                    if ($key === '@id' && is_string($item) && str_contains($item, '/.well-known/genid/')) {
+                        $item = 'snapshot-normalized-id';
+                    }
+                },
+            );
+        }
 
         return json_encode(
             $data,
@@ -298,19 +305,47 @@ trait SnapshotTrait
     {
         $filesystem = new Filesystem();
 
-        if (!getenv('UPDATE_SNAPSHOTS') && $filesystem->exists($fixtureFilename)) {
+        if (self::snapshotEnvFlag('UPDATE_SNAPSHOTS') !== true && $filesystem->exists($fixtureFilename)) {
             return;
         }
 
-        if (
-            (getenv('CREATE_SNAPSHOTS') === '0' || getenv('CREATE_SNAPSHOTS') === 'false') &&
-            !$filesystem->exists($fixtureFilename)
-        ) {
-            self::fail('Snapshot ' . basename($fixtureFilename) . ' does not exist.');
+        if (self::snapshotEnvFlag('CREATE_SNAPSHOTS') === false && !$filesystem->exists($fixtureFilename)) {
+            self::fail(sprintf(
+                'Snapshot %s does not exist.' . PHP_EOL .
+                'Snapshot: %s' . PHP_EOL .
+                'Creating snapshots is disabled by CREATE_SNAPSHOTS. Run the test without it to create the snapshot.',
+                basename($fixtureFilename),
+                $fixtureFilename,
+            ));
         }
 
         $filesystem->mkdir(dirname($fixtureFilename));
         $filesystem->dumpFile($fixtureFilename, $string);
+    }
+
+    /**
+     * Reads a boolean flag from the environment (getenv(), $_SERVER, $_ENV).
+     * Returns null if the variable is not set or empty, false for "0", "false", "no" and "off", true otherwise.
+     */
+    private static function snapshotEnvFlag(string $name): bool|null
+    {
+        $value = getenv($name);
+
+        if ($value === false || $value === '') {
+            $value = $_SERVER[$name] ?? $_ENV[$name] ?? null;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $value = strtolower(trim((string) $value));
+
+        if ($value === '') {
+            return null;
+        }
+
+        return !in_array($value, ['0', 'false', 'no', 'off'], true);
     }
 
     private function snapshotAppendFilenameHint(string $fixtureFilename, string $message): string
