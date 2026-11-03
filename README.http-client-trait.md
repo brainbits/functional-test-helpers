@@ -70,3 +70,19 @@ $this->mockResponse()->timeout();
 ```
 
 Use an array, not a generator, for `chunks()` when the response is returned more than once (`willAlwaysRespond()`).
+
+### Call expectations
+
+```php
+$this->mockRequest('POST', 'http://127.0.0.1/orders')->once()->willRespond($this->mockResponse());
+$this->mockRequest('DELETE', 'http://127.0.0.1/orders/1')->never();
+$this->mockRequest('GET', 'http://127.0.0.1/status')->times(3)->willAlwaysRespond($this->mockResponse());
+```
+
+`once()`, `never()` and `times()` are checked automatically after each test.
+
+```php
+self::assertAllMockResponsesAreConsumed();               // no sequential response was left unused
+self::assertRequestMocksAreCalledInOrder($login, $order); // first calls happened in this order
+$this->chronologicalCallStack();                         // all calls of all mocks in call order
+```

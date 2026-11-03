@@ -20,6 +20,8 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
+use function array_map;
+
 final class HttpClientMockTraitTest extends TestCase
 {
     use HttpClientMockTrait;
@@ -179,5 +181,95 @@ final class HttpClientMockTraitTest extends TestCase
         }
 
         $this->fail('Failed assertions were not reported');
+    }
+
+    public function testCallCountExpectationsAreChecked(): void
+    {
+        $this->mockRequest('GET', '/once')->name('once')->once()->willAlwaysRespond($this->mockResponse());
+        $this->mockRequest('GET', '/never')->name('never')->never()->willAlwaysRespond($this->mockResponse());
+        $this->mockRequest('GET', '/twice')->name('twice')->times(2)->willAlwaysRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/once', []);
+        (self::$collection)('GET', '/never', []);
+        (self::$collection)('GET', '/twice', []);
+
+        try {
+            $this->assertNoFailedMockRequests();
+        } catch (AssertionFailedError $e) {
+            $this->assertStringNotContainsString('"once"', $e->getMessage());
+            $this->assertStringContainsString(
+                'Mock request "never" was expected to be called 0 times, but was called 1 times.',
+                $e->getMessage(),
+            );
+            $this->assertStringContainsString(
+                'Mock request "twice" was expected to be called 2 times, but was called 1 times.',
+                $e->getMessage(),
+            );
+
+            return;
+        }
+
+        $this->fail('Call count expectations were not checked');
+    }
+
+    public function testMatchingCallCountExpectationsPass(): void
+    {
+        $this->mockRequest('GET', '/once')->once()->willRespond($this->mockResponse());
+        $this->mockRequest('GET', '/never')->never();
+
+        (self::$collection)('GET', '/once', []);
+
+        $this->assertNoFailedMockRequests();
+        $this->assertCount(1, $this->chronologicalCallStack());
+    }
+
+    public function testAssertAllMockResponsesAreConsumed(): void
+    {
+        $this->mockRequest('GET', '/sequence')
+            ->name('sequence')
+            ->willRespond($this->mockResponse())
+            ->willRespond($this->mockResponse());
+        $this->mockRequest('GET', '/always')->willAlwaysRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/sequence', []);
+
+        try {
+            self::assertAllMockResponsesAreConsumed();
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString(
+                'Mock request "sequence" has responses that were never returned.',
+                $e->getMessage(),
+            );
+            $this->createdMockRequestBuilders = [];
+
+            return;
+        }
+
+        $this->fail('Unused responses were not detected');
+    }
+
+    public function testChronologicalCallStackAndCallOrder(): void
+    {
+        $a = $this->mockRequest('GET', '/a')->name('a')->willAlwaysRespond($this->mockResponse());
+        $b = $this->mockRequest('GET', '/b')->name('b')->willAlwaysRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/b', []);
+        (self::$collection)('GET', '/a', []);
+        (self::$collection)('GET', '/b', []);
+
+        $uris = array_map(static fn ($call) => $call->getUri(), [...$this->chronologicalCallStack()]);
+        $this->assertSame(['/b', '/a', '/b'], $uris);
+
+        self::assertRequestMocksAreCalledInOrder($b, $a);
+
+        try {
+            self::assertRequestMocksAreCalledInOrder($a, $b);
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString('Mock request "b" was called before "a".', $e->getMessage());
+
+            return;
+        }
+
+        $this->fail('Wrong call order was not detected');
     }
 }

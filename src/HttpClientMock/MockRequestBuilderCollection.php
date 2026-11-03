@@ -20,6 +20,8 @@ final class MockRequestBuilderCollection implements IteratorAggregate, Countable
     private MockRequestResolver $requestResolver;
     /** @var MockRequestBuilder[] */
     private array $requestBuilders = [];
+    /** @var list<array{MockRequestBuilder, RealRequest}> */
+    private array $calls = [];
 
     public function __construct()
     {
@@ -35,6 +37,7 @@ final class MockRequestBuilderCollection implements IteratorAggregate, Countable
         $requestBuilder = ($this->requestResolver)($this, $realRequest);
         $requestBuilder->assert($realRequest);
         $requestBuilder->called($realRequest);
+        $this->calls[] = [$requestBuilder, $realRequest];
 
         if ($requestBuilder->onMatch && is_callable($requestBuilder->onMatch)) {
             ($requestBuilder->onMatch)($realRequest);
@@ -56,6 +59,24 @@ final class MockRequestBuilderCollection implements IteratorAggregate, Countable
         );
 
         return CallStack::fromCallStacks(...$callStacks);
+    }
+
+    /**
+     * All calls of all mock request builders in the order they were made.
+     */
+    public function getChronologicalCallStack(): CallStack
+    {
+        return new CallStack(...array_map(static fn (array $call) => $call[1], $this->calls));
+    }
+
+    /**
+     * The mock request builders in the order they were called, one entry per call.
+     *
+     * @return list<MockRequestBuilder>
+     */
+    public function getCalledRequestBuilders(): array
+    {
+        return array_map(static fn (array $call) => $call[0], $this->calls);
     }
 
     /** @return Traversable<MockRequestBuilder> */

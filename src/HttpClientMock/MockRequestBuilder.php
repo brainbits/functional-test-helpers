@@ -36,6 +36,7 @@ final class MockRequestBuilder
     public string|null $name = null;
 
     private MockResponseCollection $responses;
+    private int|null $expectedCallCount = null;
 
     /** @var Matcher[]|array<Matcher[]> */
     private array $matchers = [];
@@ -349,6 +350,42 @@ final class MockRequestBuilder
     public function hasNextResponse(): bool
     {
         return $this->responses->hasNext();
+    }
+
+    public function hasUnusedResponses(): bool
+    {
+        return $this->responses->hasUnusedResponses();
+    }
+
+    /**
+     * Expect this mock to be called exactly once. Checked automatically after the test.
+     */
+    public function once(): self
+    {
+        return $this->times(1);
+    }
+
+    /**
+     * Expect this mock to never be called. Checked automatically after the test.
+     */
+    public function never(): self
+    {
+        return $this->times(0);
+    }
+
+    /**
+     * Expect this mock to be called exactly $times times. Checked automatically after the test.
+     */
+    public function times(int $times): self
+    {
+        $this->expectedCallCount = $times;
+
+        return $this;
+    }
+
+    public function getExpectedCallCount(): int|null
+    {
+        return $this->expectedCallCount;
     }
 
     public function resetResponses(): self

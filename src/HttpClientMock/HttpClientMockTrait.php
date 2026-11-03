@@ -18,6 +18,7 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Throwable;
 
+use function array_key_exists;
 use function array_map;
 use function assert;
 use function count;
@@ -71,11 +72,28 @@ trait HttpClientMockTrait
         $mockRequestBuilders = $this->createdMockRequestBuilders;
         $this->createdMockRequestBuilders = [];
 
+        // a skipped or incomplete test didn't run its requests, call counts must not turn it into a failure
+        $status = $this->status();
+        $checkCallCounts = !$status->isSkipped() && !$status->isIncomplete();
+
         $failedAssertions = [];
         foreach ($mockRequestBuilders as $mockRequestBuilder) {
             foreach ($mockRequestBuilder->getFailedAssertions() as $failedAssertion) {
                 $failedAssertions[] = $failedAssertion;
             }
+
+            $expectedCallCount = $mockRequestBuilder->getExpectedCallCount();
+            $actualCallCount = count($mockRequestBuilder->getCallStack());
+            if (!$checkCallCounts || $expectedCallCount === null || $expectedCallCount === $actualCallCount) {
+                continue;
+            }
+
+            $failedAssertions[] = new AssertionFailedError(sprintf(
+                'Mock request %s was expected to be called %d times, but was called %d times.',
+                self::describeMockRequestBuilder($mockRequestBuilder),
+                $expectedCallCount,
+                $actualCallCount,
+            ));
         }
 
         if (count($failedAssertions) === 1) {
@@ -255,6 +273,94 @@ trait HttpClientMockTrait
         assert($stack instanceof MockRequestBuilderCollection);
 
         return $stack->getCallStack();
+    }
+
+    /**
+     * All calls of all mock requests in the order they were made.
+     */
+    protected function chronologicalCallStack(): CallStack
+    {
+        return self::getMockRequestBuilderCollection()->getChronologicalCallStack();
+    }
+
+    /**
+     * Fails if a mock request has sequential responses (willRespond(), willThrow(), ...) that were never returned.
+     */
+    protected static function assertAllMockResponsesAreConsumed(string $message = ''): void
+    {
+        foreach (self::getMockRequestBuilderCollection() as $mockRequestBuilder) {
+            self::assertFalse(
+                $mockRequestBuilder->hasUnusedResponses(),
+                self::mockRequestMessage(
+                    $message,
+                    'Mock request %s has responses that were never returned.',
+                    self::describeMockRequestBuilder($mockRequestBuilder),
+                ),
+            );
+        }
+    }
+
+    /**
+     * Fails unless the first calls of the given mock requests happened in the given order.
+     */
+    protected static function assertRequestMocksAreCalledInOrder(MockRequestBuilder ...$expectedOrder): void
+    {
+        $calledBuilders = self::getMockRequestBuilderCollection()->getCalledRequestBuilders();
+
+        $firstCalls = [];
+        foreach ($calledBuilders as $index => $calledBuilder) {
+            foreach ($expectedOrder as $position => $expectedBuilder) {
+                if ($calledBuilder !== $expectedBuilder || array_key_exists($position, $firstCalls)) {
+                    continue;
+                }
+
+                $firstCalls[$position] = $index;
+            }
+        }
+
+        foreach ($expectedOrder as $position => $expectedBuilder) {
+            self::assertArrayHasKey(
+                $position,
+                $firstCalls,
+                sprintf('Mock request %s was not called.', self::describeMockRequestBuilder($expectedBuilder)),
+            );
+
+            if ($position === 0) {
+                continue;
+            }
+
+            self::assertGreaterThan(
+                $firstCalls[$position - 1],
+                $firstCalls[$position],
+                sprintf(
+                    'Mock request %s was called before %s.',
+                    self::describeMockRequestBuilder($expectedBuilder),
+                    self::describeMockRequestBuilder($expectedOrder[$position - 1]),
+                ),
+            );
+        }
+    }
+
+    private static function getMockRequestBuilderCollection(): MockRequestBuilderCollection
+    {
+        if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
+            static::fail(sprintf(
+                '%s not found, did you forget to include it in your test services?',
+                MockRequestBuilderCollection::class,
+            ));
+        }
+
+        $collection = self::getContainer()->get(MockRequestBuilderCollection::class);
+        assert($collection instanceof MockRequestBuilderCollection);
+
+        return $collection;
+    }
+
+    private static function describeMockRequestBuilder(MockRequestBuilder $mockRequestBuilder): string
+    {
+        $name = $mockRequestBuilder->name;
+
+        return $name !== null ? sprintf('"%s"', $name) : sprintf('[%s]', (string) $mockRequestBuilder);
     }
 
     /** @param mixed[] $expected */
