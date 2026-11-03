@@ -21,7 +21,7 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
-    versioning-strategy: "increase-if-necessary"
+    versioning-strategy: "widen"
     commit-message:
       prefix: "fix"
       prefix-development: "chore"

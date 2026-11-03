@@ -3,19 +3,37 @@
 name: "Release"
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - "Build"
+    types:
+      - "completed"
     branches:
       - "main"
 
+permissions:
+  contents: "write"
+  issues: "write"
+  pull-requests: "write"
+
 jobs:
-  tests:
+  release:
     name: "Create Release"
+
+    # Only release commits pushed to main whose build succeeded
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
 
     runs-on: "ubuntu-latest"
 
     steps:
       - name: "Checkout"
         uses: "actions/checkout@v4"
+        with:
+          ref: "${{ github.event.workflow_run.head_sha }}"
+          fetch-depth: 0
 
       - uses: "actions/setup-node@v4"
         with:
