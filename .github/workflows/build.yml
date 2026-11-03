@@ -8,6 +8,9 @@ on:
     branches:
       - "main"
 
+permissions:
+  contents: "read"
+
 jobs:
   tests:
     name: "Tests"
@@ -34,12 +37,16 @@ jobs:
       - name: "Install unix packages"
         run: "sudo apt-get update && sudo apt-get install -y 7zip"
 
+      - name: "Determine composer cache directory"
+        id: "composer-cache"
+        run: "echo \"dir=$(composer config cache-files-dir)\" >> \"$GITHUB_OUTPUT\""
+
       - name: "Cache dependencies"
         uses: "actions/cache@v4"
         with:
-          path: "~/.composer/cache"
-          key: "php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.json') }}"
-          restore-keys: "php-${{ matrix.php-version }}-composer-"
+          path: "${{ steps.composer-cache.outputs.dir }}"
+          key: "php-${{ matrix.php-version }}-${{ matrix.dependencies }}-composer-${{ hashFiles('**/composer.json') }}"
+          restore-keys: "php-${{ matrix.php-version }}-${{ matrix.dependencies }}-composer-"
 
       - name: "Install lowest dependencies"
         if: ${{ matrix.dependencies == 'lowest' }}
