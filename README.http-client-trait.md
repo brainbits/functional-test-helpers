@@ -46,3 +46,27 @@ final class MyTest extends WebTestCase
 }
 
 ```
+
+### Failures, timeouts and streamed responses
+
+`willThrow()` throws when the request is sent. Real network errors and timeouts surface when the
+response is read (`getStatusCode()`, `getContent()`, `toArray()`, ...). To test that kind of error handling, use:
+
+```php
+$this->mockRequest('GET', 'http://127.0.0.1/my/endpoint')
+    ->willTimeout();                                    // TimeoutException when the response is read
+
+$this->mockRequest('GET', 'http://127.0.0.1/other/endpoint')
+    ->willFailWithTransportError('Connection refused'); // TransportException when the response is read
+```
+
+The response builder can also stream its content in chunks and delay the response:
+
+```php
+$this->mockResponse()->chunks(['first ', 'second']);
+$this->mockResponse()->json(['ok' => true])->delay(0.5);
+$this->mockResponse()->transportError('Connection reset');
+$this->mockResponse()->timeout();
+```
+
+Use an array, not a generator, for `chunks()` when the response is returned more than once (`willAlwaysRespond()`).

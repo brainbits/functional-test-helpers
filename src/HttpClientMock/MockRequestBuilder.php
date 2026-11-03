@@ -304,6 +304,23 @@ final class MockRequestBuilder
         return $this;
     }
 
+    /**
+     * The response fails with a TimeoutException when it is read, like a real timeout.
+     */
+    public function willTimeout(): self
+    {
+        return $this->willRespond((new MockResponseBuilder())->timeout());
+    }
+
+    /**
+     * The response fails with a TransportException when it is read, like a real network error.
+     * Unlike willThrow(), request() itself doesn't throw.
+     */
+    public function willFailWithTransportError(string $message = 'Transport error'): self
+    {
+        return $this->willRespond((new MockResponseBuilder())->transportError($message));
+    }
+
     public function willThrow(Throwable $exception): self
     {
         try {
