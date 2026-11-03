@@ -11,6 +11,7 @@ use DOMDocument;
 use function count;
 use function error_reporting;
 use function is_callable;
+use function libxml_clear_errors;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
 use function sprintf;
@@ -83,10 +84,14 @@ final readonly class XmlMatcher implements CallbackMatcher
         $reporting = error_reporting(0);
 
         try {
+            // errors left in the buffer by the application must not count
+            libxml_clear_errors();
+
             $document->loadXML($data);
 
             $errors = libxml_get_errors();
         } finally {
+            libxml_clear_errors();
             libxml_use_internal_errors($internal);
             error_reporting($reporting);
         }

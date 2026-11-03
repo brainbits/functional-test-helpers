@@ -106,6 +106,22 @@ final class HttpClientMockTraitTest extends TestCase
         );
     }
 
+    public function testMockRequestKeepsThePortOfLegacyUris(): void
+    {
+        $builder = $this->mockRequest('GET', 'http://localhost:8080/path?x=1');
+
+        $this->assertEquals(
+            new MockRequestMatcher(null, [
+                new MethodMatcher('GET'),
+                new QueryParamMatcher('x', '1', []),
+                new UriMatcher('http://localhost:8080/path', new UriParams()),
+            ]),
+            $builder->getMatcher(),
+        );
+
+        $this->createdMockRequestBuilders = [];
+    }
+
     public function testMockRequestWithoutMethodAndUri(): void
     {
         $builder = $this->mockRequest();

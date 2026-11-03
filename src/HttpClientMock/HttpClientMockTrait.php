@@ -209,6 +209,7 @@ trait HttpClientMockTrait
             $uriParts = parse_url($uri);
             $uri = ($uriParts['scheme'] ?? false ? $uriParts['scheme'] . '://' : '') .
                 ($uriParts['host'] ?? false ? $uriParts['host'] : '') .
+                ($uriParts['port'] ?? false ? ':' . $uriParts['port'] : '') .
                 ($uriParts['path'] ?? '');
 
             if ($uriParts['query'] ?? false) {
