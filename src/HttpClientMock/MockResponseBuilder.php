@@ -11,6 +11,7 @@ use function count;
 use function is_array;
 use function is_string;
 use function iterator_to_array;
+use function Safe\file_get_contents;
 use function Safe\json_encode;
 use function sprintf;
 use function str_repeat;
@@ -93,6 +94,17 @@ final class MockResponseBuilder
         return $this;
     }
 
+    /**
+     * Adds another value for the header, e.g. for several Set-Cookie headers.
+     */
+    public function addHeader(string $key, string $value): self
+    {
+        $key = strtolower($key);
+        $this->headers[$key] = [...(array) ($this->headers[$key] ?? []), $value];
+
+        return $this;
+    }
+
     public function contentType(string $contentType): self
     {
         $this->header('Content-Type', $contentType);
@@ -115,10 +127,33 @@ final class MockResponseBuilder
     }
 
     /** @param mixed[]|null $data */
-    public function json(array|null $data = null): self
+    public function json(array|null $data = null, int|null $code = null): self
     {
         $this->contentType('application/json');
         $this->content($data !== null ? json_encode($data) : null);
+
+        if ($code !== null) {
+            $this->code($code);
+        }
+
+        return $this;
+    }
+
+    public function jsonFile(string $path, int|null $code = null): self
+    {
+        $this->contentType('application/json');
+        $this->content(file_get_contents($path));
+
+        if ($code !== null) {
+            $this->code($code);
+        }
+
+        return $this;
+    }
+
+    public function contentFromFile(string $path): self
+    {
+        $this->content(file_get_contents($path));
 
         return $this;
     }
@@ -212,7 +247,9 @@ final class MockResponseBuilder
                 $key = ucwords($key);
                 $key = str_replace(' ', '-', $key);
 
-                $string .= sprintf('%s%s: %s', PHP_EOL, $key, $value);
+                foreach ((array) $value as $headerValue) {
+                    $string .= sprintf('%s%s: %s', PHP_EOL, $key, $headerValue);
+                }
             }
         }
 

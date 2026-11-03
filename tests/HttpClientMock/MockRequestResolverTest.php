@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockRequest;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Mismatch;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver;
@@ -384,5 +386,55 @@ GET /query');
         $result = (new MockRequestResolver())($collection, $this->createRealRequest('GET', '/b'));
 
         $this->assertSame($getMock, $result);
+    }
+
+    public function testFlexibleMatchers(): void
+    {
+        $collection = new MockRequestBuilderCollection();
+        $collection->addMockRequestBuilder(
+            $mock = (new MockRequestBuilder())
+                ->method('POST')
+                ->uriMatches('#^/users/\d+$#')
+                ->headerMatches('Authorization', '/^Bearer .+/')
+                ->withoutHeader('X-Debug')
+                ->queryParams(['page' => '1'])
+                ->jsonContains(['user' => ['name' => 'peter']]),
+        );
+
+        $request = $this->createRealRequest(
+            'POST',
+            '/users/42',
+            headers: ['authorization' => 'Bearer abc'],
+            json: ['user' => ['name' => 'peter', 'id' => 42], 'created' => '2026-01-01'],
+            queryParams: ['page' => '1'],
+        );
+
+        $this->assertSame($mock, (new MockRequestResolver())($collection, $request));
+    }
+
+    public function testFlexibleMatchersMismatch(): void
+    {
+        $mock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uriMatches('#^/users/\d+$#')
+            ->withoutHeader('X-Debug')
+            ->queryParams(['page' => '1'])
+            ->jsonContains(['user' => ['name' => 'peter']]);
+
+        $request = $this->createRealRequest(
+            'POST',
+            '/users/abc',
+            headers: ['x-debug' => '1'],
+            json: ['user' => ['name' => 'paul']],
+            queryParams: ['page' => '1', 'extra' => 'x'],
+        );
+
+        $results = ($mock->getMatcher())($request)->getResults();
+
+        $this->assertCount(5, $results);
+        $this->assertInstanceOf(Hit::class, $results[0]);
+        foreach ([1, 2, 3, 4] as $index) {
+            $this->assertInstanceOf(Mismatch::class, $results[$index]);
+        }
     }
 }

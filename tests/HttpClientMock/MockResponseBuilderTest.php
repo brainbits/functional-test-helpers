@@ -291,4 +291,33 @@ final class MockResponseBuilderTest extends TestCase
         $this->assertSame('Transport error: boom', (string) (new MockResponseBuilder())->transportError('boom'));
         $this->assertSame('Timeout', (string) (new MockResponseBuilder())->timeout());
     }
+
+    public function testResponseFixturesAndMultiValueHeaders(): void
+    {
+        $builder = (new MockResponseBuilder())
+            ->jsonFile(__DIR__ . '/../files/response.json', 201)
+            ->addHeader('Set-Cookie', 'a=1')
+            ->addHeader('Set-Cookie', 'b=2');
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+        $response = $client->request('GET', 'http://localhost/');
+
+        $this->assertSame(201, $response->getStatusCode());
+        $this->assertSame(['id' => 1], $response->toArray());
+        $this->assertSame(['a=1', 'b=2'], $response->getHeaders()['set-cookie']);
+    }
+
+    public function testJsonWithCodeAndContentFromFile(): void
+    {
+        $json = (new MockResponseBuilder())->json(['error' => 'x'], 422);
+        $client = new MockHttpClient($json->getResponse($this->createRealRequest()));
+        $this->assertSame(422, $client->request('GET', 'http://localhost/')->getStatusCode());
+
+        $file = (new MockResponseBuilder())->contentFromFile(__DIR__ . '/../files/test.txt');
+        $client = new MockHttpClient($file->getResponse($this->createRealRequest()));
+        $this->assertStringEqualsFile(
+            __DIR__ . '/../files/test.txt',
+            $client->request('GET', 'http://localhost/')->getContent(),
+        );
+    }
 }

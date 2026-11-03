@@ -86,3 +86,20 @@ self::assertAllMockResponsesAreConsumed();               // no sequential respon
 self::assertRequestMocksAreCalledInOrder($login, $order); // first calls happened in this order
 $this->chronologicalCallStack();                         // all calls of all mocks in call order
 ```
+
+### Flexible matching and response fixtures
+
+```php
+$this->mockRequest('POST')
+    ->uriMatches('#^https://api\.test/users/\d+$#')       // regular expression for the URI without query string
+    ->headerMatches('Authorization', '/^Bearer .+/')      // or header('X-Foo', fn (string $value) => ...)
+    ->withoutHeader('X-Debug')                            // header must be absent
+    ->queryParams(['page' => '1'])                         // exactly these query parameters
+    ->jsonContains(['user' => ['name' => 'peter']])        // JSON body contains these keys and values
+    ->willRespond(
+        $this->mockResponse()
+            ->jsonFile(__DIR__ . '/fixtures/user.json', 201) // or json($data, 201), contentFromFile($path)
+            ->addHeader('Set-Cookie', 'a=1')
+            ->addHeader('Set-Cookie', 'b=2'),
+    );
+```
