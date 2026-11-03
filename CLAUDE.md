@@ -64,4 +64,4 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 - Use Conventional Commits (`feat:`, `fix:`, `chore(deps):`, `test:`, `ci:`, `docs:`). semantic-release
   (`.releaserc`) derives versions from them and releases on every push to `main`, with tags without a `v` prefix.
   `feat`/`fix` trigger a release, and `BREAKING CHANGE` triggers a major release (add an `UPGRADE-x.0.md` entry).
-- Dependency updates are handled by Renovate (`renovate.json`).
+- Dependency updates are handled by Dependabot (`.github/dependabot.yml`), weekly for Composer and GitHub Actions. Its commit prefixes fit semantic-release: runtime deps use `fix` (patch release), dev deps use `chore`, and Actions use `ci`.
