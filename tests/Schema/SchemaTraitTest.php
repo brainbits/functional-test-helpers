@@ -11,6 +11,7 @@ use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStrategy;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 use function getenv;
@@ -23,8 +24,8 @@ final class SchemaTraitTest extends TestCase
 
     private string $oldEnvUsePreInitializedSchema;
 
-    private MockObject&Connection $connectionMock;
-    private MockObject&SchemaStrategy $schemaStrategyMock;
+    private Stub&Connection $connectionMock;
+    private SchemaStrategy $schemaStrategyMock;
 
     private SchemaBuilder $schemaBuilder;
     private DataBuilder $dataBuilder;
@@ -35,8 +36,8 @@ final class SchemaTraitTest extends TestCase
 
         self::$isSchemaDatabaseClean = false;
 
-        $this->connectionMock = $this->createMock(Connection::class);
-        $this->schemaStrategyMock = $this->createMock(SchemaStrategy::class);
+        $this->connectionMock = $this->createStub(Connection::class);
+        $this->schemaStrategyMock = $this->createStub(SchemaStrategy::class);
 
         $this->schemaBuilder = $this->createSchemaBuilder();
         $this->dataBuilder = $this->createDataBuilder();
@@ -66,11 +67,13 @@ final class SchemaTraitTest extends TestCase
 
     public function testFixtureFromNewConnectionAppliesSchemaAndData(): void
     {
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock = $this->mockSchemaStrategy();
+
+        $schemaStrategyMock->expects($this->once())
             ->method('applySchema')
             ->with($this->schemaBuilder, $this->isInstanceOf(Connection::class));
 
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock->expects($this->once())
             ->method('applyData')
             ->with($this->dataBuilder, $this->isInstanceOf(Connection::class));
 
@@ -101,11 +104,13 @@ final class SchemaTraitTest extends TestCase
 
     public function testFixtureFromConnectionAppliesSchemaAndData(): void
     {
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock = $this->mockSchemaStrategy();
+
+        $schemaStrategyMock->expects($this->once())
             ->method('applySchema')
             ->with($this->schemaBuilder, $this->connectionMock);
 
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock->expects($this->once())
             ->method('applyData')
             ->with($this->dataBuilder, $this->connectionMock);
 
@@ -119,12 +124,14 @@ final class SchemaTraitTest extends TestCase
 
     public function testFixtureFromConnectionWithPreInitializedSchema(): void
     {
+        $schemaStrategyMock = $this->mockSchemaStrategy();
+
         putenv('USE_PRE_INITIALIZED_SCHEMA=1');
 
-        $this->schemaStrategyMock->expects($this->never())
+        $schemaStrategyMock->expects($this->never())
             ->method('applySchema');
 
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock->expects($this->once())
             ->method('applyData')
             ->with($this->dataBuilder, $this->connectionMock);
 
@@ -138,13 +145,15 @@ final class SchemaTraitTest extends TestCase
 
     public function testSchemaIsCleanedUpBeforeApplyingDataIfDatabaseIsDirty(): void
     {
+        $schemaStrategyMock = $this->mockSchemaStrategy();
+
         self::$isSchemaDatabaseClean = false;
 
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock->expects($this->once())
             ->method('deleteData')
             ->with($this->connectionMock);
 
-        $this->schemaStrategyMock->expects($this->once())
+        $schemaStrategyMock->expects($this->once())
             ->method('resetSequences')
             ->with($this->connectionMock);
 
@@ -158,12 +167,14 @@ final class SchemaTraitTest extends TestCase
 
     public function testSchemaIsNotCleanedUpBeforeApplyingDataIfDatabaseIsClean(): void
     {
+        $schemaStrategyMock = $this->mockSchemaStrategy();
+
         self::$isSchemaDatabaseClean = true;
 
-        $this->schemaStrategyMock->expects($this->never())
+        $schemaStrategyMock->expects($this->never())
             ->method('deleteData');
 
-        $this->schemaStrategyMock->expects($this->never())
+        $schemaStrategyMock->expects($this->never())
             ->method('resetSequences');
 
         $this->fixtureFromConnection(
@@ -252,6 +263,14 @@ final class SchemaTraitTest extends TestCase
     /**
      * Overridden this method to use a schema strategy mock.
      */
+    private function mockSchemaStrategy(): MockObject&SchemaStrategy
+    {
+        $schemaStrategyMock = $this->createMock(SchemaStrategy::class);
+        $this->schemaStrategyMock = $schemaStrategyMock;
+
+        return $schemaStrategyMock;
+    }
+
     protected function createSchemaStrategy(Connection $connection): SchemaStrategy
     {
         return $this->schemaStrategyMock;

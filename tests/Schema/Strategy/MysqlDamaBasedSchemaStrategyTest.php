@@ -16,7 +16,7 @@ use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\MySQLSchemaManager;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
@@ -33,13 +33,13 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
     use SnapshotTrait;
 
     private MySQLPlatform $platform;
-    private MySQLSchemaManager&MockObject $schemaManager;
+    private MySQLSchemaManager&Stub $schemaManager;
     private SchemaBuilder $schemaBuilder;
 
     protected function setUp(): void
     {
         $this->platform = new MySQLPlatform();
-        $this->schemaManager = $this->createMock(MySQLSchemaManager::class);
+        $this->schemaManager = $this->createStub(MySQLSchemaManager::class);
 
         $this->schemaBuilder = $this->createSchemaBuilder();
         $this->schemaBuilder->foo();
@@ -50,8 +50,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
 
-        $this->schemaManager->expects($this->any())
-            ->method('listTableNames')
+        $this->schemaManager->method('listTableNames')
             ->willReturnCallback(
                 static function () use ($queryLog) {
                     $result = [];
@@ -66,21 +65,16 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                 },
             );
 
-        $connection = $this->createMock(Connection::class);
-        $connection->expects($this->any())
-            ->method('quoteIdentifier')
+        $connection = $this->createStub(Connection::class);
+        $connection->method('quoteIdentifier')
             ->willReturnCallback($this->platform->quoteIdentifier(...));
-        $connection->expects($this->any())
-            ->method('getParams')
+        $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
-        $connection->expects($this->any())
-            ->method('getDatabasePlatform')
+        $connection->method('getDatabasePlatform')
             ->willReturn($this->platform);
-        $connection->expects($this->any())
-            ->method('createSchemaManager')
+        $connection->method('createSchemaManager')
             ->willReturn($this->schemaManager);
-        $connection->expects($this->any())
-            ->method('executeStatement')
+        $connection->method('executeStatement')
             ->willReturnCallback(
                 static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
@@ -88,8 +82,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                     return 0;
                 },
             );
-        $connection->expects($this->any())
-            ->method('executeQuery')
+        $connection->method('executeQuery')
             ->willReturnCallback(
                 static function () use ($queryLog, $connection) {
                     $query = func_get_arg(0);
@@ -110,10 +103,13 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 
     public function testExistingTablesAreDroppedBeforeCreatingFreshSchema(): void
     {
+        $schemaManager = $this->createMock(MySQLSchemaManager::class);
+        $this->schemaManager = $schemaManager;
+
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
 
-        $this->schemaManager->expects($this->once())
+        $schemaManager->expects($this->once())
             ->method('listTableNames')
             ->willReturnCallback(static function () use ($queryLog) {
                 $result = ['old_table_1', 'old_table_2'];
@@ -123,7 +119,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                 return $result;
             });
 
-        $this->schemaManager->expects($this->exactly(2))
+        $schemaManager->expects($this->exactly(2))
             ->method('listTableForeignKeys')
             ->willReturnCallback(static function ($tableName) use ($queryLog) {
                 $result = [];
@@ -144,8 +140,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                 return $result;
             });
 
-        $this->schemaManager->expects($this->any())
-            ->method('dropForeignKey')
+        $schemaManager->method('dropForeignKey')
             ->willReturnCallback(static function ($tableName) use ($queryLog) {
                 $result = [];
 
@@ -154,8 +149,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                 return $result;
             });
 
-        $this->schemaManager->expects($this->any())
-            ->method('dropTable')
+        $schemaManager->method('dropTable')
             ->willReturnCallback(static function ($tableName) use ($queryLog) {
                 $result = [];
 
@@ -164,21 +158,16 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                 return $result;
             });
 
-        $connection = $this->createMock(Connection::class);
-        $connection->expects($this->any())
-            ->method('quoteIdentifier')
+        $connection = $this->createStub(Connection::class);
+        $connection->method('quoteIdentifier')
             ->willReturnCallback($this->platform->quoteIdentifier(...));
-        $connection->expects($this->any())
-            ->method('getParams')
+        $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
-        $connection->expects($this->any())
-            ->method('getDatabasePlatform')
+        $connection->method('getDatabasePlatform')
             ->willReturn($this->platform);
-        $connection->expects($this->any())
-            ->method('createSchemaManager')
-            ->willReturn($this->schemaManager);
-        $connection->expects($this->any())
-            ->method('executeStatement')
+        $connection->method('createSchemaManager')
+            ->willReturn($schemaManager);
+        $connection->method('executeStatement')
             ->willReturnCallback(
                 static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
@@ -186,8 +175,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                     return 0;
                 },
             );
-        $connection->expects($this->any())
-            ->method('executeQuery')
+        $connection->method('executeQuery')
             ->willReturnCallback(
                 static function () use ($queryLog, $connection) {
                     $query = func_get_arg(0);
@@ -219,8 +207,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
 
-        $this->schemaManager->expects($this->any())
-            ->method('listTableNames')
+        $this->schemaManager->method('listTableNames')
             ->willReturnCallback(
                 static function () use ($queryLog) {
                     $result = [];
@@ -235,21 +222,16 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                 },
             );
 
-        $connection = $this->createMock(Connection::class);
-        $connection->expects($this->any())
-            ->method('quoteIdentifier')
+        $connection = $this->createStub(Connection::class);
+        $connection->method('quoteIdentifier')
             ->willReturnCallback($this->platform->quoteIdentifier(...));
-        $connection->expects($this->any())
-            ->method('getParams')
+        $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
-        $connection->expects($this->any())
-            ->method('getDatabasePlatform')
+        $connection->method('getDatabasePlatform')
             ->willReturn(new MySQLPlatform());
-        $connection->expects($this->any())
-            ->method('createSchemaManager')
+        $connection->method('createSchemaManager')
             ->willReturn($this->schemaManager);
-        $connection->expects($this->any())
-            ->method('executeStatement')
+        $connection->method('executeStatement')
             ->willReturnCallback(
                 static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
@@ -257,8 +239,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                     return 0;
                 },
             );
-        $connection->expects($this->any())
-            ->method('executeQuery')
+        $connection->method('executeQuery')
             ->willReturnCallback(
                 static function () use ($queryLog, $connection) {
                     $query = func_get_arg(0);
@@ -285,21 +266,16 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
         /** @phpstan-var ArrayObject<string, mixed[]> $queryLog */
         $queryLog = new ArrayObject();
 
-        $connection = $this->createMock(Connection::class);
-        $connection->expects($this->any())
-            ->method('quoteIdentifier')
+        $connection = $this->createStub(Connection::class);
+        $connection->method('quoteIdentifier')
             ->willReturnCallback($this->platform->quoteIdentifier(...));
-        $connection->expects($this->any())
-            ->method('getParams')
+        $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
-        $connection->expects($this->any())
-            ->method('getDatabase')
+        $connection->method('getDatabase')
             ->willReturn('database_name');
-        $connection->expects($this->any())
-            ->method('getDatabasePlatform')
+        $connection->method('getDatabasePlatform')
             ->willReturn($this->platform);
-        $connection->expects($this->any())
-            ->method('executeStatement')
+        $connection->method('executeStatement')
             ->willReturnCallback(
                 static function () use ($queryLog): int {
                     $queryLog[] = ['statement' => func_get_arg(0)];
@@ -307,8 +283,7 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
                     return 0;
                 },
             );
-        $connection->expects($this->any())
-            ->method('executeQuery')
+        $connection->method('executeQuery')
             ->willReturnCallback(
                 static function () use ($queryLog, $connection) {
                     $query = func_get_arg(0);
