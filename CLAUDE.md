@@ -16,7 +16,7 @@ vendor/bin/phpunit --filter testMockRequest
 ```
 
 CI (`.github/workflows/build.yml`) runs phpcs → phpstan → phpunit against both `--prefer-lowest`
-and highest dependencies (dev dependencies: Symfony ^8.0). A change must work with the lowest versions allowed in `composer.json`,
+and highest dependencies. A change must work with the lowest versions allowed in `composer.json`,
 not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 
 ## Layout
@@ -57,6 +57,8 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
   has installed. `conflict` in `composer.json` sets the supported floor: sebastian/diff 8.3, which has the
   `StrictUnifiedDiffOutputBuilder` options used in `Mismatch`. In practice that means PHPUnit 13+, since
   PHPUnit 11 and 12 require diff ^6 and ^7. If the library starts using newer PHPUnit APIs, add a conflict for PHPUnit itself.
+- Symfony 8 is the minimum: `conflict` lists every Symfony package used in `src` with `<8.0`, and
+  `require-dev` uses `^8.0`. Add a new conflict entry when `src` starts using another Symfony component.
 
 ## Environment variables read by the library
 
