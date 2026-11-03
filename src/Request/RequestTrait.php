@@ -9,7 +9,6 @@ use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\BrowserKit\AbstractBrowser;
-use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
@@ -71,12 +70,17 @@ trait RequestTrait
 
     final protected function build(string $method, string $uri): RequestBuilder
     {
-        if (method_exists($this, 'findUser')) { // @phpstan-ignore-line
-            $callable = $this->findUser();
-            $isFindUser = true;
+        if (method_exists($this, 'findUser')) {
+            // deprecated findUser() returns the user, the login on the request client happens here
+            $findUser = $this->findUser();
+            $callable = static function (mixed $username) use ($findUser): void {
+                $client = self::getRequestClient();
+                assert($client instanceof KernelBrowser);
+
+                $client->loginUser($findUser($username));
+            };
         } else {
             $callable = $this->loginUser();
-            $isFindUser = false;
         }
 
         return RequestBuilder::create(
@@ -84,7 +88,7 @@ trait RequestTrait
             $this->createToken(),
             $method,
             $uri,
-            $isFindUser,
+            false,
         );
     }
 
@@ -115,30 +119,11 @@ trait RequestTrait
         $client = self::getRequestClient();
         assert($client instanceof KernelBrowser);
 
-        $cookie = $client->getCookieJar()->get('MOCKSESSID');
-
-        // create a new session object
-        $container = $client->getContainer();
-        $session = $container->get('session.factory')->createSession();
-        assert($session instanceof SessionInterface);
-
-        if ($cookie) {
-            // get the session id from the session cookie if it exists
-            $session->setId($cookie->getValue());
-            $session->start();
-        } else {
-            // or create a new session id and a session cookie
-            $session->start();
-            $session->save();
-
-            $sessionCookie = new Cookie(
-                $session->getName(),
-                $session->getId(),
-                null,
-                null,
-                'localhost',
-            );
-            $client->getCookieJar()->set($sessionCookie);
+        // KernelBrowser::getSession() reuses the session cookie of the client (whatever its name and domain is)
+        // or creates one that is valid for every host
+        $session = $client->getSession();
+        if (!$session instanceof SessionInterface) {
+            static::fail('Session values need an enabled session, check framework.session in your test configuration.');
         }
 
         foreach ($sessionValues as $key => $value) {
