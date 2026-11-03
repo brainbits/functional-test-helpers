@@ -69,7 +69,8 @@ count as disabled, an empty value counts as not set.
 | Variable | Effect |
 |---|---|
 | `UPDATE_SNAPSHOTS` | Rewrite existing snapshot files with the actual values. |
-| `CREATE_SNAPSHOTS` | Set to `0` or `false` to fail instead of creating missing snapshots. Snapshots are created by default. |
+| `CREATE_SNAPSHOTS` | Set to `0` or `false` to fail instead of creating missing snapshots, or to `auto` to fail only when the `CI` variable is set. Snapshots are created by default. |
+| `SNAPSHOT_CREATED_WARNING` | Emit a PHPUnit warning for every snapshot that was created, so new snapshots don't go unnoticed. |
 | `SKIP_SNAPSHOT_TESTS` | Mark tests as skipped when they reach a snapshot assertion. |
 
 ## Recreate/Update Snapshots
@@ -89,4 +90,12 @@ When running in continuous integration you probably want to disable snapshot gen
 ```shell
 CREATE_SNAPSHOTS=0 phpunit
 CREATE_SNAPSHOTS=false phpunit tests/Functional/MyTest.php
+```
+
+With `CREATE_SNAPSHOTS=auto` in `phpunit.xml.dist`, snapshots are created locally but not in CI. Only the `CI`
+variable is checked. GitHub Actions, GitLab CI and most other CI systems set it, Jenkins and Azure Pipelines don't,
+so set `CI=true` there yourself:
+
+```xml
+<env name="CREATE_SNAPSHOTS" value="auto"/>
 ```

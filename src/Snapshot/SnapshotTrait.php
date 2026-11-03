@@ -31,8 +31,10 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function trigger_error;
 use function trim;
 
+use const E_USER_WARNING;
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_LINE_TERMINATORS;
 use const JSON_UNESCAPED_SLASHES;
@@ -309,11 +311,13 @@ trait SnapshotTrait
             return;
         }
 
-        if (self::snapshotEnvFlag('CREATE_SNAPSHOTS') === false && !$filesystem->exists($fixtureFilename)) {
+        $isCreated = !$filesystem->exists($fixtureFilename);
+
+        if ($isCreated && !self::snapshotCreationAllowed()) {
             self::fail(sprintf(
                 'Snapshot %s does not exist.' . PHP_EOL .
                 'Snapshot: %s' . PHP_EOL .
-                'Creating snapshots is disabled by CREATE_SNAPSHOTS. Run the test without it to create the snapshot.',
+                'Creating snapshots is disabled by CREATE_SNAPSHOTS. Run the test locally to create the snapshot.',
                 basename($fixtureFilename),
                 $fixtureFilename,
             ));
@@ -321,6 +325,29 @@ trait SnapshotTrait
 
         $filesystem->mkdir(dirname($fixtureFilename));
         $filesystem->dumpFile($fixtureFilename, $string);
+
+        if (!$isCreated || self::snapshotEnvFlag('SNAPSHOT_CREATED_WARNING') !== true) {
+            return;
+        }
+
+        trigger_error(sprintf('Snapshot %s was created.', $fixtureFilename), E_USER_WARNING);
+    }
+
+    /**
+     * CREATE_SNAPSHOTS=0 disables creating snapshots, CREATE_SNAPSHOTS=auto disables it when the CI variable is set.
+     */
+    private static function snapshotCreationAllowed(): bool
+    {
+        $value = getenv('CREATE_SNAPSHOTS');
+        if ($value === false || $value === '') {
+            $value = $_SERVER['CREATE_SNAPSHOTS'] ?? $_ENV['CREATE_SNAPSHOTS'] ?? null;
+        }
+
+        if (is_string($value) && strtolower(trim($value)) === 'auto') {
+            return self::snapshotEnvFlag('CI') !== true;
+        }
+
+        return self::snapshotEnvFlag('CREATE_SNAPSHOTS') !== false;
     }
 
     /**
