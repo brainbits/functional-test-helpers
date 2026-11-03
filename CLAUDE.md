@@ -53,6 +53,10 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
   dependency belongs in `require-dev` and `suggest`, with a note saying which trait needs it.
   Don't add hard `require` entries without good reason.
 - `src/HttpClientMock/CallbackHandler.php` is excluded from phpstan on purpose (Monolog 2/3 compatibility).
+- PHPUnit is not a runtime requirement, so the library runs with whatever PHPUnit version the user's project
+  has installed. `conflict` in `composer.json` sets the supported floor: sebastian/diff 8.3, which has the
+  `StrictUnifiedDiffOutputBuilder` options used in `Mismatch`. In practice that means PHPUnit 13+, since
+  PHPUnit 12 requires diff ^7. If the library starts using newer PHPUnit APIs, add a conflict for PHPUnit itself.
 
 ## Environment variables read by the library
 
