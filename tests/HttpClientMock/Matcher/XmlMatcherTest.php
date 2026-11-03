@@ -129,4 +129,15 @@ final class XmlMatcherTest extends TestCase
 
         self::assertSame('callback(request.content) !== false', (string) $matcher);
     }
+
+    public function testCallbackIsNotInvokedForMissingContent(): void
+    {
+        $matcher = new XmlMatcher(static function (): bool {
+            self::fail('Callback was invoked without content');
+        });
+
+        $result = $matcher($this->createRealRequest(content: null));
+
+        self::assertInstanceOf(Mismatch::class, $result);
+    }
 }

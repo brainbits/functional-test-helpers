@@ -15,7 +15,7 @@ use function libxml_get_errors;
 use function libxml_use_internal_errors;
 use function sprintf;
 
-final readonly class XmlMatcher implements Matcher
+final readonly class XmlMatcher implements CallbackMatcher
 {
     private mixed $xml;
 
@@ -34,7 +34,7 @@ final readonly class XmlMatcher implements Matcher
         $realXml = $realRequest->getContent();
 
         if (is_callable($expectedXml)) {
-            if (!$this->isXmlString($realXml)) {
+            if ($realXml === null || !$this->isXmlString($realXml)) {
                 return Mismatch::mismatchingXml('<callback>', $realXml);
             }
 
@@ -62,6 +62,11 @@ final readonly class XmlMatcher implements Matcher
         }
 
         return Hit::matchesXml($realXml);
+    }
+
+    public function isCallback(): bool
+    {
+        return is_callable($this->xml);
     }
 
     public function __toString(): string

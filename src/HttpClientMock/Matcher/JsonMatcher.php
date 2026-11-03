@@ -11,7 +11,7 @@ use function is_callable;
 use function Safe\json_encode;
 use function sprintf;
 
-final readonly class JsonMatcher implements Matcher
+final readonly class JsonMatcher implements CallbackMatcher
 {
     private mixed $json;
 
@@ -43,6 +43,11 @@ final readonly class JsonMatcher implements Matcher
         }
 
         return Hit::matchesJson(json_encode($realJson));
+    }
+
+    public function isCallback(): bool
+    {
+        return is_callable($this->json);
     }
 
     public function __toString(): string

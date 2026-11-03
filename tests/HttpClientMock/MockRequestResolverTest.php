@@ -353,4 +353,36 @@ GET /query');
 
         self::assertSame($requestBuilder2, $resultRequestBuilder);
     }
+
+    public function testCallbackMatchersOfOtherMocksDoNotBreakBodylessRequests(): void
+    {
+        $xmlMock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uri('/xml')
+            ->xml(static fn () => true);
+        $contentMock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uri('/content')
+            ->content(static fn () => true);
+        $thatMock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uri('/that')
+            ->that(static function (): void {
+                self::fail('Callback of another mock was invoked');
+            });
+        $getMock = (new MockRequestBuilder())
+            ->name('get')
+            ->method('GET')
+            ->uri('/b');
+
+        $collection = new MockRequestBuilderCollection();
+        $collection->addMockRequestBuilder($xmlMock);
+        $collection->addMockRequestBuilder($contentMock);
+        $collection->addMockRequestBuilder($thatMock);
+        $collection->addMockRequestBuilder($getMock);
+
+        $result = (new MockRequestResolver())($collection, $this->createRealRequest('GET', '/b'));
+
+        $this->assertSame($getMock, $result);
+    }
 }
