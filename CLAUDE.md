@@ -16,7 +16,7 @@ vendor/bin/phpunit --filter testMockRequest
 ```
 
 CI (`.github/workflows/build.yml`) runs phpcs → phpstan → phpunit against both `--prefer-lowest`
-and highest dependencies. A change must work with the lowest versions allowed in `composer.json`,
+and highest dependencies (dev dependencies: Symfony ^8.0). A change must work with the lowest versions allowed in `composer.json`,
 not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 
 ## Layout
@@ -56,7 +56,7 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 - PHPUnit is not a runtime requirement, so the library runs with whatever PHPUnit version the user's project
   has installed. `conflict` in `composer.json` sets the supported floor: sebastian/diff 8.3, which has the
   `StrictUnifiedDiffOutputBuilder` options used in `Mismatch`. In practice that means PHPUnit 13+, since
-  PHPUnit 12 requires diff ^7. If the library starts using newer PHPUnit APIs, add a conflict for PHPUnit itself.
+  PHPUnit 11 and 12 require diff ^6 and ^7. If the library starts using newer PHPUnit APIs, add a conflict for PHPUnit itself.
 
 ## Environment variables read by the library
 
@@ -66,6 +66,7 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 ## Commits & releases
 
 - Use Conventional Commits (`feat:`, `fix:`, `chore(deps):`, `test:`, `ci:`, `docs:`). semantic-release
-  (`.releaserc`) derives versions from them and releases on every push to `main`, with tags without a `v` prefix.
+  (`.releaserc`) derives versions from them and releases from `main` once the Build workflow succeeded on it (`release.yaml`, triggered via `workflow_run`), with tags without a `v` prefix.
   `feat`/`fix` trigger a release, and `BREAKING CHANGE` triggers a major release (add an `UPGRADE-x.0.md` entry).
-- Dependency updates are handled by Dependabot (`.github/dependabot.yml`), weekly for Composer and GitHub Actions. Its commit prefixes fit semantic-release: runtime deps use `fix` (patch release), dev deps use `chore`, and Actions use `ci`.
+- Dependency updates are handled by Dependabot (`.github/dependabot.yml`), weekly for Composer (`versioning-strategy: widen`, so
+  OR constraints like `^2.0 || ^3.0` are extended, not replaced) and GitHub Actions. Its commit prefixes fit semantic-release: runtime deps use `fix` (patch release), dev deps use `chore`, and Actions use `ci`.
