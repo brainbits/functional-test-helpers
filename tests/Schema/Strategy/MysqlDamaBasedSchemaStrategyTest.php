@@ -130,8 +130,8 @@ final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 
                 if ($tableName === 'old_table_1') {
                     $result = [
-                        new ForeignKeyConstraint([], '', [], 'constraint_1'),
-                        new ForeignKeyConstraint([], '', [], 'constraint_2'),
+                        new ForeignKeyConstraint(['foreign_id'], 'foreign_table', ['id'], 'constraint_1'),
+                        new ForeignKeyConstraint(['foreign_id'], 'foreign_table', ['id'], 'constraint_2'),
                     ];
                 }
 

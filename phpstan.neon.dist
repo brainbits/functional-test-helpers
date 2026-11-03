@@ -9,6 +9,20 @@ parameters:
     ignoreErrors:
         - '#Constructor in .* has parameter .* with default value#'
         - '#SchemaBuilder::foo\(\)#'
+        # findUser() is an optional, deprecated hook that test classes may implement
+        -
+            identifier: function.impossibleType
+            path: src/Request/RequestTrait.php
+            count: 1
+        # tests passing invalid arguments on purpose
+        -
+            identifier: argument.type
+            path: tests/Request/RequestBuilderTest.php
+            count: 1
+        -
+            identifier: argument.type
+            path: tests/ZipContents/ZipContentsTest.php
+            count: 1
     ergebnis:
         noNamedArgument:
             enabled: false
