@@ -1,0 +1,11 @@
+# Exclude development files from the dist package
+/.github            export-ignore
+/tests              export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.releaserc         export-ignore
+/CLAUDE.md          export-ignore
+/TODO.md            export-ignore
+/phpcs.xml.dist     export-ignore
+/phpstan.neon.dist  export-ignore
+/phpunit.xml.dist   export-ignore
