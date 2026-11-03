@@ -69,7 +69,7 @@ final class CreateSchemaStrategyTest extends TestCase
 
     public function testItUsesSqliteDamaFileStrategyIfConfiguredByUrl(): void
     {
-        $driver = $this->createMock(StaticDriver::class);
+        $driver = $this->createStub(StaticDriver::class);
         StaticDriver::setKeepStaticConnections(true);
 
         $connection = $this->createMock(Connection::class);
@@ -87,7 +87,7 @@ final class CreateSchemaStrategyTest extends TestCase
 
     public function testItUsesSqliteDamaStrategyIfConfiguredByParams(): void
     {
-        $driver = $this->createMock(StaticDriver::class);
+        $driver = $this->createStub(StaticDriver::class);
         StaticDriver::setKeepStaticConnections(true);
 
         $connection = $this->createMock(Connection::class);
@@ -117,7 +117,7 @@ final class CreateSchemaStrategyTest extends TestCase
 
     public function testItUsesMysqlDamaStrategyIfStaticConnectionIsActive(): void
     {
-        $driver = $this->createMock(StaticDriver::class);
+        $driver = $this->createStub(StaticDriver::class);
         StaticDriver::setKeepStaticConnections(true);
 
         $connection = $this->createMock(Connection::class);
@@ -135,7 +135,7 @@ final class CreateSchemaStrategyTest extends TestCase
 
     public function testItUsesMysqlStrategyIfStaticConnectionIsActive(): void
     {
-        $driver = $this->createMock(StaticDriver::class);
+        $driver = $this->createStub(StaticDriver::class);
         StaticDriver::setKeepStaticConnections(false);
 
         $connection = $this->createMock(Connection::class);

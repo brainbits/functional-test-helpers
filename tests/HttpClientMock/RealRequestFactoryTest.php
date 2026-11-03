@@ -71,7 +71,7 @@ final class RealRequestFactoryTest extends TestCase
 
     public function testBuildsRequestWithCallableInBody(): void
     {
-        $body = $this->getMockBuilder(StreamInterface::class)->getMock();
+        $body = $this->createStub(StreamInterface::class);
         $body->method('read')
             ->willReturn('{"foo": "bar"}');
 

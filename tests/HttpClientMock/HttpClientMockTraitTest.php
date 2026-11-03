@@ -29,8 +29,8 @@ final class HttpClientMockTraitTest extends TestCase
     public function createContainerServices(): void
     {
         self::$collection = new MockRequestBuilderCollection();
-        self::$dispatcher = $this->createMock(EventDispatcherInterface::class);
-        self::$logger = $this->createMock(Logger::class);
+        self::$dispatcher = $this->createStub(EventDispatcherInterface::class);
+        self::$logger = $this->createStub(Logger::class);
     }
 
     public static function getContainer(): Container
