@@ -9,15 +9,21 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 use function basename;
+use function explode;
+use function http_build_query;
 use function is_array;
 use function rawurlencode;
 use function Safe\array_walk_recursive;
 use function Safe\json_encode;
 use function sprintf;
+use function str_contains;
 use function str_replace;
 use function strpos;
+use function strtoupper;
 use function sys_get_temp_dir;
 use function urlencode;
+
+use const PHP_QUERY_RFC3986;
 
 final class RequestBuilder
 {
@@ -40,6 +46,8 @@ final class RequestBuilder
     /** @var array<string, mixed> */
     private array $loginTokenAttributes = [];
     private bool $logout = false;
+    private bool|null $followRedirects = null;
+    private bool $disableReboot = false;
     /** @var array<string, string> token id => field */
     private array $csrfTokens = [];
 
@@ -106,6 +114,108 @@ final class RequestBuilder
     public function parameter(string $key, mixed $value): self
     {
         $this->parameters[$key] = $value;
+
+        return $this;
+    }
+
+    /**
+     * Appends the query parameters like http_build_query(): nested arrays, true/false as 1/0, null values are left out.
+     *
+     * @param array<string, mixed> $params
+     */
+    public function queryParams(array $params): self
+    {
+        $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+
+        if ($query === '') {
+            return $this;
+        }
+
+        [$uri, $fragment] = explode('#', $this->uri, 2) + [1 => null];
+
+        $this->uri = $uri . (str_contains($uri, '?') ? '&' : '?') . $query;
+
+        if ($fragment !== null) {
+            $this->uri .= '#' . $fragment;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Sends the values as application/x-www-form-urlencoded form.
+     *
+     * @param array<string, mixed> $values
+     */
+    public function form(array $values): self
+    {
+        foreach ($values as $key => $value) {
+            $this->parameter($key, $value);
+        }
+
+        return $this->contentType('application/x-www-form-urlencoded');
+    }
+
+    /**
+     * Sets a request header. Content-Type and Content-Length are mapped to CONTENT_TYPE and CONTENT_LENGTH,
+     * all other headers to HTTP_*.
+     */
+    public function header(string $name, string $value): self
+    {
+        $key = strtoupper(str_replace('-', '_', $name));
+
+        if ($key !== 'CONTENT_TYPE' && $key !== 'CONTENT_LENGTH') {
+            $key = 'HTTP_' . $key;
+        }
+
+        return $this->server($key, $value);
+    }
+
+    public function ajax(): self
+    {
+        return $this->header('X-Requested-With', 'XMLHttpRequest');
+    }
+
+    public function acceptLanguage(string $acceptLanguage): self
+    {
+        return $this->header('Accept-Language', $acceptLanguage);
+    }
+
+    public function host(string $host): self
+    {
+        return $this->header('Host', $host);
+    }
+
+    public function followRedirects(bool $followRedirects = true): self
+    {
+        $this->followRedirects = $followRedirects;
+
+        return $this;
+    }
+
+    public function getFollowRedirects(): bool|null
+    {
+        return $this->followRedirects;
+    }
+
+    /**
+     * Keeps the kernel (and the container state) between this and the following requests of the client.
+     */
+    public function disableReboot(): self
+    {
+        $this->disableReboot = true;
+
+        return $this;
+    }
+
+    public function isRebootDisabled(): bool
+    {
+        return $this->disableReboot;
+    }
+
+    public function changeHistory(bool $changeHistory): self
+    {
+        $this->changeHistory = $changeHistory;
 
         return $this;
     }

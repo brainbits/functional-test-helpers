@@ -62,6 +62,13 @@ final class TestKernel extends Kernel
         return new JsonResponse(['valid' => $tokenManager->isTokenValid($token)]);
     }
 
+    public function csrfNested(Request $request, CsrfTokenManagerInterface $tokenManager): JsonResponse
+    {
+        $token = new CsrfToken('profile', (string) ($request->request->all('profile')['_token'] ?? ''));
+
+        return new JsonResponse(['valid' => $tokenManager->isTokenValid($token)]);
+    }
+
     protected function configureContainer(ContainerConfigurator $container): void
     {
         $container->extension('framework', [
@@ -85,5 +92,6 @@ final class TestKernel extends Kernel
     {
         $routes->add('dump', '/dump')->controller([self::class, 'dump']);
         $routes->add('csrf', '/csrf')->controller([self::class, 'csrf']);
+        $routes->add('csrf_nested', '/csrf-nested')->controller([self::class, 'csrfNested']);
     }
 }

@@ -8,6 +8,7 @@ use Brainbits\FunctionalTestHelpers\Request\RequestTrait;
 use Brainbits\FunctionalTestHelpers\Tests\Request\Kernel\TestKernel;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\BrowserKit\AbstractBrowser;
 
 use function Safe\json_decode;
 
@@ -18,7 +19,7 @@ final class RequestTraitKernelTest extends WebTestCase
 
     public function testSessionValuesWithLocalhost(): void
     {
-        $response = $this->request($this->build('GET', '/dump')->sessionValue('foo', 'bar'));
+        $response = $this->request($this->build('GET', 'http://localhost/dump')->sessionValue('foo', 'bar'));
 
         $this->assertSame(['foo' => 'bar'], json_decode((string) $response->getContent(), true)['session']);
     }
@@ -46,6 +47,40 @@ final class RequestTraitKernelTest extends WebTestCase
         $this->assertSame(['valid' => true], json_decode((string) $response->getContent(), true));
     }
 
+    public function testCsrfTokenForRelativeUriAfterHttpsRequest(): void
+    {
+        $this->request($this->build('GET', 'https://localhost/dump'));
+
+        $response = $this->request($this->build('POST', '/csrf')->csrfToken('form'));
+
+        $this->assertSame(['valid' => true], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testCsrfTokenForHttpsServerParameter(): void
+    {
+        $response = $this->request($this->build('POST', '/csrf')->server('HTTPS', 'on')->csrfToken('form'));
+
+        $this->assertSame(['valid' => true], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testCsrfTokenInNestedField(): void
+    {
+        $response = $this->request(
+            $this->build('POST', '/csrf-nested')
+                ->form(['profile' => ['name' => 'peter']])
+                ->csrfToken('profile', 'profile[_token]'),
+        );
+
+        $this->assertSame(['valid' => true], json_decode((string) $response->getContent(), true));
+    }
+
+    public function testFollowRedirectsAppliesToOneRequest(): void
+    {
+        $this->request($this->build('GET', '/dump')->followRedirects());
+
+        $this->assertFalse(self::getRequestClient()->isFollowingRedirects());
+    }
+
     public function testMissingCsrfTokenIsRejected(): void
     {
         $response = $this->request($this->build('POST', '/csrf'));
@@ -60,6 +95,19 @@ final class RequestTraitKernelTest extends WebTestCase
         $response = $this->request($this->build('GET', '/dump')->logout());
 
         $this->assertNull(json_decode((string) $response->getContent(), true)['session']);
+    }
+
+    public function testCustomClientWithServerDefaults(): void
+    {
+        $response = $this->request($this->build('GET', '/dump'));
+
+        $this->assertSame('custom.test', json_decode((string) $response->getContent(), true)['host']);
+    }
+
+    /** @return AbstractBrowser<covariant object, covariant object> */
+    protected static function createRequestClient(): AbstractBrowser
+    {
+        return static::createClient([], ['HTTP_HOST' => 'custom.test']);
     }
 
     protected static function getKernelClass(): string

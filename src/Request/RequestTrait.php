@@ -12,12 +12,16 @@ use Symfony\Component\BrowserKit\AbstractBrowser;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
+use function array_replace_recursive;
 use function assert;
 use function bin2hex;
 use function method_exists;
+use function parse_str;
 use function random_bytes;
 use function sprintf;
 use function str_starts_with;
+use function strtolower;
+use function urlencode;
 
 /** @mixin TestCase */
 trait RequestTrait
@@ -38,7 +42,18 @@ trait RequestTrait
     #[Before(12)]
     protected function setUpRequest(): void
     {
-        self::$requestClient = static::createClient();
+        self::$requestClient = static::createRequestClient();
+    }
+
+    /**
+     * Creates the client for the requests of a test. Override it to pass kernel options or server defaults,
+     * e.g. static::createClient([], ['HTTP_HOST' => 'app.test']).
+     *
+     * @return AbstractBrowser<covariant object, covariant object>
+     */
+    protected static function createRequestClient(): AbstractBrowser
+    {
+        return static::createClient();
     }
 
     #[After]
@@ -107,7 +122,15 @@ trait RequestTrait
     final protected function request(RequestBuilder $requestBuilder): Response
     {
         $client = self::getRequestClient();
-        assert($client instanceof KernelBrowser);
+
+        $followRedirects = $client->isFollowingRedirects();
+        if ($requestBuilder->getFollowRedirects() !== null) {
+            $client->followRedirects($requestBuilder->getFollowRedirects());
+        }
+
+        if ($requestBuilder->isRebootDisabled()) {
+            self::requestKernelBrowser('disableReboot()')->disableReboot();
+        }
 
         if ($requestBuilder->isLogout()) {
             $client->getCookieJar()->clear();
@@ -115,7 +138,7 @@ trait RequestTrait
 
         $loginUser = $requestBuilder->getLoginUser();
         if ($loginUser !== null) {
-            $client->loginUser(
+            self::requestKernelBrowser('loginAs()')->loginUser(
                 $loginUser,
                 $requestBuilder->getLoginFirewall() ?? $this->loginFirewall(),
                 $requestBuilder->getLoginTokenAttributes(),
@@ -127,28 +150,72 @@ trait RequestTrait
 
         foreach ($requestBuilder->getCsrfTokens() as $tokenId => $field) {
             $token = bin2hex(random_bytes(16));
-            $namespace = str_starts_with($requestBuilder->getUri(), 'https://') ? 'https-' : '';
+            $namespace = self::isSecureRequest($client, $requestBuilder) ? 'https-' : '';
 
             // the session key SessionTokenStorage reads the token from
             $sessionValues['_csrf/' . $namespace . $tokenId] = $token;
-            $parameters[$field] = $token;
+
+            // a field like "profile[_token]" is sent nested, like a browser submits a named form
+            $fieldParameters = [];
+            parse_str(urlencode($field) . '=' . urlencode($token), $fieldParameters);
+            $parameters = array_replace_recursive($parameters, $fieldParameters);
         }
 
         if ($sessionValues) {
             $this->applySessionValues($sessionValues);
         }
 
-        $client->request(
-            $requestBuilder->getMethod(),
-            $requestBuilder->getUri(),
-            $parameters,
-            $requestBuilder->getFiles(),
-            $requestBuilder->getServer(),
-            $requestBuilder->getContent(),
-            $requestBuilder->getChangeHistory(),
-        );
+        try {
+            $client->request(
+                $requestBuilder->getMethod(),
+                $requestBuilder->getUri(),
+                $parameters,
+                $requestBuilder->getFiles(),
+                $requestBuilder->getServer(),
+                $requestBuilder->getContent(),
+                $requestBuilder->getChangeHistory(),
+            );
+        } finally {
+            // followRedirects() applies to this request only
+            $client->followRedirects($followRedirects);
+        }
 
-        return $client->getResponse();
+        $response = $client->getResponse();
+        assert($response instanceof Response);
+
+        return $response;
+    }
+
+    /** @return KernelBrowser<covariant object, covariant object> */
+    private static function requestKernelBrowser(string $feature): KernelBrowser
+    {
+        $client = self::getRequestClient();
+        if (!$client instanceof KernelBrowser) {
+            static::fail(sprintf('%s needs a %s as request client.', $feature, KernelBrowser::class));
+        }
+
+        return $client;
+    }
+
+    /**
+     * Same rules as the browser: the HTTPS server parameter wins, otherwise the scheme of the absolute URI.
+     * A relative URI is resolved against the current page of the history, or http://localhost.
+     *
+     * @param AbstractBrowser<covariant object, covariant object> $client
+     */
+    private static function isSecureRequest(AbstractBrowser $client, RequestBuilder $requestBuilder): bool
+    {
+        $https = $requestBuilder->getServer()['HTTPS'] ?? $client->getServerParameter('HTTPS', null);
+        if ($https !== null) {
+            return $https !== false && $https !== '' && $https !== '0' && strtolower((string) $https) !== 'off';
+        }
+
+        $uri = $requestBuilder->getUri();
+        if (!str_starts_with($uri, 'http://') && !str_starts_with($uri, 'https://')) {
+            $uri = $client->getHistory()->isEmpty() ? 'http://localhost' : $client->getHistory()->current()->getUri();
+        }
+
+        return str_starts_with($uri, 'https://');
     }
 
     /** @param array<string, mixed> $sessionValues */
