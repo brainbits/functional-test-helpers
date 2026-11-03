@@ -64,6 +64,6 @@ final class HeaderMatcherTest extends TestCase
     {
         $matcher = new HeaderMatcher('Accept', 'text/plain');
 
-        self::assertSame('request.header["text/plain"] === "accept"', (string) $matcher);
+        self::assertSame('request.header["accept"] === "text/plain"', (string) $matcher);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\HttpClientMockTrait;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\CatchAllMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MethodMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriMatcher;
@@ -12,7 +13,9 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriParams;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestMatcher;
 use Monolog\Logger;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\Before;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -101,5 +104,64 @@ final class HttpClientMockTraitTest extends TestCase
                 new UriMatcher('https://example.com/query', new UriParams()),
             ]),
         );
+    }
+
+    public function testMockRequestWithoutMethodAndUri(): void
+    {
+        $builder = $this->mockRequest();
+
+        $this->assertEquals(new MockRequestMatcher(null, [new CatchAllMatcher()]), $builder->getMatcher());
+
+        $this->createdMockRequestBuilders = [];
+    }
+
+    public function testHeaderContainingAssertionFailsForMissingHeader(): void
+    {
+        $builder = $this->mockRequest('GET', '/query')
+            ->willRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/query', []);
+
+        try {
+            self::assertRequestMockIsCalledWithHeaderContaining('X-Missing', 'foo', $builder);
+        } catch (ExpectationFailedException) {
+            return;
+        } finally {
+            $this->createdMockRequestBuilders = [];
+        }
+
+        $this->fail('Assertion did not fail');
+    }
+
+    public function testHeaderNotContainingAssertionPassesForMissingHeader(): void
+    {
+        $builder = $this->mockRequest('GET', '/query')
+            ->willRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/query', []);
+
+        self::assertRequestMockIsCalledWithHeaderNotContaining('X-Missing', 'foo', $builder);
+    }
+
+    public function testAllFailedAssertionCallbacksAreReported(): void
+    {
+        $this->mockRequest('GET', '/query')
+            ->assertMethod(static fn () => self::fail('first failure'))
+            ->assertUri(static fn () => self::fail('second failure'))
+            ->willRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/query', []);
+
+        try {
+            $this->assertNoFailedMockRequests();
+        } catch (AssertionFailedError $e) {
+            $this->assertStringContainsString('2 mock request assertions failed', $e->getMessage());
+            $this->assertStringContainsString('first failure', $e->getMessage());
+            $this->assertStringContainsString('second failure', $e->getMessage());
+
+            return;
+        }
+
+        $this->fail('Failed assertions were not reported');
     }
 }

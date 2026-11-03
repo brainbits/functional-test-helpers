@@ -36,6 +36,6 @@ final readonly class HeaderMatcher implements Matcher
 
     public function __toString(): string
     {
-        return sprintf('request.header["%s"] === "%s"', $this->value, $this->header);
+        return sprintf('request.header["%s"] === "%s"', $this->header, $this->value);
     }
 }
