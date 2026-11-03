@@ -13,18 +13,24 @@ use function assert;
 use function explode;
 use function is_array;
 use function is_callable;
+use function is_iterable;
+use function is_resource;
 use function is_string;
+use function max;
 use function Safe\fopen;
 use function Safe\fwrite;
 use function Safe\json_decode;
 use function Safe\preg_match;
 use function Safe\rewind;
+use function Safe\stream_get_contents;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function trim;
 use function urldecode;
 
 final class RealRequestFactory
@@ -50,9 +56,12 @@ final class RealRequestFactory
         }
 
         foreach ($options['headers'] ?? [] as $header) {
-            [$key, $value] = explode(': ', (string) $header);
+            [$key, $value] = explode(':', (string) $header, 2) + [1 => ''];
+            $key = strtolower(trim($key));
+            $value = trim($value);
 
-            $headers[strtolower($key)] = $value;
+            // repeated headers keep the last value, combining them is planned for 8.0 (#138)
+            $headers[$key] = $value;
         }
 
         if (array_key_exists('json', $options)) {
@@ -62,14 +71,17 @@ final class RealRequestFactory
         if (array_key_exists('body', $options)) {
             $body = $options['body'];
             $contentType = $headers['content-type'] ?? '';
-            $contentLength = $headers['content-length'] ?? 0;
+            $contentLength = (int) ($headers['content-length'] ?? 0);
+
+            // read streamed bodies only once, they can't be rewound
+            if (!is_string($body) && !is_array($body)) {
+                $body = $this->readBody($body, $contentLength);
+            }
 
             // application/json; charset=utf-8
             if (strpos($contentType, 'application/json') === 0) {
                 if (is_string($body)) {
-                    $json = json_decode($body, true);
-                } elseif (is_callable($body)) {
-                    $json = json_decode((string) $body((int) $contentLength), true);
+                    $json = $this->decodeJson($body);
                 } elseif (is_array($body)) {
                     $json = $body;
                 } else {
@@ -105,15 +117,11 @@ final class RealRequestFactory
 
                 fwrite($stream, "\r\n");
 
-                if (is_string($body)) {
-                    fwrite($stream, $body);
-                } elseif (is_callable($body)) {
-                    while ($chunk = ($body)(1000)) {
-                        fwrite($stream, $chunk);
-                    }
-                } else {
+                if (!is_string($body)) {
                     throw UnprocessableBody::create();
                 }
+
+                fwrite($stream, $body);
 
                 rewind($stream);
 
@@ -132,8 +140,6 @@ final class RealRequestFactory
 
             if (is_string($body)) {
                 $content = $body;
-            } elseif (is_callable($body)) {
-                $content = (string) $body((int) $contentLength);
             }
         }
 
@@ -147,6 +153,50 @@ final class RealRequestFactory
             $requestParams,
             $multiparts,
         );
+    }
+
+    private function readBody(mixed $body, int $contentLength): string
+    {
+        if (is_resource($body)) {
+            return stream_get_contents($body);
+        }
+
+        if (is_iterable($body)) {
+            $content = '';
+            foreach ($body as $chunk) {
+                $content .= $chunk;
+            }
+
+            return $content;
+        }
+
+        if (!is_callable($body)) {
+            throw UnprocessableBody::create();
+        }
+
+        $content = '';
+        while (($chunk = (string) $body(max($contentLength, 16372))) !== '') {
+            $content .= $chunk;
+
+            if ($contentLength > 0 && strlen($content) >= $contentLength) {
+                break;
+            }
+        }
+
+        return $content;
+    }
+
+    /** @return mixed[]|null */
+    private function decodeJson(string $content): array|null
+    {
+        if ($content === '') {
+            return null;
+        }
+
+        $json = json_decode($content, true);
+
+        // scalar JSON documents can only be matched via content()
+        return is_array($json) ? $json : null;
     }
 
     /** @return string[] */

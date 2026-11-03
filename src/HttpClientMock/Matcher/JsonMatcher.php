@@ -32,12 +32,12 @@ final readonly class JsonMatcher implements CallbackMatcher
             }
         } else {
             $expectedValue = Json::canonicalize(json_encode($expectedJson));
-            $realValue = $realJson ? Json::canonicalize(json_encode($realJson)) : null;
+            $realValue = $realJson !== null ? Json::canonicalize(json_encode($realJson)) : null;
 
             if ($expectedValue !== $realValue) {
                 return Mismatch::mismatchingJson(
                     json_encode($expectedJson),
-                    $realJson ? json_encode($realJson) : null,
+                    $realJson !== null ? json_encode($realJson) : null,
                 );
             }
         }

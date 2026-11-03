@@ -114,4 +114,11 @@ final class JsonMatcherTest extends TestCase
 
         self::assertSame('callback(request.content) !== false', (string) $matcher);
     }
+
+    public function testEmptyJsonMatchesEmptyArray(): void
+    {
+        $matcher = new JsonMatcher([]);
+
+        self::assertInstanceOf(Hit::class, $matcher($this->createRealRequest(json: [])));
+    }
 }
