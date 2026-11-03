@@ -1,10 +1,10 @@
 # brainbits Functional Test Helpers
 
-[![Latest Version](https://img.shields.io/github/release/brainbits/functional-test-helpers.svg?style=flat-square)](https://github.com/brainbits/functional-test-helpers/releases)
-[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Build Status](https://img.shields.io/github/check-runs/brainbits/functional-test-helpers/main)](https://github.com/brainbits/functional-test-helpers/actions)
-[![Coverage Status](https://img.shields.io/codecov/c/github/brainbits/functional-test-helpers)](https://app.codecov.io/gh/brainbits/functional-test-helpers)
-[![Total Downloads](https://img.shields.io/packagist/dt/brainbits/functional-test-helpers.svg?style=flat-square)](https://packagist.org/packages/brainbits/functional-test-helpers)
+[![Build](https://github.com/brainbits/functional-test-helpers/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/brainbits/functional-test-helpers/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/brainbits/functional-test-helpers/branch/main/graph/badge.svg)](https://codecov.io/gh/brainbits/functional-test-helpers)
+[![Latest Stable Version](https://poser.pugx.org/brainbits/functional-test-helpers/version)](https://packagist.org/packages/brainbits/functional-test-helpers)
+[![License](https://poser.pugx.org/brainbits/functional-test-helpers/license)](https://packagist.org/packages/brainbits/functional-test-helpers)
+[![Total Downloads](https://img.shields.io/packagist/dt/brainbits/functional-test-helpers)](https://packagist.org/packages/brainbits/functional-test-helpers)
 
 A collection of test helper traits for symfony projects. 
 Please look at the respective READMEs for details.
