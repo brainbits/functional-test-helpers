@@ -41,6 +41,8 @@ final class RequestBuilder
     private array $server = [];
     private string|null $content = null;
     private bool $changeHistory = true;
+    /** @var list<string> */
+    private static array $temporaryFiles = [];
     private object|null $loginAsUser = null;
     private string|null $loginFirewall = null;
     /** @var array<string, mixed> */
@@ -143,7 +145,7 @@ final class RequestBuilder
     }
 
     /**
-     * Sends the values as application/x-www-form-urlencoded form.
+     * Sends the values as application/x-www-form-urlencoded form, or as multipart/form-data together with files.
      *
      * @param array<string, mixed> $values
      */
@@ -151,6 +153,10 @@ final class RequestBuilder
     {
         foreach ($values as $key => $value) {
             $this->parameter($key, $value);
+        }
+
+        if ($this->files !== []) {
+            return $this;
         }
 
         return $this->contentType('application/x-www-form-urlencoded');
@@ -377,24 +383,36 @@ final class RequestBuilder
         return $this;
     }
 
-    public function fileByPath(string $key, string $path): self
+    /**
+     * Removes the temporary files created by fileByPath() and fileByContent(). Called after each test by RequestTrait.
+     */
+    public static function removeTemporaryFiles(): void
+    {
+        (new Filesystem())->remove(self::$temporaryFiles);
+
+        self::$temporaryFiles = [];
+    }
+
+    public function fileByPath(string $key, string $path, string|null $mimeType = null): self
     {
         $filesystem = new Filesystem();
         $temporaryFilename = $filesystem->tempnam(sys_get_temp_dir(), 'upload_file_');
         $filesystem->copy($path, $temporaryFilename, true);
+        self::$temporaryFiles[] = $temporaryFilename;
 
-        $this->file($key, new UploadedFile($temporaryFilename, basename($path)));
+        $this->file($key, new UploadedFile($temporaryFilename, basename($path), $mimeType));
 
         return $this;
     }
 
-    public function fileByContent(string $key, string $content, string $filename): self
+    public function fileByContent(string $key, string $content, string $filename, string|null $mimeType = null): self
     {
         $filesystem = new Filesystem();
         $temporaryFilename = $filesystem->tempnam(sys_get_temp_dir(), 'upload_file_');
         $filesystem->dumpFile($temporaryFilename, $content);
+        self::$temporaryFiles[] = $temporaryFilename;
 
-        $this->file($key, new UploadedFile($temporaryFilename, $filename));
+        $this->file($key, new UploadedFile($temporaryFilename, $filename, $mimeType));
 
         return $this;
     }

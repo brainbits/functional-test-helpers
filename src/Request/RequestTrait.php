@@ -60,6 +60,8 @@ trait RequestTrait
     protected function tearDownRequest(): void
     {
         self::$requestClient = null;
+
+        RequestBuilder::removeTemporaryFiles();
     }
 
     /** @return AbstractBrowser<covariant object, covariant object> */

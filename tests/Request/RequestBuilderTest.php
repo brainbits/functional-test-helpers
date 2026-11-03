@@ -433,4 +433,27 @@ final class RequestBuilderTest extends TestCase
         self::assertTrue($builder->isRebootDisabled());
         self::assertFalse($builder->getChangeHistory());
     }
+
+    public function testFormWithFilesStaysMultipart(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')
+            ->fileByContent('document', 'a', 'a.txt')
+            ->form(['name' => 'peter']);
+
+        self::assertSame('multipart/form-data', $builder->getServer()['CONTENT_TYPE']);
+
+        RequestBuilder::removeTemporaryFiles();
+    }
+
+    public function testTemporaryFilesAreRemoved(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')->fileByContent('f', 'a', 'a.txt');
+        $file = $builder->getFiles()['f'];
+        self::assertInstanceOf(UploadedFile::class, $file);
+        self::assertFileExists($file->getPathname());
+
+        RequestBuilder::removeTemporaryFiles();
+
+        self::assertFileDoesNotExist($file->getPathname());
+    }
 }
