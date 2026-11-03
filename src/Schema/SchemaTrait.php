@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Schema;
 
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\IdentifierQuoting;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStrategy;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
 use function getenv;
+use function implode;
+use function is_bool;
+use function Safe\json_encode;
+use function sprintf;
 
 // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
 
@@ -77,6 +82,69 @@ trait SchemaTrait
         $this->schemaStrategy->resetSequences($this->schemaStrategyConnection);
 
         self::$isSchemaDatabaseClean = true;
+    }
+
+    /**
+     * Asserts the number of rows in a table of the fixture connection.
+     */
+    protected function assertTableRowCount(int $expected, string $table, string $message = ''): void
+    {
+        $connection = $this->getFixtureConnection();
+        $quotedTable = IdentifierQuoting::quote($connection->getDatabasePlatform(), $table);
+
+        self::assertSame(
+            $expected,
+            (int) $connection->fetchOne(sprintf('SELECT COUNT(*) FROM %s', $quotedTable)),
+            $message !== '' ? $message : sprintf('Table %s does not contain %d rows.', $table, $expected),
+        );
+    }
+
+    /**
+     * Asserts that a table of the fixture connection contains a row with the given column values.
+     *
+     * @param array<string, scalar|null> $values
+     */
+    protected function assertTableContains(string $table, array $values, string $message = ''): void
+    {
+        $connection = $this->getFixtureConnection();
+        $platform = $connection->getDatabasePlatform();
+
+        $conditions = [];
+        $parameters = [];
+        foreach ($values as $column => $value) {
+            $quotedColumn = IdentifierQuoting::quote($platform, $column);
+
+            if ($value === null) {
+                $conditions[] = sprintf('%s IS NULL', $quotedColumn);
+
+                continue;
+            }
+
+            $conditions[] = sprintf('%s = ?', $quotedColumn);
+            // PDO binds false as '', which matches neither 0 nor a boolean column
+            $parameters[] = is_bool($value) ? (int) $value : $value;
+        }
+
+        $sql = sprintf(
+            'SELECT COUNT(*) FROM %s%s',
+            IdentifierQuoting::quote($platform, $table),
+            $conditions !== [] ? ' WHERE ' . implode(' AND ', $conditions) : '',
+        );
+
+        if ($message === '') {
+            $message = sprintf('Table %s does not contain a row with %s.', $table, json_encode($values));
+        }
+
+        self::assertGreaterThan(0, (int) $connection->fetchOne($sql, $parameters), $message);
+    }
+
+    private function getFixtureConnection(): Connection
+    {
+        if ($this->schemaStrategyConnection === null) {
+            self::fail('No fixture connection, call fixtureFromConnection() or fixtureFromNewConnection() first.');
+        }
+
+        return $this->schemaStrategyConnection;
     }
 
     protected function createSchemaStrategy(Connection $connection): SchemaStrategy

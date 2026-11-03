@@ -165,3 +165,12 @@ The strategy is detected from the connection: SQLite in memory, SQLite file or M
 without the DAMA doctrine-test-bundle. If the detection doesn't fit your setup, force a strategy with
 the `SCHEMA_STRATEGY` environment variable: `sqlite-memory`, `sqlite-file`, `sqlite-file-dama`,
 `mysql` or `mysql-dama`.
+
+## Assertions
+
+```php
+$this->assertTableRowCount(2, 'user');
+$this->assertTableContains('user', ['username' => 'foo', 'deleted_at' => null]);
+```
+
+Both use the connection of the last `fixtureFromConnection()` / `fixtureFromNewConnection()` call.
