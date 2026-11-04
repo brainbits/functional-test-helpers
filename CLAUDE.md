@@ -72,3 +72,5 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
   `feat`/`fix` trigger a release, and `BREAKING CHANGE` triggers a major release (add an `UPGRADE-x.0.md` entry).
 - Dependency updates are handled by Dependabot (`.github/dependabot.yml`), weekly for Composer (`versioning-strategy: widen`, so
   OR constraints like `^2.0 || ^3.0` are extended, not replaced) and GitHub Actions. Its commit prefixes fit semantic-release: runtime deps use `fix` (patch release), dev deps use `chore`, and Actions use `ci`.
+- Workflow actions are pinned to a commit SHA with the version as a comment (`uses: "actions/checkout@<sha>" # v4.4.0`).
+  Pin new actions the same way. Dependabot updates the SHA and the comment.
