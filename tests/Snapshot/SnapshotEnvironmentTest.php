@@ -14,6 +14,7 @@ use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
 use function assert;
+use function getenv;
 use function Safe\file_get_contents;
 use function Safe\file_put_contents;
 use function Safe\putenv;
@@ -26,20 +27,58 @@ final class SnapshotEnvironmentTest extends TestCase
 
     private vfsStreamDirectory $snapshotsDir;
 
+    /** @var array<string, array{env: string|false, _ENV: mixed, _SERVER: mixed}> */
+    private array $backup = [];
+
     public function setUp(): void
     {
+        $this->backupVariables();
+        $this->clearVariables();
+
         $root = vfsStream::setup('root', null, ['__snapshots__' => []]);
 
         $snapshotsDir = $root->getChild('__snapshots__');
         assert($snapshotsDir instanceof vfsStreamDirectory);
 
         $this->snapshotsDir = $snapshotsDir;
-
-        $this->clearVariables();
     }
 
     #[After]
-    public function clearVariables(): void
+    public function restoreVariables(): void
+    {
+        $this->clearVariables();
+
+        foreach ($this->backup as $variable => $values) {
+            if ($values['env'] !== false) {
+                putenv($variable . '=' . $values['env']);
+            }
+
+            if ($values['_ENV'] !== null) {
+                $_ENV[$variable] = $values['_ENV'];
+            }
+
+            if ($values['_SERVER'] === null) {
+                continue;
+            }
+
+            $_SERVER[$variable] = $values['_SERVER'];
+        }
+
+        $this->backup = [];
+    }
+
+    private function backupVariables(): void
+    {
+        foreach (self::VARIABLES as $variable) {
+            $this->backup[$variable] = [
+                'env' => getenv($variable),
+                '_ENV' => $_ENV[$variable] ?? null,
+                '_SERVER' => $_SERVER[$variable] ?? null,
+            ];
+        }
+    }
+
+    private function clearVariables(): void
     {
         foreach (self::VARIABLES as $variable) {
             putenv($variable);
