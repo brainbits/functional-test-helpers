@@ -71,7 +71,7 @@ trait RequestTrait
 
     final protected function build(string $method, string $uri): RequestBuilder
     {
-        if (method_exists($this, 'findUser')) {
+        if (method_exists($this, 'findUser')) { // @phpstan-ignore-line
             $callable = $this->findUser();
             $isFindUser = true;
         } else {

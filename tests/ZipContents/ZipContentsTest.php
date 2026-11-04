@@ -33,7 +33,7 @@ final class ZipContentsTest extends TestCase
         $this->expectExceptionMessage('Valid stream is required, string given');
 
         $zipContents = new ZipContents();
-        $zipContents->readStream('foo', filesize(self::FILE));
+        $zipContents->readStream('foo', filesize(self::FILE)); // @phpstan-ignore-line
     }
 
     public function testItNeedsSize(): void
