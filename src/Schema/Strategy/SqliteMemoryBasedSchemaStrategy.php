@@ -7,7 +7,6 @@ namespace Brainbits\FunctionalTestHelpers\Schema\Strategy;
 use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Identifier;
 
 final class SqliteMemoryBasedSchemaStrategy implements SchemaStrategy
 {
@@ -40,7 +39,7 @@ final class SqliteMemoryBasedSchemaStrategy implements SchemaStrategy
 
     private function quoteIdentifier(Connection $connection, string $identifier): string
     {
-        return (new Identifier($identifier, true))->getQuotedName($connection->getDatabasePlatform());
+        return IdentifierQuoting::quote($connection->getDatabasePlatform(), $identifier);
     }
 
     /**

@@ -9,7 +9,6 @@ use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Identifier;
 use Throwable;
 
 use function count;
@@ -81,7 +80,7 @@ final class MysqlDamaBasedSchemaStrategy implements SchemaStrategy
 
         foreach ($tablesWithAutoIncrements as $table) {
             $connection->executeStatement(
-                sprintf('ALTER TABLE %s AUTO_INCREMENT = 1', $connection->quoteIdentifier($table)),
+                sprintf('ALTER TABLE %s AUTO_INCREMENT = 1', $this->quoteIdentifier($connection, (string) $table)),
             );
         }
 
@@ -110,17 +109,14 @@ final class MysqlDamaBasedSchemaStrategy implements SchemaStrategy
     /** @param list<string> $tableNames */
     private function dropTables(array $tableNames, Connection $connection): void
     {
-        $schemaManager = $connection->createSchemaManager();
-
         try {
+            // with foreign key checks disabled, tables can be dropped in any order without dropping the keys first
             $connection->executeStatement('SET foreign_key_checks = 0');
 
             foreach ($tableNames as $tableName) {
-                foreach ($schemaManager->listTableForeignKeys($tableName) as $foreignKey) {
-                    $schemaManager->dropForeignKey($foreignKey->getName(), $tableName);
-                }
-
-                $schemaManager->dropTable($tableName);
+                $connection->executeStatement(
+                    sprintf('DROP TABLE %s', $this->quoteIdentifier($connection, (string) $tableName)),
+                );
             }
         } finally {
             $connection->executeStatement('SET foreign_key_checks = 1');
@@ -129,7 +125,7 @@ final class MysqlDamaBasedSchemaStrategy implements SchemaStrategy
 
     private function quoteIdentifier(Connection $connection, string $identifier): string
     {
-        return (new Identifier($identifier, true))->getQuotedName($connection->getDatabasePlatform());
+        return IdentifierQuoting::quote($connection->getDatabasePlatform(), $identifier);
     }
 
     /**
