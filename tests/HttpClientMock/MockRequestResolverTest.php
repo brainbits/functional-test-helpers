@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockRequest;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderAbsentMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonSubsetMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Mismatch;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamsMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriPatternMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver;
@@ -13,6 +19,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(MockRequestResolver::class)]
+#[CoversClass(HeaderAbsentMatcher::class)]
+#[CoversClass(JsonSubsetMatcher::class)]
+#[CoversClass(QueryParamsMatcher::class)]
+#[CoversClass(UriPatternMatcher::class)]
 final class MockRequestResolverTest extends TestCase
 {
     use RealRequestTrait;
@@ -352,5 +362,87 @@ GET /query');
         $resultRequestBuilder = (new MockRequestResolver())($collection, $realRequest);
 
         self::assertSame($requestBuilder2, $resultRequestBuilder);
+    }
+
+    public function testCallbackMatchersOfOtherMocksDoNotBreakBodylessRequests(): void
+    {
+        $xmlMock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uri('/xml')
+            ->xml(static fn () => true);
+        $contentMock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uri('/content')
+            ->content(static fn () => true);
+        $thatMock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uri('/that')
+            ->that(static function (): void {
+                self::fail('Callback of another mock was invoked');
+            });
+        $getMock = (new MockRequestBuilder())
+            ->name('get')
+            ->method('GET')
+            ->uri('/b');
+
+        $collection = new MockRequestBuilderCollection();
+        $collection->addMockRequestBuilder($xmlMock);
+        $collection->addMockRequestBuilder($contentMock);
+        $collection->addMockRequestBuilder($thatMock);
+        $collection->addMockRequestBuilder($getMock);
+
+        $result = (new MockRequestResolver())($collection, $this->createRealRequest('GET', '/b'));
+
+        $this->assertSame($getMock, $result);
+    }
+
+    public function testFlexibleMatchers(): void
+    {
+        $collection = new MockRequestBuilderCollection();
+        $collection->addMockRequestBuilder(
+            $mock = (new MockRequestBuilder())
+                ->method('POST')
+                ->uriMatches('#^/users/\d+$#')
+                ->headerMatches('Authorization', '/^Bearer .+/')
+                ->withoutHeader('X-Debug')
+                ->queryParams(['page' => '1'])
+                ->jsonContains(['user' => ['name' => 'peter']]),
+        );
+
+        $request = $this->createRealRequest(
+            'POST',
+            '/users/42',
+            headers: ['authorization' => 'Bearer abc'],
+            json: ['user' => ['name' => 'peter', 'id' => 42], 'created' => '2026-01-01'],
+            queryParams: ['page' => '1'],
+        );
+
+        $this->assertSame($mock, (new MockRequestResolver())($collection, $request));
+    }
+
+    public function testFlexibleMatchersMismatch(): void
+    {
+        $mock = (new MockRequestBuilder())
+            ->method('POST')
+            ->uriMatches('#^/users/\d+$#')
+            ->withoutHeader('X-Debug')
+            ->queryParams(['page' => '1'])
+            ->jsonContains(['user' => ['name' => 'peter']]);
+
+        $request = $this->createRealRequest(
+            'POST',
+            '/users/abc',
+            headers: ['x-debug' => '1'],
+            json: ['user' => ['name' => 'paul']],
+            queryParams: ['page' => '1', 'extra' => 'x'],
+        );
+
+        $results = ($mock->getMatcher())($request)->getResults();
+
+        $this->assertCount(5, $results);
+        $this->assertInstanceOf(Hit::class, $results[0]);
+        foreach ([1, 2, 3, 4] as $index) {
+            $this->assertInstanceOf(Mismatch::class, $results[$index]);
+        }
     }
 }

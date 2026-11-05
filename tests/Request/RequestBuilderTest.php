@@ -9,6 +9,7 @@ use Brainbits\FunctionalTestHelpers\Request\RequestBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\User\InMemoryUser;
@@ -367,5 +368,92 @@ final class RequestBuilderTest extends TestCase
             $method,
             $uri,
         );
+    }
+
+    public function testLoginAs(): void
+    {
+        $user = new stdClass();
+        $builder = $this->createRequestBuilder('GET', '/users')->loginAs($user, 'admin', ['foo' => 'bar']);
+
+        self::assertSame($user, $builder->getLoginUser());
+        self::assertSame('admin', $builder->getLoginFirewall());
+        self::assertSame(['foo' => 'bar'], $builder->getLoginTokenAttributes());
+        self::assertFalse($builder->isLogout());
+
+        $builder->logout();
+
+        self::assertNull($builder->getLoginUser());
+        self::assertTrue($builder->isLogout());
+    }
+
+    public function testCsrfToken(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')->csrfToken('form')->csrfToken('delete', 'token');
+
+        self::assertSame(['form' => '_token', 'delete' => 'token'], $builder->getCsrfTokens());
+    }
+
+    public function testQueryParams(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users#top')
+            ->queryParams(['ids' => [1, 2], 'active' => true, 'deleted' => false, 'skip' => null, 'q' => 'a b']);
+
+        self::assertSame('/users?ids%5B0%5D=1&ids%5B1%5D=2&active=1&deleted=0&q=a%20b#top', $builder->getUri());
+    }
+
+    public function testHeaders(): void
+    {
+        $builder = $this->createRequestBuilder('GET', '/users')
+            ->header('X-Custom-Header', 'a')
+            ->header('Content-Type', 'text/plain')
+            ->ajax()
+            ->acceptLanguage('de')
+            ->host('app.test');
+
+        self::assertSame([
+            'HTTP_X_CUSTOM_HEADER' => 'a',
+            'CONTENT_TYPE' => 'text/plain',
+            'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest',
+            'HTTP_ACCEPT_LANGUAGE' => 'de',
+            'HTTP_HOST' => 'app.test',
+        ], $builder->getServer());
+    }
+
+    public function testFormAndClientOptions(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')
+            ->form(['name' => 'peter'])
+            ->followRedirects()
+            ->disableReboot()
+            ->changeHistory(false);
+
+        self::assertSame(['name' => 'peter'], $builder->getParameters());
+        self::assertSame('application/x-www-form-urlencoded', $builder->getServer()['CONTENT_TYPE']);
+        self::assertTrue($builder->getFollowRedirects());
+        self::assertTrue($builder->isRebootDisabled());
+        self::assertFalse($builder->getChangeHistory());
+    }
+
+    public function testFormWithFilesStaysMultipart(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')
+            ->fileByContent('document', 'a', 'a.txt')
+            ->form(['name' => 'peter']);
+
+        self::assertSame('multipart/form-data', $builder->getServer()['CONTENT_TYPE']);
+
+        RequestBuilder::removeTemporaryFiles();
+    }
+
+    public function testTemporaryFilesAreRemoved(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')->fileByContent('f', 'a', 'a.txt');
+        $file = $builder->getFiles()['f'];
+        self::assertInstanceOf(UploadedFile::class, $file);
+        self::assertFileExists($file->getPathname());
+
+        RequestBuilder::removeTemporaryFiles();
+
+        self::assertFileDoesNotExist($file->getPathname());
     }
 }

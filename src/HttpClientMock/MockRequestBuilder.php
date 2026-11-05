@@ -8,17 +8,22 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\AddMockResponseFail
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\CatchAllMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ContentMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderAbsentMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonSubsetMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Matcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MethodMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MultipartMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamsMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\RequestParamMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ThatMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriParams;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriPatternMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\XmlMatcher;
+use Closure;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\File\File;
 use Throwable;
@@ -27,6 +32,7 @@ use function base64_encode;
 use function count;
 use function implode;
 use function is_array;
+use function Safe\preg_match;
 use function sprintf;
 use function strtolower;
 use function trim;
@@ -36,6 +42,7 @@ final class MockRequestBuilder
     public string|null $name = null;
 
     private MockResponseCollection $responses;
+    private int|null $expectedCallCount = null;
 
     /** @var Matcher[]|array<Matcher[]> */
     private array $matchers = [];
@@ -112,9 +119,38 @@ final class MockRequestBuilder
         return $this;
     }
 
-    public function header(string $key, string $value): self
+    /** @param string|Closure(string $value): (bool|null) $value A string is compared exactly, a Closure decides */
+    public function header(string $key, string|Closure $value): self
     {
         $this->matchers['headers'][strtolower($key)] = new HeaderMatcher($key, $value);
+
+        return $this;
+    }
+
+    /**
+     * Matches the header value against a regular expression.
+     */
+    public function headerMatches(string $key, string $pattern): self
+    {
+        return $this->header($key, static fn (string $value): bool => preg_match($pattern, $value) === 1);
+    }
+
+    /**
+     * Matches only requests without the given header.
+     */
+    public function withoutHeader(string $key): self
+    {
+        $this->matchers['headers'][strtolower($key)] = new HeaderAbsentMatcher($key);
+
+        return $this;
+    }
+
+    /**
+     * Matches the URI against a regular expression instead of a fixed URI.
+     */
+    public function uriMatches(string $pattern): self
+    {
+        $this->matchers['uri'] = new UriPatternMatcher($pattern);
 
         return $this;
     }
@@ -193,6 +229,18 @@ final class MockRequestBuilder
         return $this;
     }
 
+    /**
+     * Matches if the JSON body contains the given keys and values. Additional keys are ignored.
+     *
+     * @param mixed[] $subset
+     */
+    public function jsonContains(array $subset): self
+    {
+        $this->matchers['json'] = new JsonSubsetMatcher($subset);
+
+        return $this;
+    }
+
     public function xml(string|callable $xml): self
     {
         $this->matchers['xml'] = new XmlMatcher($xml);
@@ -205,6 +253,18 @@ final class MockRequestBuilder
     {
         $this->matchers['queryParams'] ??= [];
         $this->matchers['queryParams'][] = new QueryParamMatcher($key, $value, $placeholders);
+
+        return $this;
+    }
+
+    /**
+     * Matches if the query parameters are exactly the given ones. Additional parameters are a mismatch.
+     *
+     * @param array<string, string|mixed[]> $params
+     */
+    public function queryParams(array $params): self
+    {
+        $this->matchers['queryParams'] = [new QueryParamsMatcher($params)];
 
         return $this;
     }
@@ -304,6 +364,23 @@ final class MockRequestBuilder
         return $this;
     }
 
+    /**
+     * The response fails with a TimeoutException when it is read, like a real timeout.
+     */
+    public function willTimeout(): self
+    {
+        return $this->willRespond((new MockResponseBuilder())->timeout());
+    }
+
+    /**
+     * The response fails with a TransportException when it is read, like a real network error.
+     * Unlike willThrow(), request() itself doesn't throw.
+     */
+    public function willFailWithTransportError(string $message = 'Transport error'): self
+    {
+        return $this->willRespond((new MockResponseBuilder())->transportError($message));
+    }
+
     public function willThrow(Throwable $exception): self
     {
         try {
@@ -332,6 +409,42 @@ final class MockRequestBuilder
     public function hasNextResponse(): bool
     {
         return $this->responses->hasNext();
+    }
+
+    public function hasUnusedResponses(): bool
+    {
+        return $this->responses->hasUnusedResponses();
+    }
+
+    /**
+     * Expect this mock to be called exactly once. Checked automatically after the test.
+     */
+    public function once(): self
+    {
+        return $this->times(1);
+    }
+
+    /**
+     * Expect this mock to never be called. Checked automatically after the test.
+     */
+    public function never(): self
+    {
+        return $this->times(0);
+    }
+
+    /**
+     * Expect this mock to be called exactly $times times. Checked automatically after the test.
+     */
+    public function times(int $times): self
+    {
+        $this->expectedCallCount = $times;
+
+        return $this;
+    }
+
+    public function getExpectedCallCount(): int|null
+    {
+        return $this->expectedCallCount;
     }
 
     public function resetResponses(): self

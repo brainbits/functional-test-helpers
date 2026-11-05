@@ -7,6 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock;
 use ArrayObject;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\HttpClientMockException;
 use Monolog\Logger;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\TestCase;
@@ -17,9 +18,12 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Throwable;
 
+use function array_key_exists;
 use function array_map;
 use function assert;
+use function count;
 use function explode;
+use function implode;
 use function is_string;
 use function Safe\parse_url;
 use function sprintf;
@@ -68,10 +72,43 @@ trait HttpClientMockTrait
         $mockRequestBuilders = $this->createdMockRequestBuilders;
         $this->createdMockRequestBuilders = [];
 
+        // a skipped or incomplete test didn't run its requests, call counts must not turn it into a failure
+        $status = $this->status();
+        $checkCallCounts = !$status->isSkipped() && !$status->isIncomplete();
+
+        $failedAssertions = [];
         foreach ($mockRequestBuilders as $mockRequestBuilder) {
             foreach ($mockRequestBuilder->getFailedAssertions() as $failedAssertion) {
-                throw $failedAssertion;
+                $failedAssertions[] = $failedAssertion;
             }
+
+            $expectedCallCount = $mockRequestBuilder->getExpectedCallCount();
+            $actualCallCount = count($mockRequestBuilder->getCallStack());
+            if (!$checkCallCounts || $expectedCallCount === null || $expectedCallCount === $actualCallCount) {
+                continue;
+            }
+
+            $failedAssertions[] = new AssertionFailedError(sprintf(
+                'Mock request %s was expected to be called %d times, but was called %d times.',
+                self::describeMockRequestBuilder($mockRequestBuilder),
+                $expectedCallCount,
+                $actualCallCount,
+            ));
+        }
+
+        if (count($failedAssertions) === 1) {
+            throw $failedAssertions[0];
+        }
+
+        if (count($failedAssertions) > 1) {
+            throw new AssertionFailedError(sprintf(
+                "%d mock request assertions failed:\n\n%s",
+                count($failedAssertions),
+                implode("\n\n", array_map(
+                    static fn (Throwable $failedAssertion): string => $failedAssertion->getMessage(),
+                    $failedAssertions,
+                )),
+            ));
         }
     }
 
@@ -177,8 +214,11 @@ trait HttpClientMockTrait
         $stack = self::getContainer()->get(MockRequestBuilderCollection::class);
         assert($stack instanceof MockRequestBuilderCollection);
 
-        $this->createdMockRequestBuilders[] = $builder = (new MockRequestBuilder())
-            ->method($method);
+        $this->createdMockRequestBuilders[] = $builder = new MockRequestBuilder();
+
+        if ($method !== null) {
+            $builder->method($method);
+        }
 
         // legacy start - remove in 8.0.0
 
@@ -187,6 +227,7 @@ trait HttpClientMockTrait
             $uriParts = parse_url($uri);
             $uri = ($uriParts['scheme'] ?? false ? $uriParts['scheme'] . '://' : '') .
                 ($uriParts['host'] ?? false ? $uriParts['host'] : '') .
+                ($uriParts['port'] ?? false ? ':' . $uriParts['port'] : '') .
                 ($uriParts['path'] ?? '');
 
             if ($uriParts['query'] ?? false) {
@@ -205,7 +246,9 @@ trait HttpClientMockTrait
 
         // legacy end - remove in 8.0.0
 
-        $builder->uri($uri);
+        if ($uri !== null) {
+            $builder->uri($uri);
+        }
 
         $stack->addMockRequestBuilder($builder);
 
@@ -230,6 +273,94 @@ trait HttpClientMockTrait
         assert($stack instanceof MockRequestBuilderCollection);
 
         return $stack->getCallStack();
+    }
+
+    /**
+     * All calls of all mock requests in the order they were made.
+     */
+    protected function chronologicalCallStack(): CallStack
+    {
+        return self::getMockRequestBuilderCollection()->getChronologicalCallStack();
+    }
+
+    /**
+     * Fails if a mock request has sequential responses (willRespond(), willThrow(), ...) that were never returned.
+     */
+    protected static function assertAllMockResponsesAreConsumed(string $message = ''): void
+    {
+        foreach (self::getMockRequestBuilderCollection() as $mockRequestBuilder) {
+            self::assertFalse(
+                $mockRequestBuilder->hasUnusedResponses(),
+                self::mockRequestMessage(
+                    $message,
+                    'Mock request %s has responses that were never returned.',
+                    self::describeMockRequestBuilder($mockRequestBuilder),
+                ),
+            );
+        }
+    }
+
+    /**
+     * Fails unless the first calls of the given mock requests happened in the given order.
+     */
+    protected static function assertRequestMocksAreCalledInOrder(MockRequestBuilder ...$expectedOrder): void
+    {
+        $calledBuilders = self::getMockRequestBuilderCollection()->getCalledRequestBuilders();
+
+        $firstCalls = [];
+        foreach ($calledBuilders as $index => $calledBuilder) {
+            foreach ($expectedOrder as $position => $expectedBuilder) {
+                if ($calledBuilder !== $expectedBuilder || array_key_exists($position, $firstCalls)) {
+                    continue;
+                }
+
+                $firstCalls[$position] = $index;
+            }
+        }
+
+        foreach ($expectedOrder as $position => $expectedBuilder) {
+            self::assertArrayHasKey(
+                $position,
+                $firstCalls,
+                sprintf('Mock request %s was not called.', self::describeMockRequestBuilder($expectedBuilder)),
+            );
+
+            if ($position === 0) {
+                continue;
+            }
+
+            self::assertGreaterThan(
+                $firstCalls[$position - 1],
+                $firstCalls[$position],
+                sprintf(
+                    'Mock request %s was called before %s.',
+                    self::describeMockRequestBuilder($expectedBuilder),
+                    self::describeMockRequestBuilder($expectedOrder[$position - 1]),
+                ),
+            );
+        }
+    }
+
+    private static function getMockRequestBuilderCollection(): MockRequestBuilderCollection
+    {
+        if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
+            static::fail(sprintf(
+                '%s not found, did you forget to include it in your test services?',
+                MockRequestBuilderCollection::class,
+            ));
+        }
+
+        $collection = self::getContainer()->get(MockRequestBuilderCollection::class);
+        assert($collection instanceof MockRequestBuilderCollection);
+
+        return $collection;
+    }
+
+    private static function describeMockRequestBuilder(MockRequestBuilder $mockRequestBuilder): string
+    {
+        $name = $mockRequestBuilder->name;
+
+        return $name !== null ? sprintf('"%s"', $name) : sprintf('[%s]', (string) $mockRequestBuilder);
     }
 
     /** @param mixed[] $expected */
@@ -402,7 +533,7 @@ trait HttpClientMockTrait
         foreach ($callStack as $call) {
             self::assertStringContainsString(
                 $expectedSubstring,
-                $call->getHeader($expectedHeader),
+                $call->getHeader($expectedHeader) ?? '',
                 self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call),
             );
         }
@@ -420,7 +551,7 @@ trait HttpClientMockTrait
         foreach ($callStack as $call) {
             self::assertStringNotContainsString(
                 $expectedSubstring,
-                $call->getHeader($expectedHeader),
+                $call->getHeader($expectedHeader) ?? '',
                 self::mockRequestMessage($message, 'Request not called with expected header: %s', (string) $call),
             );
         }

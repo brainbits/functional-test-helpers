@@ -7,7 +7,6 @@ namespace Brainbits\FunctionalTestHelpers\Schema\Strategy;
 use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Identifier;
 
 use function assert;
 use function dirname;
@@ -38,12 +37,11 @@ final class SqliteFileDamaBasedSchemaStrategy implements SchemaStrategy
         $databaseDirectoryExists = file_exists($pathToDatabaseDirectory);
 
         if (!$databaseDirectoryExists) {
-            mkdir($pathToDatabaseDirectory);
+            mkdir($pathToDatabaseDirectory, 0777, true);
         }
 
-        foreach ($schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform()) as $sql) {
-            $connection->executeStatement($sql);
-        }
+        // the file may already contain the tables, e.g. after a run without DAMA or a #[SkipDatabaseRollback] test
+        SqliteTables::createMissing($schemaBuilder, $connection);
     }
 
     public function applyData(DataBuilder $dataBuilder, Connection $connection): void
@@ -61,7 +59,7 @@ final class SqliteFileDamaBasedSchemaStrategy implements SchemaStrategy
 
     private function quoteIdentifier(Connection $connection, string $identifier): string
     {
-        return (new Identifier($identifier, true))->getQuotedName($connection->getDatabasePlatform());
+        return IdentifierQuoting::quote($connection->getDatabasePlatform(), $identifier);
     }
 
     /**

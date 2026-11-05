@@ -7,7 +7,6 @@ namespace Brainbits\FunctionalTestHelpers\Schema\Strategy;
 use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Identifier;
 
 final class SqliteMemoryBasedSchemaStrategy implements SchemaStrategy
 {
@@ -21,9 +20,8 @@ final class SqliteMemoryBasedSchemaStrategy implements SchemaStrategy
 
     public function applySchema(SchemaBuilder $schemaBuilder, Connection $connection): void
     {
-        foreach ($schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform()) as $sql) {
-            $connection->executeStatement($sql);
-        }
+        // a second fixture on the same connection must not create the tables again
+        SqliteTables::createMissing($schemaBuilder, $connection);
     }
 
     public function applyData(DataBuilder $dataBuilder, Connection $connection): void
@@ -41,7 +39,7 @@ final class SqliteMemoryBasedSchemaStrategy implements SchemaStrategy
 
     private function quoteIdentifier(Connection $connection, string $identifier): string
     {
-        return (new Identifier($identifier, true))->getQuotedName($connection->getDatabasePlatform());
+        return IdentifierQuoting::quote($connection->getDatabasePlatform(), $identifier);
     }
 
     /**

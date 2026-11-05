@@ -11,7 +11,7 @@ use function is_callable;
 use function Safe\json_encode;
 use function sprintf;
 
-final readonly class JsonMatcher implements Matcher
+final readonly class JsonMatcher implements CallbackMatcher
 {
     private mixed $json;
 
@@ -32,17 +32,22 @@ final readonly class JsonMatcher implements Matcher
             }
         } else {
             $expectedValue = Json::canonicalize(json_encode($expectedJson));
-            $realValue = $realJson ? Json::canonicalize(json_encode($realJson)) : null;
+            $realValue = $realJson !== null ? Json::canonicalize(json_encode($realJson)) : null;
 
             if ($expectedValue !== $realValue) {
                 return Mismatch::mismatchingJson(
                     json_encode($expectedJson),
-                    $realJson ? json_encode($realJson) : null,
+                    $realJson !== null ? json_encode($realJson) : null,
                 );
             }
         }
 
         return Hit::matchesJson(json_encode($realJson));
+    }
+
+    public function isCallback(): bool
+    {
+        return is_callable($this->json);
     }
 
     public function __toString(): string

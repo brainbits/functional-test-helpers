@@ -102,6 +102,7 @@ final class MyDataBuilder implements DataBuilder
 // FunctionalTestCase.php
 
 use Brainbits\FunctionalTestHelpers\Schema\SchemaTrait;
+use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 abstract class FunctionalTestCase extends WebTestCase
@@ -115,12 +116,14 @@ abstract class FunctionalTestCase extends WebTestCase
         $schemaBuilder = MySchemaBuilder::create();
         $dataBuilder = MyDataBuilder::create($schemaBuilder);
 
-        $this->fixtureFromServiceConnection(
-            self::$container->get('doctrine.dbal.default_connection'),
+        $connection = static::getContainer()->get('doctrine.dbal.default_connection');
+        assert($connection instanceof Connection);
+
+        $this->fixtureFromConnection(
+            $connection,
             $schemaBuilder,
             $dataBuilder,
-            ,
-            function ($data): void {
+            function (MyDataBuilder $data): void {
                 $this->buildData($data);
             },
         );
@@ -131,6 +134,7 @@ abstract class FunctionalTestCase extends WebTestCase
 ```
 
 In your test, implement the `buildData()` method. The database and test data will be created before each test.
+`fixtureFromNewConnection()` creates an SQLite in-memory connection instead and returns it.
 
 
 ```php
@@ -150,7 +154,23 @@ final class MyTest extends FunctionalTestCase
     protected function buildData(MyDataBuilder $data): void
     {
         $data->user(1, 'foo', 'foo@baz.com', ['ROLE_USER']);
-        $data->user(1, 'bar', 'bar@baz.com', ['ROLE_SUPER_ADMIN']);
+        $data->user(2, 'bar', 'bar@baz.com', ['ROLE_SUPER_ADMIN']);
     }
 }    
 ```
+
+## Schema strategies
+
+The strategy is detected from the connection: SQLite in memory, SQLite file or MySQL, each with or
+without the DAMA doctrine-test-bundle. If the detection doesn't fit your setup, force a strategy with
+the `SCHEMA_STRATEGY` environment variable: `sqlite-memory`, `sqlite-file`, `sqlite-file-dama`,
+`mysql` or `mysql-dama`.
+
+## Assertions
+
+```php
+$this->assertTableRowCount(2, 'user');
+$this->assertTableContains('user', ['username' => 'foo', 'deleted_at' => null]);
+```
+
+Both use the connection of the last `fixtureFromConnection()` / `fixtureFromNewConnection()` call.

@@ -15,15 +15,25 @@ use PHPUnit\Framework\TestCase;
 
 use function assert;
 use function getenv;
+use function restore_error_handler;
 use function Safe\file_get_contents;
 use function Safe\file_put_contents;
 use function Safe\putenv;
+use function set_error_handler;
+
+use const E_USER_WARNING;
 
 final class SnapshotEnvironmentTest extends TestCase
 {
     use SnapshotTrait;
 
-    private const array VARIABLES = ['UPDATE_SNAPSHOTS', 'CREATE_SNAPSHOTS', 'SKIP_SNAPSHOT_TESTS'];
+    private const array VARIABLES = [
+        'UPDATE_SNAPSHOTS',
+        'CREATE_SNAPSHOTS',
+        'SKIP_SNAPSHOT_TESTS',
+        'CI',
+        'SNAPSHOT_CREATED_WARNING',
+    ];
 
     private vfsStreamDirectory $snapshotsDir;
 
@@ -183,6 +193,54 @@ final class SnapshotEnvironmentTest extends TestCase
         }
 
         $this->assertSame('old', file_get_contents($filename));
+    }
+
+    public function testCreateSnapshotsAutoDisablesCreationOnCi(): void
+    {
+        putenv('CREATE_SNAPSHOTS=auto');
+        putenv('CI=true');
+
+        try {
+            $this->assertMatchesTextSnapshot('text');
+        } catch (AssertionFailedError) {
+            $this->assertCount(0, $this->snapshotsDir->getChildren());
+
+            return;
+        }
+
+        $this->fail('Snapshot was created on CI');
+    }
+
+    public function testCreateSnapshotsAutoCreatesSnapshotsOutsideCi(): void
+    {
+        putenv('CREATE_SNAPSHOTS=auto');
+
+        $this->assertMatchesTextSnapshot('text');
+
+        $this->assertSame('text', file_get_contents($this->onlySnapshotFile()));
+    }
+
+    public function testSnapshotCreatedWarning(): void
+    {
+        putenv('SNAPSHOT_CREATED_WARNING=1');
+
+        $warnings = [];
+        set_error_handler(static function (int $errno, string $errstr) use (&$warnings): bool {
+            $warnings[] = $errstr;
+
+            return true;
+        }, E_USER_WARNING);
+
+        try {
+            $this->assertMatchesTextSnapshot('text');
+            $this->filenames = [];
+            $this->assertMatchesTextSnapshot('text');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('was created', $warnings[0]);
     }
 
     private function onlySnapshotFile(): string

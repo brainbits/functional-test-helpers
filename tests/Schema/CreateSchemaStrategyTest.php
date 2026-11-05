@@ -13,10 +13,12 @@ use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileDamaBasedSchemaStr
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrategy;
 use DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver;
 use Doctrine\DBAL\Connection;
-use PHPUnit\Framework\Attributes\CoversClass;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(CreateSchemaStrategy::class)]
+use function Safe\putenv;
+
 final class CreateSchemaStrategyTest extends TestCase
 {
     public function testItUsesSqliteMemoryStrategyIfConfiguredByUrl(): void
@@ -164,5 +166,70 @@ final class CreateSchemaStrategyTest extends TestCase
         $applySchema = (new CreateSchemaStrategy())($connection);
 
         $this->assertInstanceOf(SqliteFileBasedSchemaStrategy::class, $applySchema);
+    }
+
+    /** @return iterable<string, array{mixed[], class-string}> */
+    public static function provideParams(): iterable
+    {
+        yield 'sqlite3 memory' => [['driver' => 'sqlite3', 'memory' => true], SqliteMemoryBasedSchemaStrategy::class];
+        yield 'sqlite3 file' => [['driver' => 'sqlite3', 'path' => '/tmp/my.db'], SqliteFileBasedSchemaStrategy::class];
+        yield 'mysqli' => [['driver' => 'mysqli'], MysqlBasedSchemaStrategy::class];
+    }
+
+    /**
+     * @param mixed[]      $params
+     * @param class-string $expectedStrategy
+     */
+    #[DataProvider('provideParams')]
+    public function testItDetectsDrivers(array $params, string $expectedStrategy): void
+    {
+        StaticDriver::setKeepStaticConnections(false);
+
+        $connection = $this->createStub(Connection::class);
+        $connection->method('getParams')->willReturn($params);
+
+        $this->assertInstanceOf($expectedStrategy, (new CreateSchemaStrategy())($connection));
+    }
+
+    public function testItFallsBackToThePlatform(): void
+    {
+        StaticDriver::setKeepStaticConnections(false);
+
+        $connection = $this->createStub(Connection::class);
+        $connection->method('getParams')->willReturn(['driverClass' => 'App\\Driver', 'path' => '/tmp/my.db']);
+        $connection->method('getDatabasePlatform')->willReturn(new SQLitePlatform());
+
+        $this->assertInstanceOf(SqliteFileBasedSchemaStrategy::class, (new CreateSchemaStrategy())($connection));
+    }
+
+    public function testStrategyCanBeForced(): void
+    {
+        putenv('SCHEMA_STRATEGY=sqlite-memory');
+
+        try {
+            $connection = $this->createStub(Connection::class);
+            $connection->method('getParams')->willReturn(['driver' => 'pdo_mysql']);
+
+            $this->assertInstanceOf(SqliteMemoryBasedSchemaStrategy::class, (new CreateSchemaStrategy())($connection));
+        } finally {
+            putenv('SCHEMA_STRATEGY');
+        }
+    }
+
+    public function testExceptionDoesNotContainThePassword(): void
+    {
+        $connection = $this->createStub(Connection::class);
+        $connection->method('getParams')->willReturn(['driver' => 'pdo_pgsql', 'password' => 's3cret']);
+
+        try {
+            (new CreateSchemaStrategy())($connection);
+        } catch (NoSchemaStrategyFound $e) {
+            $this->assertStringNotContainsString('s3cret', $e->getMessage());
+            $this->assertStringContainsString('"password":"***"', $e->getMessage());
+
+            return;
+        }
+
+        $this->fail('No exception thrown');
     }
 }

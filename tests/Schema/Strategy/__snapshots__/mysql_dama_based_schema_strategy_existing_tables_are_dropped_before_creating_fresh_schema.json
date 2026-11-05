@@ -11,51 +11,10 @@
         "statement": "SET foreign_key_checks = 0"
     },
     {
-        "function": "listTableForeignKeys()",
-        "parameters": [
-            "old_table_1"
-        ],
-        "result": [
-            "constraint_1",
-            "constraint_2"
-        ]
+        "statement": "DROP TABLE `old_table_1`"
     },
     {
-        "function": "dropForeignKey()",
-        "parameters": [
-            "constraint_1",
-            "old_table_1"
-        ],
-        "result": []
-    },
-    {
-        "function": "dropForeignKey()",
-        "parameters": [
-            "constraint_2",
-            "old_table_1"
-        ],
-        "result": []
-    },
-    {
-        "function": "dropTable()",
-        "parameters": [
-            "old_table_1"
-        ],
-        "result": []
-    },
-    {
-        "function": "listTableForeignKeys()",
-        "parameters": [
-            "old_table_2"
-        ],
-        "result": []
-    },
-    {
-        "function": "dropTable()",
-        "parameters": [
-            "old_table_2"
-        ],
-        "result": []
+        "statement": "DROP TABLE `old_table_2`"
     },
     {
         "statement": "SET foreign_key_checks = 1"

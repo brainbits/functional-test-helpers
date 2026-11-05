@@ -413,4 +413,14 @@ final class MockRequestBuilderTest extends TestCase
 
         self::assertFalse($mockRequestBuilder->hasResponse());
     }
+
+    public function testWillTimeoutAndWillFailWithTransportError(): void
+    {
+        $builder = (new MockRequestBuilder())
+            ->willTimeout()
+            ->willFailWithTransportError('boom');
+
+        $this->assertSame('Timeout', (string) $builder->nextResponse());
+        $this->assertSame('Transport error: boom', (string) $builder->nextResponse());
+    }
 }

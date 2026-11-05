@@ -9,15 +9,21 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 use function basename;
+use function explode;
+use function http_build_query;
 use function is_array;
 use function rawurlencode;
 use function Safe\array_walk_recursive;
 use function Safe\json_encode;
 use function sprintf;
+use function str_contains;
 use function str_replace;
 use function strpos;
+use function strtoupper;
 use function sys_get_temp_dir;
 use function urlencode;
+
+use const PHP_QUERY_RFC3986;
 
 final class RequestBuilder
 {
@@ -35,6 +41,17 @@ final class RequestBuilder
     private array $server = [];
     private string|null $content = null;
     private bool $changeHistory = true;
+    /** @var list<string> */
+    private static array $temporaryFiles = [];
+    private object|null $loginAsUser = null;
+    private string|null $loginFirewall = null;
+    /** @var array<string, mixed> */
+    private array $loginTokenAttributes = [];
+    private bool $logout = false;
+    private bool|null $followRedirects = null;
+    private bool $disableReboot = false;
+    /** @var array<string, string> token id => field */
+    private array $csrfTokens = [];
 
     private function __construct(
         callable $loginUser,
@@ -99,6 +116,112 @@ final class RequestBuilder
     public function parameter(string $key, mixed $value): self
     {
         $this->parameters[$key] = $value;
+
+        return $this;
+    }
+
+    /**
+     * Appends the query parameters like http_build_query(): nested arrays, true/false as 1/0, null values are left out.
+     *
+     * @param array<string, mixed> $params
+     */
+    public function queryParams(array $params): self
+    {
+        $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+
+        if ($query === '') {
+            return $this;
+        }
+
+        [$uri, $fragment] = explode('#', $this->uri, 2) + [1 => null];
+
+        $this->uri = $uri . (str_contains($uri, '?') ? '&' : '?') . $query;
+
+        if ($fragment !== null) {
+            $this->uri .= '#' . $fragment;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Sends the values as application/x-www-form-urlencoded form, or as multipart/form-data together with files.
+     *
+     * @param array<string, mixed> $values
+     */
+    public function form(array $values): self
+    {
+        foreach ($values as $key => $value) {
+            $this->parameter($key, $value);
+        }
+
+        if ($this->files !== []) {
+            return $this;
+        }
+
+        return $this->contentType('application/x-www-form-urlencoded');
+    }
+
+    /**
+     * Sets a request header. Content-Type and Content-Length are mapped to CONTENT_TYPE and CONTENT_LENGTH,
+     * all other headers to HTTP_*.
+     */
+    public function header(string $name, string $value): self
+    {
+        $key = strtoupper(str_replace('-', '_', $name));
+
+        if ($key !== 'CONTENT_TYPE' && $key !== 'CONTENT_LENGTH') {
+            $key = 'HTTP_' . $key;
+        }
+
+        return $this->server($key, $value);
+    }
+
+    public function ajax(): self
+    {
+        return $this->header('X-Requested-With', 'XMLHttpRequest');
+    }
+
+    public function acceptLanguage(string $acceptLanguage): self
+    {
+        return $this->header('Accept-Language', $acceptLanguage);
+    }
+
+    public function host(string $host): self
+    {
+        return $this->header('Host', $host);
+    }
+
+    public function followRedirects(bool $followRedirects = true): self
+    {
+        $this->followRedirects = $followRedirects;
+
+        return $this;
+    }
+
+    public function getFollowRedirects(): bool|null
+    {
+        return $this->followRedirects;
+    }
+
+    /**
+     * Keeps the kernel (and the container state) between this and the following requests of the client.
+     */
+    public function disableReboot(): self
+    {
+        $this->disableReboot = true;
+
+        return $this;
+    }
+
+    public function isRebootDisabled(): bool
+    {
+        return $this->disableReboot;
+    }
+
+    public function changeHistory(bool $changeHistory): self
+    {
+        $this->changeHistory = $changeHistory;
 
         return $this;
     }
@@ -260,24 +383,36 @@ final class RequestBuilder
         return $this;
     }
 
-    public function fileByPath(string $key, string $path): self
+    /**
+     * Removes the temporary files created by fileByPath() and fileByContent(). Called after each test by RequestTrait.
+     */
+    public static function removeTemporaryFiles(): void
+    {
+        (new Filesystem())->remove(self::$temporaryFiles);
+
+        self::$temporaryFiles = [];
+    }
+
+    public function fileByPath(string $key, string $path, string|null $mimeType = null): self
     {
         $filesystem = new Filesystem();
         $temporaryFilename = $filesystem->tempnam(sys_get_temp_dir(), 'upload_file_');
         $filesystem->copy($path, $temporaryFilename, true);
+        self::$temporaryFiles[] = $temporaryFilename;
 
-        $this->file($key, new UploadedFile($temporaryFilename, basename($path)));
+        $this->file($key, new UploadedFile($temporaryFilename, basename($path), $mimeType));
 
         return $this;
     }
 
-    public function fileByContent(string $key, string $content, string $filename): self
+    public function fileByContent(string $key, string $content, string $filename, string|null $mimeType = null): self
     {
         $filesystem = new Filesystem();
         $temporaryFilename = $filesystem->tempnam(sys_get_temp_dir(), 'upload_file_');
         $filesystem->dumpFile($temporaryFilename, $content);
+        self::$temporaryFiles[] = $temporaryFilename;
 
-        $this->file($key, new UploadedFile($temporaryFilename, $filename));
+        $this->file($key, new UploadedFile($temporaryFilename, $filename, $mimeType));
 
         return $this;
     }
@@ -324,6 +459,71 @@ final class RequestBuilder
     public function getSessionValues(): array
     {
         return $this->sessionValues;
+    }
+
+    /**
+     * Logs the user in on the request client when the request is sent, via KernelBrowser::loginUser().
+     * The login stays active for later requests of the same client, use logout() to end it.
+     *
+     * @param array<string, mixed> $tokenAttributes
+     */
+    public function loginAs(object $user, string|null $firewall = null, array $tokenAttributes = []): self
+    {
+        $this->loginAsUser = $user;
+        $this->loginFirewall = $firewall;
+        $this->loginTokenAttributes = $tokenAttributes;
+        $this->logout = false;
+
+        return $this;
+    }
+
+    /**
+     * Removes all cookies of the request client (including the session of an earlier login) before the request is sent.
+     */
+    public function logout(): self
+    {
+        $this->loginAsUser = null;
+        $this->logout = true;
+
+        return $this;
+    }
+
+    public function getLoginUser(): object|null
+    {
+        return $this->loginAsUser;
+    }
+
+    public function getLoginFirewall(): string|null
+    {
+        return $this->loginFirewall;
+    }
+
+    /** @return array<string, mixed> */
+    public function getLoginTokenAttributes(): array
+    {
+        return $this->loginTokenAttributes;
+    }
+
+    public function isLogout(): bool
+    {
+        return $this->logout;
+    }
+
+    /**
+     * Stores a CSRF token for the given token id in the session and sends it in the given request parameter,
+     * so stateful CSRF protection (e.g. Symfony forms) accepts the request.
+     */
+    public function csrfToken(string $tokenId, string $field = '_token'): self
+    {
+        $this->csrfTokens[$tokenId] = $field;
+
+        return $this;
+    }
+
+    /** @return array<string, string> */
+    public function getCsrfTokens(): array
+    {
+        return $this->csrfTokens;
     }
 
     public function sessionValue(string $key, mixed $value): self

@@ -6,13 +6,14 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 
 use ArrayObject;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\IdentifierQuoting;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\MysqlBasedSchemaStrategy;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStatements;
 use Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait;
 use Doctrine\DBAL\Cache\ArrayResult;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Result;
-use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\MySQLSchemaManager;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -28,6 +29,8 @@ use function Safe\preg_match;
 use function str_starts_with;
 
 #[CoversClass(MysqlBasedSchemaStrategy::class)]
+#[CoversClass(IdentifierQuoting::class)]
+#[CoversClass(SchemaStatements::class)]
 final class MysqlBasedSchemaStrategyTest extends TestCase
 {
     use SnapshotTrait;
@@ -66,8 +69,6 @@ final class MysqlBasedSchemaStrategyTest extends TestCase
             );
 
         $connection = $this->createStub(Connection::class);
-        $connection->method('quoteIdentifier')
-            ->willReturnCallback($this->platform->quoteIdentifier(...));
         $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
         $connection->method('getDatabasePlatform')
@@ -119,48 +120,7 @@ final class MysqlBasedSchemaStrategyTest extends TestCase
                 return $result;
             });
 
-        $schemaManager->expects($this->exactly(2))
-            ->method('listTableForeignKeys')
-            ->willReturnCallback(static function ($tableName) use ($queryLog) {
-                $result = [];
-
-                if ($tableName === 'old_table_1') {
-                    $result = [
-                        new ForeignKeyConstraint(['foreign_id'], 'foreign_table', ['id'], 'constraint_1'),
-                        new ForeignKeyConstraint(['foreign_id'], 'foreign_table', ['id'], 'constraint_2'),
-                    ];
-                }
-
-                $queryLog[] = [
-                    'function' => 'listTableForeignKeys()',
-                    'parameters' => func_get_args(),
-                    'result' => array_map(static fn ($fk) => $fk->getName(), $result),
-                ];
-
-                return $result;
-            });
-
-        $schemaManager->method('dropForeignKey')
-            ->willReturnCallback(static function ($tableName) use ($queryLog) {
-                $result = [];
-
-                $queryLog[] = ['function' => 'dropForeignKey()', 'parameters' => func_get_args(), 'result' => $result];
-
-                return $result;
-            });
-
-        $schemaManager->method('dropTable')
-            ->willReturnCallback(static function ($tableName) use ($queryLog) {
-                $result = [];
-
-                $queryLog[] = ['function' => 'dropTable()', 'parameters' => func_get_args(), 'result' => $result];
-
-                return $result;
-            });
-
         $connection = $this->createStub(Connection::class);
-        $connection->method('quoteIdentifier')
-            ->willReturnCallback($this->platform->quoteIdentifier(...));
         $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
         $connection->method('getDatabasePlatform')
@@ -223,8 +183,6 @@ final class MysqlBasedSchemaStrategyTest extends TestCase
             );
 
         $connection = $this->createStub(Connection::class);
-        $connection->method('quoteIdentifier')
-            ->willReturnCallback($this->platform->quoteIdentifier(...));
         $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
         $connection->method('getDatabasePlatform')
@@ -267,8 +225,6 @@ final class MysqlBasedSchemaStrategyTest extends TestCase
         $queryLog = new ArrayObject();
 
         $connection = $this->createStub(Connection::class);
-        $connection->method('quoteIdentifier')
-            ->willReturnCallback($this->platform->quoteIdentifier(...));
         $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
         $connection->method('getDatabase')
@@ -313,8 +269,6 @@ final class MysqlBasedSchemaStrategyTest extends TestCase
         $queryLog = new ArrayObject();
 
         $connection = $this->createStub(Connection::class);
-        $connection->method('quoteIdentifier')
-            ->willReturnCallback($this->platform->quoteIdentifier(...));
         $connection->method('getParams')
             ->willReturn(['driver' => 'pdo_mysql']);
         $connection->method('getDatabase')

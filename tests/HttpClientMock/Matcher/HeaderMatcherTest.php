@@ -60,10 +60,26 @@ final class HeaderMatcherTest extends TestCase
         self::assertMatcher('header', $result);
     }
 
+    public function testStringNamingAFunctionIsComparedExactly(): void
+    {
+        $matcher = new HeaderMatcher('X-Format', 'date');
+
+        self::assertInstanceOf(Mismatch::class, $matcher($this->createRealRequest(headers: ['x-format' => 'iso'])));
+        self::assertInstanceOf(Hit::class, $matcher($this->createRealRequest(headers: ['x-format' => 'date'])));
+    }
+
+    public function testMatchHeaderWithClosure(): void
+    {
+        $matcher = new HeaderMatcher('X-Count', static fn (string $value): bool => $value > 1);
+
+        self::assertInstanceOf(Hit::class, $matcher($this->createRealRequest(headers: ['x-count' => '2'])));
+        self::assertInstanceOf(Mismatch::class, $matcher($this->createRealRequest(headers: ['x-count' => '1'])));
+    }
+
     public function testToStringWithCallback(): void
     {
         $matcher = new HeaderMatcher('Accept', 'text/plain');
 
-        self::assertSame('request.header["text/plain"] === "accept"', (string) $matcher);
+        self::assertSame('request.header["accept"] === "text/plain"', (string) $matcher);
     }
 }

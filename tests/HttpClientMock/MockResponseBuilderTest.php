@@ -6,12 +6,16 @@ namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockResponseBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
+use Generator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpClient\Exception\TimeoutException;
+use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
 use function implode;
+use function microtime;
 
 use const PHP_EOL;
 
@@ -192,5 +196,128 @@ final class MockResponseBuilderTest extends TestCase
             ->content('barbaz');
 
         self::assertSame('callable(realRequest)', (string) $builder);
+    }
+
+    public function testTransportErrorFailsWhenTheResponseIsRead(): void
+    {
+        $builder = (new MockResponseBuilder())->transportError('connection refused');
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+        $response = $client->request('GET', 'http://localhost/');
+
+        $message = null;
+        try {
+            $response->getContent();
+        } catch (TransportException $e) {
+            $message = $e->getMessage();
+        }
+
+        // the exception trace references the response; release both so no error chunk is left behind
+        unset($e, $response, $client);
+
+        $this->assertSame('connection refused', $message);
+    }
+
+    public function testTimeoutFailsWhenTheResponseIsRead(): void
+    {
+        $builder = (new MockResponseBuilder())->timeout();
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+        $response = $client->request('GET', 'http://localhost/');
+
+        $exceptionClass = null;
+        try {
+            $response->getContent();
+        } catch (TimeoutException $e) {
+            $exceptionClass = $e::class;
+        }
+
+        // the exception trace references the response; release both so no error chunk is left behind
+        unset($e, $response, $client);
+
+        $this->assertSame(TimeoutException::class, $exceptionClass);
+    }
+
+    public function testChunkedContent(): void
+    {
+        $builder = (new MockResponseBuilder())->chunks(['a', 'b', 'c']);
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+        $response = $client->request('GET', 'http://localhost/');
+
+        $chunks = [];
+        foreach ($client->stream($response) as $chunk) {
+            if ($chunk->getContent() === '') {
+                continue;
+            }
+
+            $chunks[] = $chunk->getContent();
+        }
+
+        $this->assertSame(['a', 'b', 'c'], $chunks);
+    }
+
+    public function testChunksFromAGeneratorCanBeReturnedRepeatedly(): void
+    {
+        $generator = (static function (): Generator {
+            yield 'a';
+            yield 'b';
+        })();
+
+        $builder = (new MockResponseBuilder())->chunks($generator);
+
+        foreach ([1, 2] as $run) {
+            $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+
+            $this->assertSame('ab', $client->request('GET', 'http://localhost/')->getContent(), 'run ' . $run);
+        }
+    }
+
+    public function testDelay(): void
+    {
+        $builder = (new MockResponseBuilder())->content('late')->delay(0.05);
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+
+        $start = microtime(true);
+        $content = $client->request('GET', 'http://localhost/')->getContent();
+
+        $this->assertSame('late', $content);
+        $this->assertGreaterThanOrEqual(0.04, microtime(true) - $start);
+    }
+
+    public function testFailureToString(): void
+    {
+        $this->assertSame('Transport error: boom', (string) (new MockResponseBuilder())->transportError('boom'));
+        $this->assertSame('Timeout', (string) (new MockResponseBuilder())->timeout());
+    }
+
+    public function testResponseFixturesAndMultiValueHeaders(): void
+    {
+        $builder = (new MockResponseBuilder())
+            ->jsonFile(__DIR__ . '/../files/response.json', 201)
+            ->addHeader('Set-Cookie', 'a=1')
+            ->addHeader('Set-Cookie', 'b=2');
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+        $response = $client->request('GET', 'http://localhost/');
+
+        $this->assertSame(201, $response->getStatusCode());
+        $this->assertSame(['id' => 1], $response->toArray());
+        $this->assertSame(['a=1', 'b=2'], $response->getHeaders()['set-cookie']);
+    }
+
+    public function testJsonWithCodeAndContentFromFile(): void
+    {
+        $json = (new MockResponseBuilder())->json(['error' => 'x'], 422);
+        $client = new MockHttpClient($json->getResponse($this->createRealRequest()));
+        $this->assertSame(422, $client->request('GET', 'http://localhost/')->getStatusCode());
+
+        $file = (new MockResponseBuilder())->contentFromFile(__DIR__ . '/../files/test.txt');
+        $client = new MockHttpClient($file->getResponse($this->createRealRequest()));
+        $this->assertStringEqualsFile(
+            __DIR__ . '/../files/test.txt',
+            $client->request('GET', 'http://localhost/')->getContent(),
+        );
     }
 }

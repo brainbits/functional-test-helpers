@@ -9,13 +9,19 @@ use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\BrowserKit\AbstractBrowser;
-use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
+use function array_replace_recursive;
 use function assert;
+use function bin2hex;
 use function method_exists;
+use function parse_str;
+use function random_bytes;
 use function sprintf;
+use function str_starts_with;
+use function strtolower;
+use function urlencode;
 
 /** @mixin TestCase */
 trait RequestTrait
@@ -36,13 +42,26 @@ trait RequestTrait
     #[Before(12)]
     protected function setUpRequest(): void
     {
-        self::$requestClient = static::createClient();
+        self::$requestClient = static::createRequestClient();
+    }
+
+    /**
+     * Creates the client for the requests of a test. Override it to pass kernel options or server defaults,
+     * e.g. static::createClient([], ['HTTP_HOST' => 'app.test']).
+     *
+     * @return AbstractBrowser<covariant object, covariant object>
+     */
+    protected static function createRequestClient(): AbstractBrowser
+    {
+        return static::createClient();
     }
 
     #[After]
     protected function tearDownRequest(): void
     {
         self::$requestClient = null;
+
+        RequestBuilder::removeTemporaryFiles();
     }
 
     /** @return AbstractBrowser<covariant object, covariant object> */
@@ -58,6 +77,15 @@ trait RequestTrait
         ));
     }
 
+    /**
+     * The firewall used by RequestBuilder::loginAs() if none is given. Override it for another firewall.
+     */
+    protected function loginFirewall(): string
+    {
+        return 'main';
+    }
+
+    /** @deprecated Use RequestBuilder::csrfToken(), which stores the token in the session. Removed in 8.0. */
     final public function generateCsrfToken(): string
     {
         $client = self::getRequestClient();
@@ -71,12 +99,17 @@ trait RequestTrait
 
     final protected function build(string $method, string $uri): RequestBuilder
     {
-        if (method_exists($this, 'findUser')) { // @phpstan-ignore-line
-            $callable = $this->findUser();
-            $isFindUser = true;
+        if (method_exists($this, 'findUser')) {
+            // deprecated findUser() returns the user, the login on the request client happens here
+            $findUser = $this->findUser();
+            $callable = static function (mixed $username) use ($findUser): void {
+                $client = self::getRequestClient();
+                assert($client instanceof KernelBrowser);
+
+                $client->loginUser($findUser($username));
+            };
         } else {
             $callable = $this->loginUser();
-            $isFindUser = false;
         }
 
         return RequestBuilder::create(
@@ -84,7 +117,7 @@ trait RequestTrait
             $this->createToken(),
             $method,
             $uri,
-            $isFindUser,
+            false,
         );
     }
 
@@ -92,21 +125,99 @@ trait RequestTrait
     {
         $client = self::getRequestClient();
 
-        if ($requestBuilder->getSessionValues()) {
-            $this->applySessionValues($requestBuilder->getSessionValues());
+        $followRedirects = $client->isFollowingRedirects();
+        if ($requestBuilder->getFollowRedirects() !== null) {
+            $client->followRedirects($requestBuilder->getFollowRedirects());
         }
 
-        $client->request(
-            $requestBuilder->getMethod(),
-            $requestBuilder->getUri(),
-            $requestBuilder->getParameters(),
-            $requestBuilder->getFiles(),
-            $requestBuilder->getServer(),
-            $requestBuilder->getContent(),
-            $requestBuilder->getChangeHistory(),
-        );
+        if ($requestBuilder->isRebootDisabled()) {
+            self::requestKernelBrowser('disableReboot()')->disableReboot();
+        }
 
-        return $client->getResponse();
+        if ($requestBuilder->isLogout()) {
+            $client->getCookieJar()->clear();
+        }
+
+        $loginUser = $requestBuilder->getLoginUser();
+        if ($loginUser !== null) {
+            self::requestKernelBrowser('loginAs()')->loginUser(
+                $loginUser,
+                $requestBuilder->getLoginFirewall() ?? $this->loginFirewall(),
+                $requestBuilder->getLoginTokenAttributes(),
+            );
+        }
+
+        $sessionValues = $requestBuilder->getSessionValues();
+        $parameters = $requestBuilder->getParameters();
+
+        foreach ($requestBuilder->getCsrfTokens() as $tokenId => $field) {
+            $token = bin2hex(random_bytes(16));
+            $namespace = self::isSecureRequest($client, $requestBuilder) ? 'https-' : '';
+
+            // the session key SessionTokenStorage reads the token from
+            $sessionValues['_csrf/' . $namespace . $tokenId] = $token;
+
+            // a field like "profile[_token]" is sent nested, like a browser submits a named form
+            $fieldParameters = [];
+            parse_str(urlencode($field) . '=' . urlencode($token), $fieldParameters);
+            $parameters = array_replace_recursive($parameters, $fieldParameters);
+        }
+
+        if ($sessionValues) {
+            $this->applySessionValues($sessionValues);
+        }
+
+        try {
+            $client->request(
+                $requestBuilder->getMethod(),
+                $requestBuilder->getUri(),
+                $parameters,
+                $requestBuilder->getFiles(),
+                $requestBuilder->getServer(),
+                $requestBuilder->getContent(),
+                $requestBuilder->getChangeHistory(),
+            );
+        } finally {
+            // followRedirects() applies to this request only
+            $client->followRedirects($followRedirects);
+        }
+
+        $response = $client->getResponse();
+        assert($response instanceof Response);
+
+        return $response;
+    }
+
+    /** @return KernelBrowser<covariant object, covariant object> */
+    private static function requestKernelBrowser(string $feature): KernelBrowser
+    {
+        $client = self::getRequestClient();
+        if (!$client instanceof KernelBrowser) {
+            static::fail(sprintf('%s needs a %s as request client.', $feature, KernelBrowser::class));
+        }
+
+        return $client;
+    }
+
+    /**
+     * Same rules as the browser: the HTTPS server parameter wins, otherwise the scheme of the absolute URI.
+     * A relative URI is resolved against the current page of the history, or http://localhost.
+     *
+     * @param AbstractBrowser<covariant object, covariant object> $client
+     */
+    private static function isSecureRequest(AbstractBrowser $client, RequestBuilder $requestBuilder): bool
+    {
+        $https = $requestBuilder->getServer()['HTTPS'] ?? $client->getServerParameter('HTTPS', null);
+        if ($https !== null) {
+            return $https !== false && $https !== '' && $https !== '0' && strtolower((string) $https) !== 'off';
+        }
+
+        $uri = $requestBuilder->getUri();
+        if (!str_starts_with($uri, 'http://') && !str_starts_with($uri, 'https://')) {
+            $uri = $client->getHistory()->isEmpty() ? 'http://localhost' : $client->getHistory()->current()->getUri();
+        }
+
+        return str_starts_with($uri, 'https://');
     }
 
     /** @param array<string, mixed> $sessionValues */
@@ -115,30 +226,11 @@ trait RequestTrait
         $client = self::getRequestClient();
         assert($client instanceof KernelBrowser);
 
-        $cookie = $client->getCookieJar()->get('MOCKSESSID');
-
-        // create a new session object
-        $container = $client->getContainer();
-        $session = $container->get('session.factory')->createSession();
-        assert($session instanceof SessionInterface);
-
-        if ($cookie) {
-            // get the session id from the session cookie if it exists
-            $session->setId($cookie->getValue());
-            $session->start();
-        } else {
-            // or create a new session id and a session cookie
-            $session->start();
-            $session->save();
-
-            $sessionCookie = new Cookie(
-                $session->getName(),
-                $session->getId(),
-                null,
-                null,
-                'localhost',
-            );
-            $client->getCookieJar()->set($sessionCookie);
+        // KernelBrowser::getSession() reuses the session cookie of the client (whatever its name and domain is)
+        // or creates one that is valid for every host
+        $session = $client->getSession();
+        if (!$session instanceof SessionInterface) {
+            static::fail('Session values need an enabled session, check framework.session in your test configuration.');
         }
 
         foreach ($sessionValues as $key => $value) {
