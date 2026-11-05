@@ -43,6 +43,8 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 - Use the `Safe\` function variants (`thecodingmachine/safe`) and import functions and constants explicitly
   (`use function ...;`, `use const ...;`). phpcs enforces this.
 - Traits carry a `/** @mixin TestCase */` (or `WebTestCase`) docblock and mark their helper methods `final protected`.
+  Exception: a helper method added in a minor release is `protected` without `final`, so a test class that already
+  has a method with the same name keeps working. Make it `final` in the next major release.
 - Traits hook into the test lifecycle through PHPUnit attributes, and **the priorities matter**:
   `RequestTrait` uses `#[Before(12)]` (creates the client/kernel first), and `HttpClientMockTrait`
   uses `#[Before(-12)]` (needs the container). Keep this ordering when adding hooks.
