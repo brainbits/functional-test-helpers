@@ -9,6 +9,7 @@ use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Identifier;
+use Throwable;
 
 use function count;
 use function sprintf;
@@ -76,6 +77,8 @@ final class MysqlBasedSchemaStrategy implements SchemaStrategy
 
     public function resetSequences(Connection $connection): void
     {
+        $this->disableStatisticsCache($connection);
+
         $tablesWithAutoIncrements = $connection->executeQuery(
             'SELECT `TABLE_NAME` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :table AND `AUTO_INCREMENT` > 1',
             ['table' => $connection->getDatabase()],
@@ -148,5 +151,17 @@ final class MysqlBasedSchemaStrategy implements SchemaStrategy
         }
 
         return $quotedRow;
+    }
+
+    /**
+     * MySQL 8 caches INFORMATION_SCHEMA.TABLES.AUTO_INCREMENT for up to 24 hours, which would skip tables
+     * whose counter was increased since. MariaDB doesn't know the variable and doesn't need it.
+     */
+    private function disableStatisticsCache(Connection $connection): void
+    {
+        try {
+            $connection->executeStatement('SET SESSION information_schema_stats_expiry = 0');
+        } catch (Throwable) {
+        }
     }
 }

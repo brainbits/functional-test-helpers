@@ -9,7 +9,6 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
-use function assert;
 use function getenv;
 
 // phpcs:disable SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
@@ -69,10 +68,13 @@ trait SchemaTrait
 
     final protected function cleanupFixture(): void
     {
-        assert($this->schemaStrategyConnection !== null);
+        // without a fixture nothing was cleaned, so the database must not be marked clean
+        if ($this->schemaStrategyConnection === null || $this->schemaStrategy === null) {
+            return;
+        }
 
-        $this->schemaStrategy?->deleteData($this->schemaStrategyConnection);
-        $this->schemaStrategy?->resetSequences($this->schemaStrategyConnection);
+        $this->schemaStrategy->deleteData($this->schemaStrategyConnection);
+        $this->schemaStrategy->resetSequences($this->schemaStrategyConnection);
 
         self::$isSchemaDatabaseClean = true;
     }
