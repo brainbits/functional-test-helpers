@@ -59,6 +59,30 @@ several snapshots of the same type in one test.
 * XML `assertMatchesXmlSnapshot()`
 * HTML `assertMatchesHtmlSnapshot()` (formatted with tidy)
 * Text `assertMatchesTextSnapshot()`
+* CSV `assertMatchesCsvSnapshot()` (list of rows)
+* YAML `assertMatchesYamlSnapshot()` (requires `symfony/yaml`)
+* Binary `assertMatchesBinarySnapshot($data, 'png')` (compared byte by byte)
+
+## Normalizers
+
+Normalizers replace volatile values before the snapshot is written and compared. They apply to all
+snapshots of the current test:
+
+```php
+$this->addSnapshotUuidNormalizer();      // UUIDs become the nil UUID
+$this->addSnapshotDateTimeNormalizer();  // ISO 8601 date times
+$this->addSnapshotPatternNormalizer('/"token": "[^"]+"/', '"token": "***"');
+$this->addSnapshotNormalizer(fn (string $content): string => str_replace($baseUrl, 'BASE_URL', $content));
+
+$this->assertMatchesJsonSnapshot($json);
+```
+
+## Options
+
+Override these methods in your test class:
+
+* `snapshotStrictJson(): bool` – compare JSON snapshots including key order and formatting (default: `false`)
+* `snapshotTidyConfig(): array` – the tidy configuration for HTML snapshots
 
 ## Environment variables
 

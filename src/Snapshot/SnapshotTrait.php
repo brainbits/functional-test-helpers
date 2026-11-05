@@ -8,10 +8,13 @@ use DOMDocument;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Yaml\Yaml;
 use tidy;
 
 use function basename;
+use function class_exists;
 use function dirname;
+use function fputcsv;
 use function getenv;
 use function in_array;
 use function is_array;
@@ -20,10 +23,16 @@ use function is_string;
 use function mb_strtolower;
 use function rtrim;
 use function Safe\array_walk_recursive;
+use function Safe\fclose;
+use function Safe\file_get_contents;
+use function Safe\fopen;
 use function Safe\json_decode;
 use function Safe\json_encode;
 use function Safe\preg_match;
 use function Safe\preg_replace;
+use function Safe\rewind;
+use function Safe\stream_get_contents;
+use function sha1;
 use function sprintf;
 use function str_contains;
 use function str_replace;
@@ -47,10 +56,200 @@ trait SnapshotTrait
     /** @var array<string,int> */
     private array $filenames;
 
+    /** @var list<callable(string): string> */
+    private array $snapshotNormalizers = [];
+
     #[Before]
     final protected function setUpSnapshot(): void
     {
         $this->filenames = [];
+        $this->snapshotNormalizers = [];
+    }
+
+    /**
+     * Adds a normalizer for the snapshots of the current test, e.g. to blank out timestamps or generated ids.
+     * It receives the formatted snapshot content and returns the normalized content.
+     *
+     * @param callable(string): string $normalizer
+     */
+    protected function addSnapshotNormalizer(callable $normalizer): void
+    {
+        $this->snapshotNormalizers[] = $normalizer;
+    }
+
+    /**
+     * Replaces all matches of the regular expression in the snapshots of the current test.
+     */
+    protected function addSnapshotPatternNormalizer(string $pattern, string $replacement): void
+    {
+        $this->addSnapshotNormalizer(
+            static fn (string $content): string => preg_replace($pattern, $replacement, $content),
+        );
+    }
+
+    /**
+     * Replaces UUIDs with the nil UUID in the snapshots of the current test.
+     */
+    protected function addSnapshotUuidNormalizer(): void
+    {
+        $this->addSnapshotPatternNormalizer(
+            '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i',
+            '00000000-0000-0000-0000-000000000000',
+        );
+    }
+
+    /**
+     * Replaces ISO 8601 date times (e.g. 2026-01-31T12:00:00+00:00) in the snapshots of the current test.
+     */
+    protected function addSnapshotDateTimeNormalizer(string $replacement = 'snapshot-normalized-datetime'): void
+    {
+        $this->addSnapshotPatternNormalizer(
+            '/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?/',
+            $replacement,
+        );
+    }
+
+    /**
+     * Override to compare JSON snapshots strictly, including key order and formatting.
+     */
+    protected function snapshotStrictJson(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Override to change the tidy configuration used for HTML snapshots.
+     *
+     * @return array<string, mixed>
+     */
+    protected function snapshotTidyConfig(): array
+    {
+        return ['indent' => true, 'indent-spaces' => 4, 'wrap' => 999999];
+    }
+
+    /** @param list<list<scalar|null>> $rows */
+    protected function assertMatchesCsvSnapshot(array $rows, string $message = ''): void
+    {
+        $this->assertMatchesNamedCsvSnapshot($rows, '', $message);
+    }
+
+    /** @param list<list<scalar|null>> $rows */
+    protected function assertMatchesNamedCsvSnapshot(array $rows, string $name, string $message = ''): void
+    {
+        $stream = fopen('php://temp', 'r+');
+        foreach ($rows as $row) {
+            fputcsv($stream, $row, ',', '"', '', "\n");
+        }
+
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+
+        $this->snapshotAssertText('csv', $name, $csv, $message);
+    }
+
+    protected function assertMatchesYamlSnapshot(mixed $actual, string $message = ''): void
+    {
+        $this->assertMatchesNamedYamlSnapshot($actual, '', $message);
+    }
+
+    protected function assertMatchesNamedYamlSnapshot(mixed $actual, string $name, string $message = ''): void
+    {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
+        if (!class_exists(Yaml::class)) {
+            self::fail('YAML snapshots need symfony/yaml, install it with "composer require --dev symfony/yaml".');
+        }
+
+        // objects can't be represented in YAML, an exception is better than a silent null
+        $yaml = Yaml::dump($actual, 10, 4, Yaml::DUMP_EXCEPTION_ON_INVALID_TYPE);
+
+        $this->snapshotAssertText('yaml', $name, $yaml, $message);
+    }
+
+    /**
+     * Compares binary data (e.g. images or PDFs) byte by byte.
+     */
+    protected function assertMatchesBinarySnapshot(string $actual, string $extension, string $message = ''): void
+    {
+        $this->assertMatchesNamedBinarySnapshot($actual, $extension, '', $message);
+    }
+
+    protected function assertMatchesNamedBinarySnapshot(
+        string $actual,
+        string $extension,
+        string $name,
+        string $message = '',
+    ): void {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
+        $fixtureFilename = $this->snapshotFilename($extension, $name);
+
+        $this->snapshotDump($fixtureFilename, $actual);
+
+        $expected = file_get_contents($fixtureFilename);
+
+        self::assertTrue(
+            $expected === $actual,
+            $this->snapshotAppendFilenameHint($fixtureFilename, sprintf(
+                '%sBinary snapshot differs: expected %d bytes (sha1 %s), got %d bytes (sha1 %s).',
+                $message !== '' ? $message . PHP_EOL : '',
+                strlen($expected),
+                sha1($expected),
+                strlen($actual),
+                sha1($actual),
+            )),
+        );
+    }
+
+    private function snapshotAssertText(string $extension, string $name, string $actual, string $message): void
+    {
+        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
+            self::markTestSkipped('Skipping snapshot tests');
+        }
+
+        $fixtureFilename = $this->snapshotFilename($extension, $name);
+        $actual = $this->snapshotApplyNormalizers($actual);
+
+        $this->snapshotDump($fixtureFilename, $actual);
+
+        self::assertStringEqualsFile(
+            $fixtureFilename,
+            $actual,
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
+        );
+    }
+
+    private function snapshotApplyNormalizers(string $content): string
+    {
+        foreach ($this->snapshotNormalizers as $normalizer) {
+            $content = $normalizer($content);
+        }
+
+        return $content;
+    }
+
+    private function snapshotAssertJsonFile(string $fixtureFilename, string $actual, string $message): void
+    {
+        if ($this->snapshotStrictJson()) {
+            self::assertStringEqualsFile(
+                $fixtureFilename,
+                $actual,
+                $this->snapshotAppendFilenameHint($fixtureFilename, $message),
+            );
+
+            return;
+        }
+
+        self::assertJsonStringEqualsJsonFile(
+            $fixtureFilename,
+            $actual,
+            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
+        );
     }
 
     /** @param mixed[] $actual */
@@ -72,19 +271,7 @@ trait SnapshotTrait
 
     final protected function assertMatchesNamedTextSnapshot(string $actual, string $name, string $message = ''): void
     {
-        if (self::snapshotEnvFlag('SKIP_SNAPSHOT_TESTS') === true) {
-            self::markTestSkipped('Skipping snapshot tests');
-        }
-
-        $fixtureFilename = $this->snapshotFilename('txt', $name);
-
-        $this->snapshotDump($fixtureFilename, $actual);
-
-        self::assertStringEqualsFile(
-            $fixtureFilename,
-            $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
-        );
+        $this->snapshotAssertText('txt', $name, $actual, $message);
     }
 
     final protected function assertMatchesJsonSnapshot(string $actual, string $message = ''): void
@@ -108,13 +295,11 @@ trait SnapshotTrait
         self::assertJson($actual, $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatJson($actual);
 
+        $actual = $this->snapshotApplyNormalizers($actual);
+
         $this->snapshotDump($fixtureFilename, $actual);
 
-        self::assertJsonStringEqualsJsonFile(
-            $fixtureFilename,
-            $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
-        );
+        $this->snapshotAssertJsonFile($fixtureFilename, $actual, $message);
     }
 
     final protected function assertMatchesNamedJsonLdSnapshot(string $actual, string $name, string $message = ''): void
@@ -128,13 +313,11 @@ trait SnapshotTrait
         self::assertJson($actual, $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatJsonLd($actual);
 
+        $actual = $this->snapshotApplyNormalizers($actual);
+
         $this->snapshotDump($fixtureFilename, $actual);
 
-        self::assertJsonStringEqualsJsonFile(
-            $fixtureFilename,
-            $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
-        );
+        $this->snapshotAssertJsonFile($fixtureFilename, $actual, $message);
     }
 
     final protected function assertMatchesXmlSnapshot(string $actual, string $message = ''): void
@@ -151,7 +334,7 @@ trait SnapshotTrait
         $fixtureFilename = $this->snapshotFilename('xml', $name);
 
         self::assertThat($actual, new IsXml(), $this->snapshotAppendFilenameHint($fixtureFilename, $message));
-        $actual = $this->snapshotFormatXml($actual);
+        $actual = $this->snapshotApplyNormalizers($this->snapshotFormatXml($actual));
 
         $this->snapshotDump($fixtureFilename, $actual);
 
@@ -173,16 +356,7 @@ trait SnapshotTrait
             self::markTestSkipped('Skipping snapshot tests');
         }
 
-        $fixtureFilename = $this->snapshotFilename('html', $name);
-        $actual = $this->snapshotFormatHtml($actual);
-
-        $this->snapshotDump($fixtureFilename, $actual);
-
-        self::assertStringEqualsFile(
-            $fixtureFilename,
-            $actual,
-            $this->snapshotAppendFilenameHint($fixtureFilename, $message),
-        );
+        $this->snapshotAssertText('html', $name, $this->snapshotFormatHtml($actual), $message);
     }
 
     private function snapshotFilename(string $extension, string $name): string
@@ -200,11 +374,15 @@ trait SnapshotTrait
             return $filename;
         }
 
+        // repeated snapshots of the original types are stored as .json, kept for compatibility
+        $repeatedExtension = in_array($extension, ['html', 'json', 'txt', 'xml'], true) ? 'json' : $extension;
+
         return sprintf(
-            '%s/__snapshots__/%s_%s.json',
+            '%s/__snapshots__/%s_%s.%s',
             $this->snapshotPath(),
             $this->snapshotName($name),
             ++$this->filenames[$filename],
+            $repeatedExtension,
         );
     }
 
@@ -300,7 +478,7 @@ trait SnapshotTrait
 
     private function snapshotFormatHtml(string $string): string
     {
-        return (new tidy())->repairString($string, ['indent' => true, 'indent-spaces' => 4, 'wrap' => 999999]);
+        return (new tidy())->repairString($string, $this->snapshotTidyConfig());
     }
 
     private function snapshotDump(string $fixtureFilename, string $string): void
