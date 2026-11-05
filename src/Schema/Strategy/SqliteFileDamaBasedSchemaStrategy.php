@@ -38,12 +38,11 @@ final class SqliteFileDamaBasedSchemaStrategy implements SchemaStrategy
         $databaseDirectoryExists = file_exists($pathToDatabaseDirectory);
 
         if (!$databaseDirectoryExists) {
-            mkdir($pathToDatabaseDirectory);
+            mkdir($pathToDatabaseDirectory, 0777, true);
         }
 
-        foreach ($schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform()) as $sql) {
-            $connection->executeStatement($sql);
-        }
+        // the file may already contain the tables, e.g. after a run without DAMA or a #[SkipDatabaseRollback] test
+        SqliteTables::createMissing($schemaBuilder, $connection);
     }
 
     public function applyData(DataBuilder $dataBuilder, Connection $connection): void

@@ -21,9 +21,8 @@ final class SqliteMemoryBasedSchemaStrategy implements SchemaStrategy
 
     public function applySchema(SchemaBuilder $schemaBuilder, Connection $connection): void
     {
-        foreach ($schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform()) as $sql) {
-            $connection->executeStatement($sql);
-        }
+        // a second fixture on the same connection must not create the tables again
+        SqliteTables::createMissing($schemaBuilder, $connection);
     }
 
     public function applyData(DataBuilder $dataBuilder, Connection $connection): void

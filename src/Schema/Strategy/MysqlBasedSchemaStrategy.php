@@ -34,15 +34,18 @@ final class MysqlBasedSchemaStrategy implements SchemaStrategy
 
         $existingTables = $connection->createSchemaManager()->listTableNames();
 
+        $statements = $schemaBuilder->getSchema()->toSql($platform);
+        $isConflicting = SchemaStatements::hasConflictingTables(self::$executedStatements->getArrayCopy(), $statements);
+
         if (count($existingTables) > 0) {
-            if (count(self::$executedStatements) === 0) {
+            if (count(self::$executedStatements) === 0 || $isConflicting) {
                 $this->dropTables($existingTables, $connection);
 
                 self::$executedStatements = new ArrayObject();
             }
         }
 
-        foreach ($schemaBuilder->getSchema()->toSql($platform) as $sql) {
+        foreach ($statements as $sql) {
             if (self::$executedStatements->offsetExists($sql)) {
                 continue;
             }
