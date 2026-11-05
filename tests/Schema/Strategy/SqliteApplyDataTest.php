@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\IdentifierQuoting;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStatements;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileBasedSchemaStrategy;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrategy;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteTables;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\Schema;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -21,7 +24,11 @@ use function uniqid;
 /**
  * Applies schemas to real SQLite connections.
  */
-#[CoversNothing]
+#[CoversClass(IdentifierQuoting::class)]
+#[CoversClass(SchemaStatements::class)]
+#[CoversClass(SqliteFileBasedSchemaStrategy::class)]
+#[CoversClass(SqliteMemoryBasedSchemaStrategy::class)]
+#[CoversClass(SqliteTables::class)]
 final class SqliteApplyDataTest extends TestCase
 {
     public function testSecondFixtureOnTheSameMemoryConnection(): void

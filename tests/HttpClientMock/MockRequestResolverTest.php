@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoMatchingMockRequest;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\HeaderAbsentMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\JsonSubsetMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Mismatch;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\QueryParamsMatcher;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\UriPatternMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilder;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestBuilderCollection;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\MockRequestResolver;
@@ -15,6 +19,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(MockRequestResolver::class)]
+#[CoversClass(HeaderAbsentMatcher::class)]
+#[CoversClass(JsonSubsetMatcher::class)]
+#[CoversClass(QueryParamsMatcher::class)]
+#[CoversClass(UriPatternMatcher::class)]
 final class MockRequestResolverTest extends TestCase
 {
     use RealRequestTrait;

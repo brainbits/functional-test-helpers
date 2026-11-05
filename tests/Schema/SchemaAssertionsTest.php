@@ -8,11 +8,9 @@ use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaTrait;
 use Doctrine\DBAL\Schema\Schema;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
-#[CoversNothing]
 final class SchemaAssertionsTest extends TestCase
 {
     use SchemaTrait;

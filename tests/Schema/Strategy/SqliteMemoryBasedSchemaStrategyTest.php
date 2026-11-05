@@ -6,6 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteMemoryBasedSchemaStrategy;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteTables;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\Schema;
@@ -13,6 +14,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(SqliteMemoryBasedSchemaStrategy::class)]
+#[CoversClass(SqliteTables::class)]
 final class SqliteMemoryBasedSchemaStrategyTest extends TestCase
 {
     public function testApplySchema(): void

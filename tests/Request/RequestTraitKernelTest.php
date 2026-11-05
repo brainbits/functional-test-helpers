@@ -6,13 +6,11 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Request;
 
 use Brainbits\FunctionalTestHelpers\Request\RequestTrait;
 use Brainbits\FunctionalTestHelpers\Tests\Request\Kernel\TestKernel;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\AbstractBrowser;
 
 use function Safe\json_decode;
 
-#[CoversNothing]
 final class RequestTraitKernelTest extends WebTestCase
 {
     use RequestTrait;

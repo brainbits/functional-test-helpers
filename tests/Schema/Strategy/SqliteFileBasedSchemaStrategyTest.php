@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStatements;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileBasedSchemaStrategy;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
@@ -22,6 +23,7 @@ use function sys_get_temp_dir;
 use const FILE_APPEND;
 
 #[CoversClass(SqliteFileBasedSchemaStrategy::class)]
+#[CoversClass(SchemaStatements::class)]
 final class SqliteFileBasedSchemaStrategyTest extends TestCase
 {
     private string|null $databasePath = null;

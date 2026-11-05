@@ -6,7 +6,9 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 
 use ArrayObject;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\IdentifierQuoting;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\MysqlDamaBasedSchemaStrategy;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStatements;
 use Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait;
 use Doctrine\DBAL\Cache\ArrayResult;
 use Doctrine\DBAL\Connection;
@@ -27,6 +29,8 @@ use function Safe\preg_match;
 use function str_starts_with;
 
 #[CoversClass(MysqlDamaBasedSchemaStrategy::class)]
+#[CoversClass(IdentifierQuoting::class)]
+#[CoversClass(SchemaStatements::class)]
 final class MysqlDamaBasedSchemaStrategyTest extends TestCase
 {
     use SnapshotTrait;
