@@ -36,6 +36,17 @@ final class StrictJsonSnapshotTest extends TestCase
         $this->fail('Key order was ignored in strict mode');
     }
 
+    public function testNormalizersMayCreateDuplicateKeysInStrictMode(): void
+    {
+        $this->addSnapshotUuidNormalizer();
+
+        $json = '{"items":{"1b4e28ba-2fa1-11d2-883f-0016d3cca427":1,"6ba7b810-9dad-11d1-80b4-00c04fd430c8":2}}';
+
+        // the first run creates the snapshot, the second compares the text
+        $this->assertMatchesNamedJsonSnapshot($json, 'map');
+        $this->assertMatchesNamedJsonSnapshot($json, 'map');
+    }
+
     protected function snapshotStrictJson(): bool
     {
         return true;

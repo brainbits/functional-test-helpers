@@ -236,15 +236,16 @@ trait SnapshotTrait
 
     /**
      * Normalizers work on the JSON text, so they can turn different keys into the same key, e.g. two UUIDs.
-     * The comparison would then only see the last of them, so this fails instead.
+     * The non-strict comparison would then only see the last of them, so this fails instead.
      */
     private function snapshotApplyJsonNormalizers(string $content, string $fixtureFilename, string $message): string
     {
-        if ($this->snapshotNormalizers === []) {
+        $content = $this->snapshotApplyNormalizers($content);
+
+        // the strict comparison compares the text, so no key gets lost there
+        if ($this->snapshotNormalizers === [] || $this->snapshotStrictJson()) {
             return $content;
         }
-
-        $content = $this->snapshotApplyNormalizers($content);
 
         $duplicateKey = DuplicateJsonKey::find($content);
         if ($duplicateKey !== null) {

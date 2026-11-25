@@ -21,7 +21,8 @@ final class DuplicateJsonKeyTest extends TestCase
         yield 'duplicate key in object in list' => ['[{"id":1},{"id":2,"id":3}]', 'id'];
         yield 'same string as key and value' => ['{"a":"a","b":"a"}', null];
         yield 'escaped quote in string' => ['{"a\"b":"x\"y","c":"a\"b"}', null];
-        yield 'escaped duplicate key' => ['{"ä":1,"ä":2}', 'ä'];
+        yield 'escaped and unescaped duplicate key' => ['{"\u00e4":1,"ä":2}', 'ä'];
+        yield 'escaped quote in duplicate key' => ['{"a\"b":1,"a\"b":2}', 'a"b'];
         yield 'list of strings' => ['{"a":["a","a"]}', null];
         yield 'formatted' => ["{\n    \"a\": 1,\n    \"a\": 2\n}", 'a'];
     }

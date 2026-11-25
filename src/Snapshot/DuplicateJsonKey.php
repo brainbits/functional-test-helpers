@@ -15,6 +15,8 @@ use function substr;
 /**
  * Finds keys that occur more than once in the same JSON object. json_decode() silently keeps the last one,
  * so a snapshot comparison would ignore the others.
+ *
+ * @internal
  */
 final class DuplicateJsonKey
 {
@@ -54,6 +56,7 @@ final class DuplicateJsonKey
                     continue;
                 }
 
+                // native json_decode(): a key with an invalid escape falls back to its raw text instead of throwing
                 $key = json_decode(substr($json, $start, $i - $start + 1));
                 $key = is_string($key) ? $key : substr($json, $start + 1, $i - $start - 1);
                 $keys = &$stack[count($stack) - 1];
