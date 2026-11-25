@@ -79,8 +79,10 @@ trait SchemaTrait
 
     final protected function cleanupFixture(): void
     {
-        // without a fixture nothing was cleaned, so the database must not be marked clean
+        // without a fixture nothing was cleaned, and the test may still have changed the database
         if ($this->schemaStrategyConnection === null || $this->schemaStrategy === null) {
+            self::$isSchemaDatabaseClean = false;
+
             return;
         }
 
