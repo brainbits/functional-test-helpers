@@ -259,8 +259,9 @@ final class MockRequestBuilder
 
     /**
      * Matches if the query parameters are exactly the given ones. Additional parameters are a mismatch.
+     * The parameters are encoded like the query option of Symfony HttpClient.
      *
-     * @param array<string, string|mixed[]> $params
+     * @param mixed[] $params
      */
     public function queryParams(array $params): self
     {

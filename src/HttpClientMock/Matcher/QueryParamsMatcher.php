@@ -6,29 +6,30 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
 
-use function array_is_list;
-use function array_map;
+use function explode;
+use function http_build_query;
 use function is_array;
-use function is_float;
-use function is_int;
 use function ksort;
+use function rawurldecode;
 use function Safe\json_encode;
 use function sprintf;
+
+use const PHP_QUERY_RFC3986;
 
 /**
  * Matches if the query parameters are exactly the expected ones, extra parameters are a mismatch.
  */
 final readonly class QueryParamsMatcher implements Matcher
 {
-    /** @param array<string, string|mixed[]> $params */
+    /** @param mixed[] $params */
     public function __construct(private array $params)
     {
     }
 
     public function __invoke(RealRequest $realRequest): Hit|Mismatch
     {
-        $expected = self::flatten($this->params);
-        $real = $realRequest->getQueryParams();
+        $expected = self::encode($this->params);
+        $real = self::indexLists($realRequest->getQueryParams());
 
         ksort($expected);
         ksort($real);
@@ -41,33 +42,51 @@ final readonly class QueryParamsMatcher implements Matcher
     }
 
     /**
-     * Nested parameters like ['filter' => ['a' => 1]] are received as "filter[a]", lists as list.
+     * Encodes the expected parameters like Symfony HttpClient's query option does (http_build_query()):
+     * nested parameters and lists become "filter[a]" and "ids[0]", booleans 1 and 0, null values are left out.
      *
      * @param mixed[] $params
      *
+     * @return array<string, string>
+     */
+    private static function encode(array $params): array
+    {
+        $encoded = [];
+        foreach (explode('&', http_build_query($params, '', '&', PHP_QUERY_RFC3986)) as $keyValue) {
+            if ($keyValue === '') {
+                continue;
+            }
+
+            [$key, $value] = explode('=', $keyValue, 2) + [1 => ''];
+            $encoded[rawurldecode($key)] = rawurldecode($value);
+        }
+
+        return $encoded;
+    }
+
+    /**
+     * Lists received as "ids[]=1&ids[]=2" become "ids[0]" and "ids[1]", like the expected parameters.
+     *
+     * @param array<string, string|mixed[]> $params
+     *
      * @return array<string, string|mixed[]>
      */
-    private static function flatten(array $params, string $prefix = ''): array
+    private static function indexLists(array $params): array
     {
-        $flat = [];
+        $indexed = [];
         foreach ($params as $key => $value) {
-            $name = $prefix === '' ? (string) $key : $prefix . '[' . $key . ']';
-
-            if (is_array($value) && !array_is_list($value)) {
-                $flat += self::flatten($value, $name);
+            if (!is_array($value)) {
+                $indexed[$key] = $value;
 
                 continue;
             }
 
-            $flat[$name] = is_array($value) ? array_map(self::stringify(...), $value) : self::stringify($value);
+            foreach ($value as $index => $item) {
+                $indexed[$key . '[' . $index . ']'] = $item;
+            }
         }
 
-        return $flat;
-    }
-
-    private static function stringify(mixed $value): mixed
-    {
-        return is_int($value) || is_float($value) ? (string) $value : $value;
+        return $indexed;
     }
 
     public function __toString(): string
