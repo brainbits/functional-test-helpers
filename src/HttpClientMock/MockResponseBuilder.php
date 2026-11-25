@@ -226,7 +226,8 @@ final class MockResponseBuilder
     {
         usleep((int) ($seconds * 1_000_000));
 
-        yield from is_string($body) ? [$body] : $body;
+        // an empty chunk would be a timeout for Symfony's MockResponse, an empty body yields nothing
+        yield from is_string($body) ? ($body !== '' ? [$body] : []) : $body;
     }
 
     public function __toString(): string

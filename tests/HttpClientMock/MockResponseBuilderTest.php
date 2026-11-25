@@ -286,6 +286,28 @@ final class MockResponseBuilderTest extends TestCase
         $this->assertGreaterThanOrEqual(0.04, microtime(true) - $start);
     }
 
+    public function testDelayWithEmptyBody(): void
+    {
+        $builder = (new MockResponseBuilder())->code(204)->delay(0.01);
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+        $response = $client->request('GET', 'http://localhost/');
+
+        $this->assertSame(204, $response->getStatusCode());
+        $this->assertSame('', $response->getContent());
+    }
+
+    public function testDelayKeepsTimeout(): void
+    {
+        $builder = (new MockResponseBuilder())->timeout()->delay(0.01);
+
+        $client = new MockHttpClient($builder->getResponse($this->createRealRequest()));
+
+        $this->expectException(TimeoutException::class);
+
+        $client->request('GET', 'http://localhost/')->getContent();
+    }
+
     public function testFailureToString(): void
     {
         $this->assertSame('Transport error: boom', (string) (new MockResponseBuilder())->transportError('boom'));
