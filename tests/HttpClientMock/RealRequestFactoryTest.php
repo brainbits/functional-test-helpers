@@ -32,6 +32,14 @@ final class RealRequestFactoryTest extends TestCase
         self::assertSame(['foo' => 'bar'], $request->getJson());
     }
 
+    public function testBuildsRequestWithNullBody(): void
+    {
+        $request = ($this->realRequestFactory)('GET', 'https://service.com', ['body' => null]);
+
+        self::assertNull($request->getContent());
+        self::assertNull($request->getJson());
+    }
+
     public function testBuildsRequestWithMultipleQueryParams(): void
     {
         $options = ['query_params' => ['name' => ['abc', 'def']]];

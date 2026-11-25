@@ -73,8 +73,8 @@ final class RealRequestFactory
             $contentType = $headers['content-type'] ?? '';
             $contentLength = (int) ($headers['content-length'] ?? 0);
 
-            // read streamed bodies only once, they can't be rewound
-            if (!is_string($body) && !is_array($body)) {
+            // read streamed bodies only once, they can't be rewound, null is a request without a body
+            if ($body !== null && !is_string($body) && !is_array($body)) {
                 $body = $this->readBody($body, $contentLength);
             }
 
