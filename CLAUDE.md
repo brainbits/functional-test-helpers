@@ -31,7 +31,7 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 | Console | `Console/CommandTrait`, `ApplicationTrait` | Symfony console command testing |
 | HttpClientMock | `HttpClientMock/HttpClientMockTrait` | Largest module: `MockRequestBuilder` / `MockResponseBuilder`, `MockRequestMatcher` combining `Matcher/*` (each returns `Hit`/`Mismatch`/`Missing`), `MockRequestResolver`, `CallStack` |
 | Request | `Request/RequestTrait`, `RequestBuilder` | Symfony `KernelBrowser` requests, auth/login, multipart |
-| Schema | `Schema/SchemaTrait`, `SchemaBuilder`, `DataBuilder` | Doctrine DBAL fixtures. `Strategy/*` handles SQLite (memory or file) and MySQL, each with or without DAMA |
+| Schema | `Schema/SchemaTrait`, `SchemaBuilder`, `DataBuilder` | Doctrine DBAL fixtures. `Strategy/*` handles SQLite in memory, SQLite file and MySQL, the last two with or without DAMA |
 | Snapshot | `Snapshot/SnapshotTrait` | Array/JSON/JSON-LD/XML/HTML/text snapshots in `__snapshots__` dirs |
 | Uuid | `Uuid/UuidTrait` | Deterministic UUIDs, UUID assertions |
 | ZipContents / SevenZipContents | `*ContentsTrait` | Archive inspection and assertions |
@@ -51,6 +51,8 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 - Only the tests use `#[CoversClass]`, and never on traits.
 - Tests of container-dependent traits don't boot a kernel. They override `getContainer()` with a
   hand-built `Symfony\Component\DependencyInjection\Container` (see `tests/HttpClientMock/HttpClientMockTraitTest.php`).
+  Exception: `tests/Request/RequestTraitKernelTest.php` boots the small test kernel in `tests/Request/Kernel` for behavior
+  that needs a real `KernelBrowser` (sessions, CSRF tokens, logout, redirects).
 - Most runtime dependencies are optional (`require-dev` + `suggest`). A new optional
   dependency belongs in `require-dev` and `suggest`, with a note saying which trait needs it.
   Don't add hard `require` entries without good reason.
@@ -64,8 +66,11 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 
 ## Environment variables read by the library
 
-- `UPDATE_SNAPSHOTS=1` rewrites snapshot files. `CREATE_SNAPSHOTS=0` fails a test whose snapshot is missing. `SKIP_SNAPSHOT_TESTS` skips snapshot assertions.
-- `USE_PRE_INITIALIZED_SCHEMA` skips applying the schema in `SchemaTrait`.
+- `UPDATE_SNAPSHOTS=1` rewrites snapshot files. `CREATE_SNAPSHOTS=0` fails a test whose snapshot is missing, and
+  `CREATE_SNAPSHOTS=auto` does so only when `CI` is set. `SNAPSHOT_CREATED_WARNING` emits a PHPUnit warning for every
+  created snapshot. `SKIP_SNAPSHOT_TESTS` skips snapshot assertions.
+- `USE_PRE_INITIALIZED_SCHEMA` skips applying the schema in `SchemaTrait`. `SCHEMA_STRATEGY` forces a schema strategy
+  (`sqlite-memory`, `sqlite-file`, `sqlite-file-dama`, `mysql`, `mysql-dama`).
 
 ## Commits & releases
 
