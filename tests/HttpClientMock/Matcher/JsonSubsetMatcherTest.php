@@ -31,6 +31,19 @@ final class JsonSubsetMatcherTest extends TestCase
         yield 'nested empty list matches empty list' => [['tags' => []], ['tags' => []], true];
         yield 'nested empty list does not match filled list' => [['tags' => []], ['tags' => ['a']], false];
         yield 'empty subset matches any object' => [[], ['a' => 1], true];
+        yield 'list of objects with other key order' => [
+            ['items' => [['id' => 1, 'name' => 'a']]],
+            ['items' => [['name' => 'a', 'id' => 1]], 'extra' => true],
+            true,
+        ];
+
+        yield 'list of objects with additional key' => [
+            ['items' => [['id' => 1]]],
+            ['items' => [['id' => 1, 'name' => 'a']]],
+            false,
+        ];
+
+        yield 'list of lists with other order' => [[[1, 2]], [[2, 1]], false];
     }
 
     /**

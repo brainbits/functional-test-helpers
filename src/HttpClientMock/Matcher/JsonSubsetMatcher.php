@@ -8,6 +8,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
 
 use function array_is_list;
 use function array_key_exists;
+use function count;
 use function is_array;
 use function Safe\json_encode;
 use function sprintf;
@@ -45,7 +46,7 @@ final readonly class JsonSubsetMatcher implements Matcher
     {
         // lists (and a nested empty array) have to match exactly, including the types of the values
         if (array_is_list($subset) && ($subset !== [] || $nested)) {
-            return $subset === $actual;
+            return self::equals($subset, $actual);
         }
 
         foreach ($subset as $key => $value) {
@@ -62,6 +63,28 @@ final readonly class JsonSubsetMatcher implements Matcher
             }
 
             if ($value !== $actual[$key]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Strict equality, except that the keys of objects may be in any order, like in a JSON document.
+     */
+    private static function equals(mixed $expected, mixed $actual): bool
+    {
+        if (!is_array($expected) || !is_array($actual)) {
+            return $expected === $actual;
+        }
+
+        if (count($expected) !== count($actual) || array_is_list($expected) !== array_is_list($actual)) {
+            return false;
+        }
+
+        foreach ($expected as $key => $value) {
+            if (!array_key_exists($key, $actual) || !self::equals($value, $actual[$key])) {
                 return false;
             }
         }
