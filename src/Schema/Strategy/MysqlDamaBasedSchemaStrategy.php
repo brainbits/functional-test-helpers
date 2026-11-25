@@ -9,7 +9,6 @@ use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Identifier;
 
 use function count;
 use function sprintf;
@@ -123,7 +122,7 @@ final class MysqlDamaBasedSchemaStrategy implements SchemaStrategy
 
     private function quoteIdentifier(Connection $connection, string $identifier): string
     {
-        return (new Identifier($identifier, true))->getQuotedName($connection->getDatabasePlatform());
+        return IdentifierQuoter::quote($connection->getDatabasePlatform(), $identifier);
     }
 
     /**
