@@ -7,6 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Snapshot;
 use Brainbits\FunctionalTestHelpers\Snapshot\SnapshotTrait;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -53,6 +54,29 @@ final class SnapshotFeaturesTest extends TestCase
                 JSON,
             file_get_contents($this->snapshotsDir->url() . '/snapshot_features_normalizers.json'),
         );
+    }
+
+    public function testNormalizersMustNotCreateDuplicateKeys(): void
+    {
+        $this->addSnapshotUuidNormalizer();
+
+        try {
+            $this->assertMatchesJsonSnapshot(
+                '{"items":{"1b4e28ba-2fa1-11d2-883f-0016d3cca427":1,"6ba7b810-9dad-11d1-80b4-00c04fd430c8":2}}',
+            );
+        } catch (AssertionFailedError $e) {
+            $this->assertStringContainsString(
+                'turned different keys into the same key "00000000-0000-0000-0000-000000000000"',
+                $e->getMessage(),
+            );
+            $this->assertFileDoesNotExist(
+                $this->snapshotsDir->url() . '/snapshot_features_normalizers_must_not_create_duplicate_keys.json',
+            );
+
+            return;
+        }
+
+        $this->fail('Duplicate keys were not detected');
     }
 
     public function testNormalizersAreResetForEachTest(): void

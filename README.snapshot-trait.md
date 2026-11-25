@@ -77,6 +77,9 @@ $this->addSnapshotNormalizer(fn (string $content): string => str_replace($baseUr
 $this->assertMatchesJsonSnapshot($json);
 ```
 
+Normalizers work on the formatted text. If they turn different keys of a JSON object into the same key, e.g. a map
+keyed by UUIDs, the test fails, because the comparison would only see the last of these keys.
+
 ## Options
 
 Override these methods in your test class:

@@ -234,6 +234,33 @@ trait SnapshotTrait
         return $content;
     }
 
+    /**
+     * Normalizers work on the JSON text, so they can turn different keys into the same key, e.g. two UUIDs.
+     * The comparison would then only see the last of them, so this fails instead.
+     */
+    private function snapshotApplyJsonNormalizers(string $content, string $fixtureFilename, string $message): string
+    {
+        if ($this->snapshotNormalizers === []) {
+            return $content;
+        }
+
+        $content = $this->snapshotApplyNormalizers($content);
+
+        $duplicateKey = DuplicateJsonKey::find($content);
+        if ($duplicateKey !== null) {
+            self::fail($this->snapshotAppendFilenameHint(
+                $fixtureFilename,
+                ($message !== '' ? $message . PHP_EOL : '') . sprintf(
+                    'The snapshot normalizers turned different keys into the same key "%s", '
+                    . 'the snapshot comparison would ignore all but the last of them.',
+                    $duplicateKey,
+                ),
+            ));
+        }
+
+        return $content;
+    }
+
     private function snapshotAssertJsonFile(string $fixtureFilename, string $actual, string $message): void
     {
         if ($this->snapshotStrictJson()) {
@@ -296,7 +323,7 @@ trait SnapshotTrait
         self::assertJson($actual, $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatJson($actual);
 
-        $actual = $this->snapshotApplyNormalizers($actual);
+        $actual = $this->snapshotApplyJsonNormalizers($actual, $fixtureFilename, $message);
 
         $this->snapshotDump($fixtureFilename, $actual);
 
@@ -314,7 +341,7 @@ trait SnapshotTrait
         self::assertJson($actual, $this->snapshotAppendFilenameHint($fixtureFilename, $message));
         $actual = $this->snapshotFormatJsonLd($actual);
 
-        $actual = $this->snapshotApplyNormalizers($actual);
+        $actual = $this->snapshotApplyJsonNormalizers($actual, $fixtureFilename, $message);
 
         $this->snapshotDump($fixtureFilename, $actual);
 
