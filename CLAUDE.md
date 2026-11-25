@@ -68,7 +68,7 @@ not just the installed ones. The 7z tests need the `7z` binary on the PATH.
 
 - `UPDATE_SNAPSHOTS=1` rewrites snapshot files. `CREATE_SNAPSHOTS=0` fails a test whose snapshot is missing, and
   `CREATE_SNAPSHOTS=auto` does so only when `CI` is set. `SNAPSHOT_CREATED_WARNING` emits a PHPUnit warning for every
-  created snapshot. `SKIP_SNAPSHOT_TESTS` skips snapshot assertions.
+  created snapshot (only visible with `restrictWarnings="false"`, since the library is outside the user's `<source>`). `SKIP_SNAPSHOT_TESTS` skips snapshot assertions.
 - `USE_PRE_INITIALIZED_SCHEMA` skips applying the schema in `SchemaTrait`. `SCHEMA_STRATEGY` forces a schema strategy
   (`sqlite-memory`, `sqlite-file`, `sqlite-file-dama`, `mysql`, `mysql-dama`).
 

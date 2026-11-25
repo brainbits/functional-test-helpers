@@ -161,8 +161,8 @@ final class MyTest extends FunctionalTestCase
 
 ## Schema strategies
 
-The strategy is detected from the connection: SQLite in memory, or SQLite file or MySQL, each with or
-without the DAMA doctrine-test-bundle. If the detection doesn't fit your setup, force a strategy with
+The strategy is detected from the connection: SQLite in memory, or SQLite file or MySQL. The latter two
+each come with and without the DAMA doctrine-test-bundle. If the detection doesn't fit your setup, force a strategy with
 the `SCHEMA_STRATEGY` environment variable: `sqlite-memory`, `sqlite-file`, `sqlite-file-dama`,
 `mysql` or `mysql-dama`.
 
