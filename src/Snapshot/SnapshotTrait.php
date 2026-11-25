@@ -62,8 +62,9 @@ trait SnapshotTrait
     #[Before]
     final protected function setUpSnapshot(): void
     {
+        // the normalizers are not reset here, earlier before hooks may have added some already,
+        // and PHPUnit creates a new test case instance for each test
         $this->filenames = [];
-        $this->snapshotNormalizers = [];
     }
 
     /**
