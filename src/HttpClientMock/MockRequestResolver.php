@@ -43,10 +43,23 @@ final class MockRequestResolver
         }
 
         foreach ($scoredMatchResults as $matchResults) {
+            $builderWithCallCount = null;
             foreach ($matchResults as $matchResult) {
                 if ($builders[$matchResult]->hasNextResponse()) {
                     return $builders[$matchResult];
                 }
+
+                if ($builderWithCallCount !== null || $builders[$matchResult]->getExpectedCallCount() === null) {
+                    continue;
+                }
+
+                $builderWithCallCount = $builders[$matchResult];
+            }
+
+            // A mock with once(), never() or times() keeps its requests, a less specific mock must not answer
+            // them, otherwise the call count check would miss the extra calls.
+            if ($builderWithCallCount !== null) {
+                return $builderWithCallCount;
             }
         }
 

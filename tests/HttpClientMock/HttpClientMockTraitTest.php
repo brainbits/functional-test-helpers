@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Brainbits\FunctionalTestHelpers\Tests\HttpClientMock;
 
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Exception\NoResponseMock;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\HttpClientMockTrait;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\CatchAllMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MethodMatcher;
@@ -221,6 +222,61 @@ final class HttpClientMockTraitTest extends TestCase
 
         $this->assertNoFailedMockRequests();
         $this->assertCount(1, $this->chronologicalCallStack());
+    }
+
+    public function testNeverIsNotBypassedByLessSpecificMock(): void
+    {
+        $this->mockRequest('DELETE', '/orders/1')->name('never')->never();
+        $this->mockRequest('DELETE')->willAlwaysRespond($this->mockResponse()->code(204));
+
+        try {
+            (self::$collection)('DELETE', '/orders/1', []);
+            $this->fail('The request was answered by the less specific mock');
+        } catch (NoResponseMock $e) {
+            $this->assertSame(
+                'Mock request "never" was expected to be called 0 times, but was called 1 times.',
+                $e->getMessage(),
+            );
+        }
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage('Mock request "never" was expected to be called 0 times');
+
+        $this->assertNoFailedMockRequests();
+    }
+
+    public function testOnceIsNotBypassedByLessSpecificMock(): void
+    {
+        $this->mockRequest('POST', '/orders')->name('once')->once()->willRespond($this->mockResponse());
+        $this->mockRequest('POST')->willAlwaysRespond($this->mockResponse());
+
+        (self::$collection)('POST', '/orders', []);
+
+        try {
+            (self::$collection)('POST', '/orders', []);
+            $this->fail('The request was answered by the less specific mock');
+        } catch (NoResponseMock $e) {
+            $this->assertSame(
+                'Mock request "once" was expected to be called 1 times, but was called 2 times.',
+                $e->getMessage(),
+            );
+        }
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage('Mock request "once" was expected to be called 1 times, but was called 2 times.');
+
+        $this->assertNoFailedMockRequests();
+    }
+
+    public function testEquallySpecificMocksWithCallCountsAreUsedInTurn(): void
+    {
+        $this->mockRequest('POST', '/orders')->name('first')->once()->willRespond($this->mockResponse()->code(201));
+        $this->mockRequest('POST', '/orders')->name('second')->once()->willRespond($this->mockResponse()->code(202));
+
+        $this->assertSame(201, (self::$collection)('POST', '/orders', [])->getStatusCode());
+        $this->assertSame(202, (self::$collection)('POST', '/orders', [])->getStatusCode());
+
+        $this->assertNoFailedMockRequests();
     }
 
     public function testAssertAllMockResponsesAreConsumed(): void
