@@ -24,6 +24,8 @@ final class QueryParamsMatcherTest extends TestCase
         yield 'integer value' => [['page' => 1], 'page=1', true];
         yield 'nested' => [['filter' => ['a' => '1', 'b' => '2']], 'filter%5Ba%5D=1&filter%5Bb%5D=2', true];
         yield 'list' => [['ids' => ['1', '2']], 'ids%5B%5D=1&ids%5B%5D=2', true];
+        yield 'numeric and other keys' => [['1e' => 'c', '10' => 'b', '2' => 'a'], '1e=c&10=b&2=a', true];
+        yield 'numeric keys in other order' => [['1e' => 'c', '10' => 'b', '2' => 'a'], '10=b&1e=c&2=a', true];
         yield 'nested list' => [
             ['filter' => ['ids' => [1, 2]]],
             'filter%5Bids%5D%5B%5D=1&filter%5Bids%5D%5B%5D=2',

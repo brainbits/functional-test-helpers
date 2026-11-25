@@ -28,11 +28,11 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\File\File;
 use Throwable;
 
-use function array_combine;
 use function base64_encode;
 use function count;
 use function implode;
 use function is_array;
+use function Safe\array_combine;
 use function Safe\preg_match;
 use function sprintf;
 use function strtolower;

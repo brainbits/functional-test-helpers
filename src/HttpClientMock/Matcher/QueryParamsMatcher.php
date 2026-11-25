@@ -15,6 +15,7 @@ use function Safe\json_encode;
 use function sprintf;
 
 use const PHP_QUERY_RFC3986;
+use const SORT_STRING;
 
 /**
  * Matches if the query parameters are exactly the expected ones, extra parameters are a mismatch.
@@ -31,8 +32,9 @@ final readonly class QueryParamsMatcher implements Matcher
         $expected = self::encode($this->params);
         $real = self::indexLists($realRequest->getQueryParams());
 
-        ksort($expected);
-        ksort($real);
+        // numeric keys are integers in PHP arrays, only a string sort is a total order for mixed keys
+        ksort($expected, SORT_STRING);
+        ksort($real, SORT_STRING);
 
         if ($expected !== $real) {
             return Mismatch::mismatchingQueryParam('*', $expected, $real);
