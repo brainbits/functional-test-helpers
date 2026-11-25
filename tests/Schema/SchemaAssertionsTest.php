@@ -7,6 +7,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Schema;
 use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaTrait;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Schema\Schema;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
@@ -87,5 +88,17 @@ final class SchemaAssertionsTest extends TestCase
         }
 
         $this->fail('Assertion did not fail');
+    }
+
+    public function testAssertTableContainsBinaryValueWrittenAsBlob(): void
+    {
+        // Doctrine's binary type, e.g. a binary UUID, binds the value as BLOB
+        $this->getFixtureConnection()->insert(
+            'user',
+            ['id' => 3, 'name' => 'mary', 'active' => 1, 'token' => "\x01\xff\x00"],
+            ['token' => ParameterType::BINARY],
+        );
+
+        $this->assertTableContains('user', ['token' => "\x01\xff\x00"]);
     }
 }

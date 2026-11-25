@@ -8,10 +8,13 @@ use Brainbits\FunctionalTestHelpers\Schema\Strategy\IdentifierQuoting;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SchemaStrategy;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use PHPUnit\Framework\TestCase;
 
 use function array_map;
 use function bin2hex;
+use function count;
 use function getenv;
 use function implode;
 use function is_bool;
@@ -119,11 +122,24 @@ trait SchemaTrait
 
         $conditions = [];
         $parameters = [];
+        $types = [];
         foreach ($values as $column => $value) {
             $quotedColumn = IdentifierQuoting::quote($platform, $column);
 
             if ($value === null) {
                 $conditions[] = sprintf('%s IS NULL', $quotedColumn);
+
+                continue;
+            }
+
+            if (is_string($value) && !mb_check_encoding($value, 'UTF-8')) {
+                // binary values, e.g. binary UUIDs, are stored as BLOB by Doctrine's binary type, but as TEXT
+                // if inserted without a type, and SQLite never considers a BLOB equal to a TEXT
+                $conditions[] = $platform instanceof SQLitePlatform
+                    ? sprintf('CAST(%s AS BLOB) = ?', $quotedColumn)
+                    : sprintf('%s = ?', $quotedColumn);
+                $types[count($parameters)] = ParameterType::BINARY;
+                $parameters[] = $value;
 
                 continue;
             }
@@ -139,7 +155,7 @@ trait SchemaTrait
             $conditions !== [] ? ' WHERE ' . implode(' AND ', $conditions) : '',
         );
 
-        $rowCount = (int) $connection->fetchOne($sql, $parameters);
+        $rowCount = (int) $connection->fetchOne($sql, $parameters, $types);
 
         // the message is only built for a failure, binary values can't be JSON encoded as they are
         if ($rowCount === 0 && $message === '') {
