@@ -64,6 +64,26 @@ final class MockRequestMatcherTest extends TestCase
         $this->assertCount(3, $result->getResults());
     }
 
+    public function testLaterCallbackMatchersAreSkippedIfACallbackMismatches(): void
+    {
+        $called = false;
+
+        $matcher = (new MockRequestBuilder())
+            ->method('GET')
+            ->header('X-Tenant', static fn (string $value): bool => $value === 'a')
+            ->that(static function () use (&$called): bool {
+                $called = true;
+
+                return true;
+            })
+            ->getMatcher();
+
+        $result = ($matcher)($this->createRealRequest('GET', '/b', ['x-tenant' => 'b']));
+
+        $this->assertFalse($called, 'Callback was invoked after a callback mismatched');
+        $this->assertTrue($result->isMismatch());
+    }
+
     public function testResultsKeepTheOrderOfTheMatchers(): void
     {
         $matcher = (new MockRequestBuilder())

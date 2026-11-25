@@ -36,10 +36,15 @@ final readonly class MockRequestMatcher
             $isMismatch = $isMismatch || !$results[$index] instanceof Hit;
         }
 
-        // Callbacks may contain assertions, so they only run for requests that match everything else.
+        // Callbacks may contain assertions, so they only run for requests that match everything else,
+        // including the callbacks before them.
         if (!$isMismatch) {
             foreach ($callbackMatchers as $index => $matcher) {
                 $results[$index] = $matcher($realRequest);
+
+                if (!$results[$index] instanceof Hit) {
+                    break;
+                }
             }
         }
 
