@@ -84,10 +84,13 @@ never answers a request that matches a mock with a call count, so an extra call 
 right away, and the check after the test reports it as well.
 
 ```php
-self::assertAllMockResponsesAreConsumed();               // no sequential response was left unused
-self::assertRequestMocksAreCalledInOrder($login, $order); // first calls happened in this order
-$this->chronologicalCallStack();                         // all calls of all mocks in call order
+$this->assertAllMockResponsesAreConsumed();               // no sequential response was left unused
+$this->assertRequestMocksAreCalledInOrder($login, $order); // first calls happened in this order
+$this->chronologicalCallStack();                          // all calls of all mocks in call order
 ```
+
+These three read the mocks created with `mockRequest()` in the test, so they also work after the kernel was
+rebooted between requests.
 
 ### Flexible matching and response fixtures
 

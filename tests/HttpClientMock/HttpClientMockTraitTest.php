@@ -220,8 +220,8 @@ final class HttpClientMockTraitTest extends TestCase
 
         (self::$collection)('GET', '/once', []);
 
-        $this->assertNoFailedMockRequests();
         $this->assertCount(1, $this->chronologicalCallStack());
+        $this->assertNoFailedMockRequests();
     }
 
     public function testNeverIsNotBypassedByLessSpecificMock(): void
@@ -290,7 +290,7 @@ final class HttpClientMockTraitTest extends TestCase
         (self::$collection)('GET', '/sequence', []);
 
         try {
-            self::assertAllMockResponsesAreConsumed();
+            $this->assertAllMockResponsesAreConsumed();
         } catch (ExpectationFailedException $e) {
             $this->assertStringContainsString(
                 'Mock request "sequence" has responses that were never returned.',
@@ -302,6 +302,40 @@ final class HttpClientMockTraitTest extends TestCase
         }
 
         $this->fail('Unused responses were not detected');
+    }
+
+    public function testCollectiveAssertionsSurviveAKernelReboot(): void
+    {
+        $login = $this->mockRequest('POST', '/login')->name('login')->willRespond($this->mockResponse());
+        $order = $this->mockRequest('POST', '/order')
+            ->name('order')
+            ->willRespond($this->mockResponse())
+            ->willRespond($this->mockResponse());
+
+        (self::$collection)('POST', '/login', []);
+        (self::$collection)('POST', '/order', []);
+
+        // a kernel reboot replaces the container and with it the mock request builder collection
+        self::$collection = new MockRequestBuilderCollection();
+
+        $uris = array_map(static fn ($call) => $call->getUri(), [...$this->chronologicalCallStack()]);
+        $this->assertSame(['/login', '/order'], $uris);
+
+        $this->assertRequestMocksAreCalledInOrder($login, $order);
+
+        try {
+            $this->assertAllMockResponsesAreConsumed();
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString(
+                'Mock request "order" has responses that were never returned.',
+                $e->getMessage(),
+            );
+            $this->createdMockRequestBuilders = [];
+
+            return;
+        }
+
+        $this->fail('Unused responses were not detected after a reboot');
     }
 
     public function testChronologicalCallStackAndCallOrder(): void
@@ -316,10 +350,10 @@ final class HttpClientMockTraitTest extends TestCase
         $uris = array_map(static fn ($call) => $call->getUri(), [...$this->chronologicalCallStack()]);
         $this->assertSame(['/b', '/a', '/b'], $uris);
 
-        self::assertRequestMocksAreCalledInOrder($b, $a);
+        $this->assertRequestMocksAreCalledInOrder($b, $a);
 
         try {
-            self::assertRequestMocksAreCalledInOrder($a, $b);
+            $this->assertRequestMocksAreCalledInOrder($a, $b);
         } catch (ExpectationFailedException $e) {
             $this->assertStringContainsString('Mock request "b" was called before "a".', $e->getMessage());
 

@@ -18,13 +18,16 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Throwable;
 
-use function array_key_exists;
+use function array_keys;
 use function array_map;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
 use function implode;
 use function is_string;
+use function ksort;
+use function min;
 use function Safe\parse_url;
 use function sprintf;
 use function str_contains;
@@ -276,19 +279,28 @@ trait HttpClientMockTrait
     }
 
     /**
-     * All calls of all mock requests in the order they were made.
+     * All calls of all mock requests created with mockRequest() in the order they were made.
+     * Unlike callStack(), it reads the mock requests of the test, so it also works after a kernel reboot.
      */
     protected function chronologicalCallStack(): CallStack
     {
-        return self::getMockRequestBuilderCollection()->getChronologicalCallStack();
+        $calls = [];
+        foreach ($this->createdMockRequestBuilders as $mockRequestBuilder) {
+            $calls += $mockRequestBuilder->getSequencedCalls();
+        }
+
+        ksort($calls);
+
+        return new CallStack(...array_values($calls));
     }
 
     /**
-     * Fails if a mock request has sequential responses (willRespond(), willThrow(), ...) that were never returned.
+     * Fails if a mock request created with mockRequest() has sequential responses (willRespond(), willThrow(), ...)
+     * that were never returned.
      */
-    protected static function assertAllMockResponsesAreConsumed(string $message = ''): void
+    protected function assertAllMockResponsesAreConsumed(string $message = ''): void
     {
-        foreach (self::getMockRequestBuilderCollection() as $mockRequestBuilder) {
+        foreach ($this->createdMockRequestBuilders as $mockRequestBuilder) {
             self::assertFalse(
                 $mockRequestBuilder->hasUnusedResponses(),
                 self::mockRequestMessage(
@@ -303,27 +315,18 @@ trait HttpClientMockTrait
     /**
      * Fails unless the first calls of the given mock requests happened in the given order.
      */
-    protected static function assertRequestMocksAreCalledInOrder(MockRequestBuilder ...$expectedOrder): void
+    protected function assertRequestMocksAreCalledInOrder(MockRequestBuilder ...$expectedOrder): void
     {
-        $calledBuilders = self::getMockRequestBuilderCollection()->getCalledRequestBuilders();
-
         $firstCalls = [];
-        foreach ($calledBuilders as $index => $calledBuilder) {
-            foreach ($expectedOrder as $position => $expectedBuilder) {
-                if ($calledBuilder !== $expectedBuilder || array_key_exists($position, $firstCalls)) {
-                    continue;
-                }
-
-                $firstCalls[$position] = $index;
-            }
-        }
-
         foreach ($expectedOrder as $position => $expectedBuilder) {
-            self::assertArrayHasKey(
-                $position,
-                $firstCalls,
+            $sequenceNumbers = array_keys($expectedBuilder->getSequencedCalls());
+
+            self::assertNotEmpty(
+                $sequenceNumbers,
                 sprintf('Mock request %s was not called.', self::describeMockRequestBuilder($expectedBuilder)),
             );
+
+            $firstCalls[$position] = min($sequenceNumbers);
 
             if ($position === 0) {
                 continue;
@@ -339,21 +342,6 @@ trait HttpClientMockTrait
                 ),
             );
         }
-    }
-
-    private static function getMockRequestBuilderCollection(): MockRequestBuilderCollection
-    {
-        if (!self::getContainer()->has(MockRequestBuilderCollection::class)) {
-            static::fail(sprintf(
-                '%s not found, did you forget to include it in your test services?',
-                MockRequestBuilderCollection::class,
-            ));
-        }
-
-        $collection = self::getContainer()->get(MockRequestBuilderCollection::class);
-        assert($collection instanceof MockRequestBuilderCollection);
-
-        return $collection;
     }
 
     private static function describeMockRequestBuilder(MockRequestBuilder $mockRequestBuilder): string

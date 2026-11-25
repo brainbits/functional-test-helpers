@@ -28,6 +28,7 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\File\File;
 use Throwable;
 
+use function array_combine;
 use function base64_encode;
 use function count;
 use function implode;
@@ -52,6 +53,11 @@ final class MockRequestBuilder
 
     /** @var RealRequest[]  */
     private array $calls = [];
+
+    /** @var list<int> position of each call among the calls of all mock request builders */
+    private array $callSequenceNumbers = [];
+
+    private static int $lastCallSequenceNumber = 0;
 
     private UriParams $uriParams;
 
@@ -509,8 +515,19 @@ final class MockRequestBuilder
     public function called(RealRequest $request): self
     {
         $this->calls[] = $request;
+        $this->callSequenceNumbers[] = ++self::$lastCallSequenceNumber;
 
         return $this;
+    }
+
+    /**
+     * The calls of this mock request, keyed by their position among the calls of all mock requests.
+     *
+     * @return array<int, RealRequest>
+     */
+    public function getSequencedCalls(): array
+    {
+        return array_combine($this->callSequenceNumbers, $this->calls);
     }
 
     public function getCallStack(): CallStack
