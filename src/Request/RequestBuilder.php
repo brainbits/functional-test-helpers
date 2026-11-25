@@ -146,13 +146,15 @@ final class RequestBuilder
 
     /**
      * Sends the values as application/x-www-form-urlencoded form, or as multipart/form-data together with files.
+     * Numeric field names are integer keys in PHP arrays, so integer keys are accepted, too.
      *
-     * @param array<string, mixed> $values
+     * @param array<array-key, mixed> $values
      */
     public function form(array $values): self
     {
         foreach ($values as $key => $value) {
-            $this->parameter($key, $value);
+            // PHP turns numeric string keys into integers
+            $this->parameter((string) $key, $value);
         }
 
         if ($this->files !== []) {

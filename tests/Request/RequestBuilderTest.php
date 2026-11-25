@@ -434,6 +434,13 @@ final class RequestBuilderTest extends TestCase
         self::assertFalse($builder->getChangeHistory());
     }
 
+    public function testFormWithNumericFieldNames(): void
+    {
+        $builder = $this->createRequestBuilder('POST', '/users')->form(['123' => 'checked', 'name' => 'peter']);
+
+        self::assertSame(['123' => 'checked', 'name' => 'peter'], $builder->getParameters());
+    }
+
     public function testFormWithFilesStaysMultipart(): void
     {
         $builder = $this->createRequestBuilder('POST', '/users')
