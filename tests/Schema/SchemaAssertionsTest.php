@@ -23,6 +23,7 @@ final class SchemaAssertionsTest extends TestCase
         $table->addColumn('name', 'string', ['length' => 255]);
         $table->addColumn('deleted_at', 'string', ['length' => 255, 'notnull' => false]);
         $table->addColumn('active', 'boolean');
+        $table->addColumn('token', 'binary', ['length' => 16, 'notnull' => false]);
 
         $schemaBuilder = $this->createStub(SchemaBuilder::class);
         $schemaBuilder->method('getSchema')->willReturn($schema);
@@ -30,8 +31,8 @@ final class SchemaAssertionsTest extends TestCase
         $dataBuilder = $this->createStub(DataBuilder::class);
         $dataBuilder->method('getData')->willReturn([
             'user' => [
-                ['id' => 1, 'name' => 'peter', 'deleted_at' => null, 'active' => 1],
-                ['id' => 2, 'name' => 'paul', 'deleted_at' => '2026-01-01', 'active' => 0],
+                ['id' => 1, 'name' => 'peter', 'deleted_at' => null, 'active' => 1, 'token' => "\xff\x00\xfe"],
+                ['id' => 2, 'name' => 'paul', 'deleted_at' => '2026-01-01', 'active' => 0, 'token' => null],
             ],
         ]);
 
@@ -58,6 +59,27 @@ final class SchemaAssertionsTest extends TestCase
         } catch (ExpectationFailedException $e) {
             $this->assertStringContainsString(
                 'Table user does not contain a row with {"name":"mary"}',
+                $e->getMessage(),
+            );
+
+            return;
+        }
+
+        $this->fail('Assertion did not fail');
+    }
+
+    public function testAssertTableContainsBinaryValue(): void
+    {
+        $this->assertTableContains('user', ['name' => 'peter', 'token' => "\xff\x00\xfe"]);
+    }
+
+    public function testAssertTableContainsFailsWithBinaryValue(): void
+    {
+        try {
+            $this->assertTableContains('user', ['token' => "\xff\x00\xfd"]);
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString(
+                'Table user does not contain a row with {"token":"0xff00fd"}',
                 $e->getMessage(),
             );
 

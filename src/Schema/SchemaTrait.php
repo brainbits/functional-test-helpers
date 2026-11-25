@@ -10,9 +10,15 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
+use function array_map;
+use function bin2hex;
 use function getenv;
 use function implode;
 use function is_bool;
+use function is_finite;
+use function is_float;
+use function is_string;
+use function mb_check_encoding;
 use function Safe\json_encode;
 use function sprintf;
 
@@ -131,11 +137,25 @@ trait SchemaTrait
             $conditions !== [] ? ' WHERE ' . implode(' AND ', $conditions) : '',
         );
 
-        if ($message === '') {
-            $message = sprintf('Table %s does not contain a row with %s.', $table, json_encode($values));
+        $rowCount = (int) $connection->fetchOne($sql, $parameters);
+
+        // the message is only built for a failure, binary values can't be JSON encoded as they are
+        if ($rowCount === 0 && $message === '') {
+            $message = sprintf(
+                'Table %s does not contain a row with %s.',
+                $table,
+                json_encode(array_map(
+                    static fn (mixed $value): mixed => match (true) {
+                        is_string($value) && !mb_check_encoding($value, 'UTF-8') => '0x' . bin2hex($value),
+                        is_float($value) && !is_finite($value) => (string) $value,
+                        default => $value,
+                    },
+                    $values,
+                )),
+            );
         }
 
-        self::assertGreaterThan(0, (int) $connection->fetchOne($sql, $parameters), $message);
+        self::assertGreaterThan(0, $rowCount, $message);
     }
 
     private function getFixtureConnection(): Connection
