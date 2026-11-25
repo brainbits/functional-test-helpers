@@ -331,6 +331,17 @@ final class HttpClientMockTraitTest extends TestCase
         $this->assertNoFailedMockRequests();
     }
 
+    public function testEquallySpecificMocksWithCallCountsAndAlwaysRespondAreUsedInTurn(): void
+    {
+        $this->mockRequest('GET', '/status')->once()->willAlwaysRespond($this->mockResponse()->code(201));
+        $this->mockRequest('GET', '/status')->once()->willAlwaysRespond($this->mockResponse()->code(202));
+
+        $this->assertSame(201, (self::$collection)('GET', '/status', [])->getStatusCode());
+        $this->assertSame(202, (self::$collection)('GET', '/status', [])->getStatusCode());
+
+        $this->assertNoFailedMockRequests();
+    }
+
     public function testAssertAllMockResponsesAreConsumed(): void
     {
         $this->mockRequest('GET', '/sequence')

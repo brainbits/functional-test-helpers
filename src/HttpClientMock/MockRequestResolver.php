@@ -44,7 +44,8 @@ final class MockRequestResolver
 
         // A mock with once(), never() or times() keeps its requests, neither an equally nor a less specific mock
         // may answer them, otherwise the call count check would miss the extra calls. Within the same score,
-        // the order is: a mock with call count and a response left, a mock with call count, any mock with a response.
+        // the order is: a mock with call count, calls and a response left, any other mock with call count,
+        // any mock with a response.
         foreach ($scoredMatchResults as $matchResults) {
             $builderWithCallCount = null;
             $builderWithResponse = null;
@@ -59,7 +60,7 @@ final class MockRequestResolver
                     continue;
                 }
 
-                if ($builder->hasNextResponse()) {
+                if ($builder->hasNextResponse() && count($builder->getCallStack()) < $builder->getExpectedCallCount()) {
                     return $builder;
                 }
 
