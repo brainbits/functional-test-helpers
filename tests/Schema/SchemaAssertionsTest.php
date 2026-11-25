@@ -1,0 +1,104 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Brainbits\FunctionalTestHelpers\Tests\Schema;
+
+use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
+use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
+use Brainbits\FunctionalTestHelpers\Schema\SchemaTrait;
+use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Schema\Schema;
+use PHPUnit\Framework\ExpectationFailedException;
+use PHPUnit\Framework\TestCase;
+
+final class SchemaAssertionsTest extends TestCase
+{
+    use SchemaTrait;
+
+    protected function setUp(): void
+    {
+        $schema = new Schema();
+        $table = $schema->createTable('user');
+        $table->addColumn('id', 'integer');
+        $table->addColumn('name', 'string', ['length' => 255]);
+        $table->addColumn('deleted_at', 'string', ['length' => 255, 'notnull' => false]);
+        $table->addColumn('active', 'boolean');
+        $table->addColumn('token', 'binary', ['length' => 16, 'notnull' => false]);
+
+        $schemaBuilder = $this->createStub(SchemaBuilder::class);
+        $schemaBuilder->method('getSchema')->willReturn($schema);
+
+        $dataBuilder = $this->createStub(DataBuilder::class);
+        $dataBuilder->method('getData')->willReturn([
+            'user' => [
+                ['id' => 1, 'name' => 'peter', 'deleted_at' => null, 'active' => 1, 'token' => "\xff\x00\xfe"],
+                ['id' => 2, 'name' => 'paul', 'deleted_at' => '2026-01-01', 'active' => 0, 'token' => null],
+            ],
+        ]);
+
+        $this->fixtureFromNewConnection($schemaBuilder, $dataBuilder, static fn () => null);
+    }
+
+    public function testAssertTableRowCount(): void
+    {
+        $this->assertTableRowCount(2, 'user');
+    }
+
+    public function testAssertTableContains(): void
+    {
+        $this->assertTableContains('user', ['id' => 1, 'name' => 'peter', 'deleted_at' => null]);
+        $this->assertTableContains('user', ['name' => 'paul']);
+        $this->assertTableContains('user', ['name' => 'peter', 'active' => true]);
+        $this->assertTableContains('user', ['name' => 'paul', 'active' => false]);
+    }
+
+    public function testAssertTableContainsFails(): void
+    {
+        try {
+            $this->assertTableContains('user', ['name' => 'mary']);
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString(
+                'Table user does not contain a row with {"name":"mary"}',
+                $e->getMessage(),
+            );
+
+            return;
+        }
+
+        $this->fail('Assertion did not fail');
+    }
+
+    public function testAssertTableContainsBinaryValue(): void
+    {
+        $this->assertTableContains('user', ['name' => 'peter', 'token' => "\xff\x00\xfe"]);
+    }
+
+    public function testAssertTableContainsFailsWithBinaryValue(): void
+    {
+        try {
+            $this->assertTableContains('user', ['token' => "\xff\x00\xfd"]);
+        } catch (ExpectationFailedException $e) {
+            $this->assertStringContainsString(
+                'Table user does not contain a row with {"token":"0xff00fd"}',
+                $e->getMessage(),
+            );
+
+            return;
+        }
+
+        $this->fail('Assertion did not fail');
+    }
+
+    public function testAssertTableContainsBinaryValueWrittenAsBlob(): void
+    {
+        // Doctrine's binary type, e.g. a binary UUID, binds the value as BLOB
+        $this->getFixtureConnection()->insert(
+            'user',
+            ['id' => 3, 'name' => 'mary', 'active' => 1, 'token' => "\x01\xff\x00"],
+            ['token' => ParameterType::BINARY],
+        );
+
+        $this->assertTableContains('user', ['token' => "\x01\xff\x00"]);
+    }
+}

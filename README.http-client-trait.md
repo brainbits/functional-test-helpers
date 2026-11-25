@@ -46,3 +46,71 @@ final class MyTest extends WebTestCase
 }
 
 ```
+
+### Failures, timeouts and streamed responses
+
+`willThrow()` throws when the request is sent. Real network errors and timeouts surface when the
+response is read. To test that kind of error handling, use:
+
+```php
+$this->mockRequest('GET', 'http://127.0.0.1/my/endpoint')
+    ->willTimeout();                                    // TimeoutException when the body is read
+
+$this->mockRequest('GET', 'http://127.0.0.1/other/endpoint')
+    ->willFailWithTransportError('Connection refused'); // TransportException on getStatusCode(), getContent(), ...
+```
+
+A timeout is simulated after the response headers: `getStatusCode()` and `getHeaders()` return normally, and the
+`TimeoutException` is thrown by `getContent()`, `toArray()` or when streaming the body. If the code under test never
+reads the body, the exception is thrown when the response is destroyed, outside of its error handling. So read the
+body inside the `try` block that handles the timeout.
+
+The response builder can also stream its content in chunks and delay the response:
+
+```php
+$this->mockResponse()->chunks(['first ', 'second']);
+$this->mockResponse()->json(['ok' => true])->delay(0.5);
+$this->mockResponse()->transportError('Connection reset');
+$this->mockResponse()->timeout();
+```
+
+Use an array, not a generator, for `chunks()` when the response is returned more than once (`willAlwaysRespond()`).
+
+### Call expectations
+
+```php
+$this->mockRequest('POST', 'http://127.0.0.1/orders')->once()->willRespond($this->mockResponse());
+$this->mockRequest('DELETE', 'http://127.0.0.1/orders/1')->never();
+$this->mockRequest('GET', 'http://127.0.0.1/status')->times(3)->willAlwaysRespond($this->mockResponse());
+```
+
+`once()`, `never()` and `times()` are checked automatically after each test. An equally or less specific mock,
+e.g. a default mock from `setUp()`, never answers a request that matches a mock with a call count. An extra call
+fails right away with a `NoResponseMock`, even with `willAlwaysRespond()`, and the check after the test reports it
+as well.
+
+```php
+$this->assertAllMockResponsesAreConsumed();               // no sequential response was left unused
+$this->assertRequestMocksAreCalledInOrder($login, $order); // first calls happened in this order
+$this->chronologicalCallStack();                          // all calls of all mocks in call order
+```
+
+These three read the mocks created with `mockRequest()` in the test, so they also work after the kernel was
+rebooted between requests.
+
+### Flexible matching and response fixtures
+
+```php
+$this->mockRequest('POST')
+    ->uriMatches('#^https://api\.test/users/\d+$#')       // regular expression for the URI without query string
+    ->headerMatches('Authorization', '/^Bearer .+/')      // or header('X-Foo', fn (string $value) => ...)
+    ->withoutHeader('X-Debug')                            // header must be absent
+    ->queryParams(['page' => '1'])                         // exactly these query parameters
+    ->jsonContains(['user' => ['name' => 'peter']])        // JSON body contains these keys and values
+    ->willRespond(
+        $this->mockResponse()
+            ->jsonFile(__DIR__ . '/fixtures/user.json', 201) // or json($data, 201), contentFromFile($path)
+            ->addHeader('Set-Cookie', 'a=1')
+            ->addHeader('Set-Cookie', 'b=2'),
+    );
+```

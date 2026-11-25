@@ -9,6 +9,12 @@ parameters:
     ignoreErrors:
         - '#Constructor in .* has parameter .* with default value#'
         - '#SchemaBuilder::foo\(\)#'
+        # findUser() is an optional, deprecated hook. RequestTrait is used by two test classes, so phpstan reports
+        # this "in context of" each class, and an inline ignore comment in the trait does not apply there.
+        -
+            identifier: function.impossibleType
+            path: src/Request/RequestTrait.php
+            count: 2
     ergebnis:
         noNamedArgument:
             enabled: false
@@ -30,6 +36,8 @@ parameters:
                 - Monolog\Handler\AbstractProcessingHandler
                 - PHPUnit\Framework\Constraint\Constraint
                 - RuntimeException
+                - Symfony\Bundle\FrameworkBundle\Test\WebTestCase
+                - Symfony\Component\HttpKernel\Kernel
 
 includes:
     - %rootDir%/../../brainbits/phpstan-rules/rules.neon

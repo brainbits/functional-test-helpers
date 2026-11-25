@@ -131,4 +131,31 @@ final class QueryParamMatcherTest extends TestCase
 
         self::assertSame('request.queryParams["filter"] === "lastname"', (string) $matcher);
     }
+
+    public function testArrayQueryParamAgainstScalarValueIsAMismatch(): void
+    {
+        $matcher = new QueryParamMatcher('ids[]', '1', []);
+
+        $result = $matcher($this->createRealRequest(queryParams: ['ids' => '1']));
+
+        self::assertInstanceOf(Mismatch::class, $result);
+    }
+
+    public function testValueWithPercentSignAndWithoutPlaceholders(): void
+    {
+        $matcher = new QueryParamMatcher('q', '50%', []);
+
+        $result = $matcher($this->createRealRequest(queryParams: ['q' => '50%']));
+
+        self::assertInstanceOf(Hit::class, $result);
+    }
+
+    public function testValueWithEscapedPercentSign(): void
+    {
+        $matcher = new QueryParamMatcher('q', '50%%', []);
+
+        $result = $matcher($this->createRealRequest(queryParams: ['q' => '50%']));
+
+        self::assertInstanceOf(Hit::class, $result);
+    }
 }

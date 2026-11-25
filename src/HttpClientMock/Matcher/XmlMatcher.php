@@ -11,11 +11,12 @@ use DOMDocument;
 use function count;
 use function error_reporting;
 use function is_callable;
+use function libxml_clear_errors;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
 use function sprintf;
 
-final readonly class XmlMatcher implements Matcher
+final readonly class XmlMatcher implements CallbackMatcher
 {
     private mixed $xml;
 
@@ -34,7 +35,7 @@ final readonly class XmlMatcher implements Matcher
         $realXml = $realRequest->getContent();
 
         if (is_callable($expectedXml)) {
-            if (!$this->isXmlString($realXml)) {
+            if ($realXml === null || !$this->isXmlString($realXml)) {
                 return Mismatch::mismatchingXml('<callback>', $realXml);
             }
 
@@ -64,6 +65,11 @@ final readonly class XmlMatcher implements Matcher
         return Hit::matchesXml($realXml);
     }
 
+    public function isCallback(): bool
+    {
+        return is_callable($this->xml);
+    }
+
     public function __toString(): string
     {
         return is_callable($this->xml)
@@ -78,10 +84,14 @@ final readonly class XmlMatcher implements Matcher
         $reporting = error_reporting(0);
 
         try {
+            // errors left in the buffer by the application must not count
+            libxml_clear_errors();
+
             $document->loadXML($data);
 
             $errors = libxml_get_errors();
         } finally {
+            libxml_clear_errors();
             libxml_use_internal_errors($internal);
             error_reporting($reporting);
         }

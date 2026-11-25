@@ -54,7 +54,7 @@ final class RealRequest
 
     public function hasHeader(string $key): bool
     {
-        return array_key_exists($key, $this->headers);
+        return array_key_exists(strtolower($key), $this->headers);
     }
 
     public function getHeader(string $key): string|null

@@ -23,6 +23,16 @@ final class NoResponseMock extends RuntimeException implements HttpClientMockExc
         return new self('All responses have already been processed');
     }
 
+    public static function unexpectedCall(MockRequestBuilder $requestBuilder, int $expected, int $actual): self
+    {
+        return new self(sprintf(
+            'Mock request %s was expected to be called %d times, but was called %d times.',
+            $requestBuilder->name !== null ? sprintf('"%s"', $requestBuilder->name) : sprintf('[%s]', $requestBuilder),
+            $expected,
+            $actual,
+        ));
+    }
+
     public static function withRequest(self $decorated, MockRequestBuilder $requestBuilder): self
     {
         $message = sprintf(

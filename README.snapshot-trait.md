@@ -59,6 +59,34 @@ several snapshots of the same type in one test.
 * XML `assertMatchesXmlSnapshot()`
 * HTML `assertMatchesHtmlSnapshot()` (formatted with tidy)
 * Text `assertMatchesTextSnapshot()`
+* CSV `assertMatchesCsvSnapshot()` (list of rows)
+* YAML `assertMatchesYamlSnapshot()` (requires `symfony/yaml`)
+* Binary `assertMatchesBinarySnapshot($data, 'png')` (compared byte by byte)
+
+## Normalizers
+
+Normalizers replace volatile values before the snapshot is written and compared. They apply to all
+snapshots of the current test:
+
+```php
+$this->addSnapshotUuidNormalizer();      // UUIDs become the nil UUID
+$this->addSnapshotDateTimeNormalizer();  // ISO 8601 date times
+$this->addSnapshotPatternNormalizer('/"token": "[^"]+"/', '"token": "***"');
+$this->addSnapshotNormalizer(fn (string $content): string => str_replace($baseUrl, 'BASE_URL', $content));
+
+$this->assertMatchesJsonSnapshot($json);
+```
+
+Normalizers work on the formatted text. If they turn different keys of a JSON object into the same key, e.g. a map
+keyed by UUIDs, the test fails, because the comparison would only see the last of these keys. With
+`snapshotStrictJson()` the text is compared, so duplicate keys are allowed there.
+
+## Options
+
+Override these methods in your test class:
+
+* `snapshotStrictJson(): bool` – compare JSON snapshots including key order and formatting (default: `false`)
+* `snapshotTidyConfig(): array` – the tidy configuration for HTML snapshots
 
 ## Environment variables
 
@@ -69,8 +97,19 @@ count as disabled, an empty value counts as not set.
 | Variable | Effect |
 |---|---|
 | `UPDATE_SNAPSHOTS` | Rewrite existing snapshot files with the actual values. |
-| `CREATE_SNAPSHOTS` | Set to `0` or `false` to fail instead of creating missing snapshots. Snapshots are created by default. |
+| `CREATE_SNAPSHOTS` | Set to `0` or `false` to fail instead of creating missing snapshots, or to `auto` to fail only when the `CI` variable is set. Snapshots are created by default. |
+| `SNAPSHOT_CREATED_WARNING` | Emit a PHPUnit warning for every snapshot that was created, so new snapshots don't go unnoticed. Needs `restrictWarnings="false"`, see below. |
 | `SKIP_SNAPSHOT_TESTS` | Mark tests as skipped when they reach a snapshot assertion. |
+
+The warning of `SNAPSHOT_CREATED_WARNING` is triggered in this library, which is in `vendor/` and not part of your
+`<source>`. PHPUnit drops warnings from outside the source when `restrictWarnings="true"` is set, and
+`phpunit --generate-configuration` sets it. Set it to `false` to see the warnings, and add
+`failOnWarning="true"` to fail the test run:
+
+```xml
+<phpunit failOnWarning="true">
+    <source restrictWarnings="false">
+```
 
 ## Recreate/Update Snapshots
 
@@ -89,4 +128,12 @@ When running in continuous integration you probably want to disable snapshot gen
 ```shell
 CREATE_SNAPSHOTS=0 phpunit
 CREATE_SNAPSHOTS=false phpunit tests/Functional/MyTest.php
+```
+
+With `CREATE_SNAPSHOTS=auto` in `phpunit.xml.dist`, snapshots are created locally but not in CI. Only the `CI`
+variable is checked. GitHub Actions, GitLab CI and most other CI systems set it, Jenkins and Azure Pipelines don't,
+so set `CI=true` there yourself:
+
+```xml
+<env name="CREATE_SNAPSHOTS" value="auto"/>
 ```

@@ -199,6 +199,23 @@ final class SchemaTraitTest extends TestCase
         self::assertFalse(self::$isSchemaDatabaseClean);
     }
 
+    public function testDatabaseIsMarkedDirtyByCleanupWithoutFixture(): void
+    {
+        // a test without fixture can still have changed the database
+        self::$isSchemaDatabaseClean = true;
+
+        $this->cleanupFixture();
+
+        self::assertFalse(self::$isSchemaDatabaseClean);
+    }
+
+    public function testDatabaseIsNotMarkedCleanWithoutFixture(): void
+    {
+        $this->cleanupFixture();
+
+        self::assertFalse(self::$isSchemaDatabaseClean);
+    }
+
     public function testDatabaseIsMarkedCleanAfterFixupIsCleanedUp(): void
     {
         self::$isSchemaDatabaseClean = false;

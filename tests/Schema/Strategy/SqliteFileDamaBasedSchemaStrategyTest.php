@@ -6,6 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\Tests\Schema\Strategy;
 
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteFileDamaBasedSchemaStrategy;
+use Brainbits\FunctionalTestHelpers\Schema\Strategy\SqliteTables;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\Schema;
@@ -22,6 +23,7 @@ use function sys_get_temp_dir;
 use const FILE_APPEND;
 
 #[CoversClass(SqliteFileDamaBasedSchemaStrategy::class)]
+#[CoversClass(SqliteTables::class)]
 final class SqliteFileDamaBasedSchemaStrategyTest extends TestCase
 {
     private string|null $databasePath = null;

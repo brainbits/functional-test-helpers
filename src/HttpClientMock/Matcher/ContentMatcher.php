@@ -9,7 +9,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
 use function is_callable;
 use function sprintf;
 
-final readonly class ContentMatcher implements Matcher
+final readonly class ContentMatcher implements CallbackMatcher
 {
     private mixed $content;
 
@@ -23,6 +23,13 @@ final readonly class ContentMatcher implements Matcher
         $expectedContent = $this->content;
         $realContent = $realRequest->getContent();
 
+        if ($realContent === null) {
+            return Mismatch::mismatchingContent(
+                is_callable($expectedContent) ? '<callback>' : $expectedContent,
+                $realContent,
+            );
+        }
+
         if (is_callable($expectedContent)) {
             if ($expectedContent($realContent) === false) {
                 return Mismatch::mismatchingContent('<callback>', $realContent);
@@ -32,6 +39,11 @@ final readonly class ContentMatcher implements Matcher
         }
 
         return Hit::matchesContent($realContent);
+    }
+
+    public function isCallback(): bool
+    {
+        return is_callable($this->content);
     }
 
     public function __toString(): string

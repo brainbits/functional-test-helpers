@@ -8,7 +8,6 @@ use ArrayObject;
 use Brainbits\FunctionalTestHelpers\Schema\DataBuilder;
 use Brainbits\FunctionalTestHelpers\Schema\SchemaBuilder;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Identifier;
 
 use function assert;
 use function count;
@@ -56,14 +55,22 @@ final class SqliteFileBasedSchemaStrategy implements SchemaStrategy
         $databaseDirectoryExists = file_exists($pathToDatabaseDirectory);
 
         if (!$databaseDirectoryExists) {
-            mkdir($pathToDatabaseDirectory);
+            mkdir($pathToDatabaseDirectory, 0777, true);
         }
 
         if (!$databaseExists) {
             self::$executedStatements = new ArrayObject();
         }
 
-        if (count(self::$executedStatements) === 0) {
+        $statements = $schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform());
+        $isConflicting = SchemaStatements::hasConflictingTables(self::$executedStatements->getArrayCopy(), $statements);
+
+        if (count(self::$executedStatements) === 0 || $isConflicting) {
+            self::$executedStatements = new ArrayObject();
+
+            // the files are replaced, an open connection would keep using the deleted file
+            $connection->close();
+
             if ($databaseExists) {
                 unlink($pathToDatabase);
                 $databaseExists = false;
@@ -76,10 +83,11 @@ final class SqliteFileBasedSchemaStrategy implements SchemaStrategy
         }
 
         if ($cacheExists) {
+            $connection->close();
             copy($pathToCache, $pathToDatabase);
         }
 
-        $databaseChanged = $this->applyMissingSchema($schemaBuilder, $connection);
+        $databaseChanged = $this->applyMissingSchema($statements, $connection);
 
         // phpcs:ignore SlevomatCodingStandard.ControlStructures.EarlyExit.EarlyExitNotUsed
         if ($databaseChanged) {
@@ -100,11 +108,12 @@ final class SqliteFileBasedSchemaStrategy implements SchemaStrategy
         }
     }
 
-    private function applyMissingSchema(SchemaBuilder $schemaBuilder, Connection $connection): bool
+    /** @param list<string> $statements */
+    private function applyMissingSchema(array $statements, Connection $connection): bool
     {
         $databaseChanged = false;
 
-        foreach ($schemaBuilder->getSchema()->toSql($connection->getDatabasePlatform()) as $sql) {
+        foreach ($statements as $sql) {
             if (self::$executedStatements->offsetExists($sql)) {
                 continue;
             }
@@ -118,7 +127,7 @@ final class SqliteFileBasedSchemaStrategy implements SchemaStrategy
 
     private function quoteIdentifier(Connection $connection, string $identifier): string
     {
-        return (new Identifier($identifier, true))->getQuotedName($connection->getDatabasePlatform());
+        return IdentifierQuoting::quote($connection->getDatabasePlatform(), $identifier);
     }
 
     /**

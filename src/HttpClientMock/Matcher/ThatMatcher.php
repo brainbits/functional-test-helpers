@@ -6,7 +6,7 @@ namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
 
-final readonly class ThatMatcher implements Matcher
+final readonly class ThatMatcher implements CallbackMatcher
 {
     private mixed $that;
 
@@ -22,6 +22,11 @@ final readonly class ThatMatcher implements Matcher
         }
 
         return Hit::matchesThat();
+    }
+
+    public function isCallback(): bool
+    {
+        return true;
     }
 
     public function __toString(): string

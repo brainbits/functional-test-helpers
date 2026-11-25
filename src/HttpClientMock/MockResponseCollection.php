@@ -68,6 +68,14 @@ final class MockResponseCollection
         return current($this->responses) !== false;
     }
 
+    /**
+     * True if sequentially added responses are left that were never returned.
+     */
+    public function hasUnusedResponses(): bool
+    {
+        return !$this->isSingleResponse && $this->hasNext();
+    }
+
     public function reset(): void
     {
         $this->responses = [];

@@ -42,11 +42,37 @@ final class MockRequestResolver
             throw NoMatchingMockRequest::fromResults($realRequest, $missedMatchResults);
         }
 
+        // A mock with once(), never() or times() keeps its requests, neither an equally nor a less specific mock
+        // may answer them, otherwise the call count check would miss the extra calls. Within the same score,
+        // the order is: a mock with call count, calls and a response left, any other mock with call count,
+        // any mock with a response.
         foreach ($scoredMatchResults as $matchResults) {
+            $builderWithCallCount = null;
+            $builderWithResponse = null;
             foreach ($matchResults as $matchResult) {
-                if ($builders[$matchResult]->hasNextResponse()) {
-                    return $builders[$matchResult];
+                $builder = $builders[$matchResult];
+
+                if ($builder->getExpectedCallCount() === null) {
+                    if ($builderWithResponse === null && $builder->hasNextResponse()) {
+                        $builderWithResponse = $builder;
+                    }
+
+                    continue;
                 }
+
+                if ($builder->hasNextResponse() && count($builder->getCallStack()) < $builder->getExpectedCallCount()) {
+                    return $builder;
+                }
+
+                $builderWithCallCount ??= $builder;
+            }
+
+            if ($builderWithCallCount !== null) {
+                return $builderWithCallCount;
+            }
+
+            if ($builderWithResponse !== null) {
+                return $builderWithResponse;
             }
         }
 

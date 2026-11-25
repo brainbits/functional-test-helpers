@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher;
 
 use Brainbits\FunctionalTestHelpers\HttpClientMock\RealRequest;
+use ValueError;
 
 use function in_array;
 use function is_array;
@@ -36,7 +37,11 @@ final readonly class QueryParamMatcher implements Matcher
         }
 
         if (!is_array($value)) {
-            $value = vsprintf($value, $placeholders);
+            try {
+                $value = vsprintf($value, $placeholders);
+            } catch (ValueError) {
+                // a literal "%" without placeholders, e.g. "50%"
+            }
         }
 
         $this->key = $key;
@@ -55,7 +60,7 @@ final readonly class QueryParamMatcher implements Matcher
 
         if (
             (!$this->isArray && $expectedValue !== $realValue) ||
-            ($this->isArray && !in_array($expectedValue, $realValue, true))
+            ($this->isArray && (!is_array($realValue) || !in_array($expectedValue, $realValue, true)))
         ) {
             return Mismatch::mismatchingQueryParam($this->key, $expectedValue, $realValue);
         }

@@ -9,8 +9,12 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Mismatch;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\XmlMatcher;
 use Brainbits\FunctionalTestHelpers\Tests\HttpClientMock\RealRequestTrait;
+use DOMDocument;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+
+use function libxml_clear_errors;
+use function libxml_use_internal_errors;
 
 #[CoversClass(XmlMatcher::class)]
 #[CoversClass(Hit::class)]
@@ -128,5 +132,31 @@ final class XmlMatcherTest extends TestCase
         $matcher = new XmlMatcher(static fn ($xml) => $xml === '<?xml version="1.0"?><root><first>abc</first></root>');
 
         self::assertSame('callback(request.content) !== false', (string) $matcher);
+    }
+
+    public function testCallbackIsNotInvokedForMissingContent(): void
+    {
+        $matcher = new XmlMatcher(static function (): bool {
+            self::fail('Callback was invoked without content');
+        });
+
+        $result = $matcher($this->createRealRequest(content: null));
+
+        self::assertInstanceOf(Mismatch::class, $result);
+    }
+
+    public function testLibxmlErrorsOfTheApplicationAreIgnored(): void
+    {
+        $previous = libxml_use_internal_errors(true);
+        (new DOMDocument())->loadXML('<broken');
+
+        try {
+            $matcher = new XmlMatcher('<a/>');
+
+            self::assertInstanceOf(Hit::class, $matcher($this->createRealRequest(content: '<a/>')));
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
     }
 }
