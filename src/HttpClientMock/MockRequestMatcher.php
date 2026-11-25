@@ -8,6 +8,7 @@ use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\CallbackMatcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Hit;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\Matcher;
 use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\MatchResult;
+use Brainbits\FunctionalTestHelpers\HttpClientMock\Matcher\ThatMatcher;
 
 use function array_values;
 use function ksort;
@@ -25,7 +26,14 @@ final readonly class MockRequestMatcher
         $callbackMatchers = [];
         $isMismatch = false;
 
+        $thatMatchers = [];
         foreach (array_values($this->matchers) as $index => $matcher) {
+            if ($matcher instanceof ThatMatcher) {
+                $thatMatchers[$index] = $matcher;
+
+                continue;
+            }
+
             if ($matcher instanceof CallbackMatcher && $matcher->isCallback()) {
                 $callbackMatchers[$index] = $matcher;
 
@@ -37,7 +45,9 @@ final readonly class MockRequestMatcher
         }
 
         // Callbacks may contain assertions, so they only run for requests that match everything else,
-        // including the callbacks before them.
+        // including the callbacks before them. that() is meant for assertions, so it runs last.
+        $callbackMatchers += $thatMatchers;
+
         if (!$isMismatch) {
             foreach ($callbackMatchers as $index => $matcher) {
                 $results[$index] = $matcher($realRequest);

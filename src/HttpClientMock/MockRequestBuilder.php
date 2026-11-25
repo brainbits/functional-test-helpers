@@ -406,13 +406,14 @@ final class MockRequestBuilder
 
     public function nextResponse(): MockResponseBuilder|Throwable
     {
+        // an extra call fails right away, also if there are responses left, e.g. with willAlwaysRespond()
+        if ($this->expectedCallCount !== null && count($this->calls) > $this->expectedCallCount) {
+            throw NoResponseMock::unexpectedCall($this, $this->expectedCallCount, count($this->calls));
+        }
+
         try {
             return $this->responses->next();
         } catch (NoResponseMock $e) {
-            if ($this->expectedCallCount !== null && count($this->calls) > $this->expectedCallCount) {
-                throw NoResponseMock::unexpectedCall($this, $this->expectedCallCount, count($this->calls));
-            }
-
             throw NoResponseMock::withRequest($e, $this);
         }
     }

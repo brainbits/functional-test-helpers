@@ -191,8 +191,13 @@ final class HttpClientMockTraitTest extends TestCase
         $this->mockRequest('GET', '/twice')->name('twice')->times(2)->willAlwaysRespond($this->mockResponse());
 
         (self::$collection)('GET', '/once', []);
-        (self::$collection)('GET', '/never', []);
         (self::$collection)('GET', '/twice', []);
+
+        try {
+            (self::$collection)('GET', '/never', []);
+        } catch (NoResponseMock) {
+            // an extra call fails right away, and the check after the test reports it as well
+        }
 
         try {
             $this->assertNoFailedMockRequests();
@@ -266,6 +271,53 @@ final class HttpClientMockTraitTest extends TestCase
         $this->expectExceptionMessage('Mock request "once" was expected to be called 1 times, but was called 2 times.');
 
         $this->assertNoFailedMockRequests();
+    }
+
+    public function testNeverIsNotBypassedByEquallySpecificMock(): void
+    {
+        // e.g. a default mock from setUp()
+        $this->mockRequest('GET', '/status')->willAlwaysRespond($this->mockResponse());
+        $this->mockRequest('GET', '/status')->name('never')->never();
+
+        $this->expectException(NoResponseMock::class);
+        $this->expectExceptionMessage('Mock request "never" was expected to be called 0 times');
+
+        try {
+            (self::$collection)('GET', '/status', []);
+        } finally {
+            $this->createdMockRequestBuilders = [];
+        }
+    }
+
+    public function testNeverIsNotBypassedByMockWithOtherMatchersOfTheSameScore(): void
+    {
+        $this->mockRequest('GET')->header('Accept', 'application/json')->willAlwaysRespond($this->mockResponse());
+        $this->mockRequest('GET')->name('never')->queryParam('a', '1')->never();
+
+        $this->expectException(NoResponseMock::class);
+        $this->expectExceptionMessage('Mock request "never" was expected to be called 0 times');
+
+        try {
+            (self::$collection)('GET', '/x?a=1', ['headers' => ['Accept: application/json']]);
+        } finally {
+            $this->createdMockRequestBuilders = [];
+        }
+    }
+
+    public function testExtraCallOfOnceWithAlwaysRespondFailsRightAway(): void
+    {
+        $this->mockRequest('GET', '/status')->name('once')->once()->willAlwaysRespond($this->mockResponse());
+
+        (self::$collection)('GET', '/status', []);
+
+        $this->expectException(NoResponseMock::class);
+        $this->expectExceptionMessage('Mock request "once" was expected to be called 1 times, but was called 2 times.');
+
+        try {
+            (self::$collection)('GET', '/status', []);
+        } finally {
+            $this->createdMockRequestBuilders = [];
+        }
     }
 
     public function testEquallySpecificMocksWithCallCountsAreUsedInTurn(): void

@@ -84,9 +84,10 @@ $this->mockRequest('DELETE', 'http://127.0.0.1/orders/1')->never();
 $this->mockRequest('GET', 'http://127.0.0.1/status')->times(3)->willAlwaysRespond($this->mockResponse());
 ```
 
-`once()`, `never()` and `times()` are checked automatically after each test. A less specific mock
-never answers a request that matches a mock with a call count, so an extra call fails with a `NoResponseMock`
-right away, and the check after the test reports it as well.
+`once()`, `never()` and `times()` are checked automatically after each test. An equally or less specific mock,
+e.g. a default mock from `setUp()`, never answers a request that matches a mock with a call count. An extra call
+fails right away with a `NoResponseMock`, even with `willAlwaysRespond()`, and the check after the test reports it
+as well.
 
 ```php
 $this->assertAllMockResponsesAreConsumed();               // no sequential response was left unused
