@@ -94,8 +94,18 @@ count as disabled, an empty value counts as not set.
 |---|---|
 | `UPDATE_SNAPSHOTS` | Rewrite existing snapshot files with the actual values. |
 | `CREATE_SNAPSHOTS` | Set to `0` or `false` to fail instead of creating missing snapshots, or to `auto` to fail only when the `CI` variable is set. Snapshots are created by default. |
-| `SNAPSHOT_CREATED_WARNING` | Emit a PHPUnit warning for every snapshot that was created, so new snapshots don't go unnoticed. |
+| `SNAPSHOT_CREATED_WARNING` | Emit a PHPUnit warning for every snapshot that was created, so new snapshots don't go unnoticed. Needs `restrictWarnings="false"`, see below. |
 | `SKIP_SNAPSHOT_TESTS` | Mark tests as skipped when they reach a snapshot assertion. |
+
+The warning of `SNAPSHOT_CREATED_WARNING` is triggered in this library, which is in `vendor/` and not part of your
+`<source>`. PHPUnit drops warnings from outside the source when `restrictWarnings="true"` is set, and
+`phpunit --generate-configuration` sets it. Set it to `false` to see the warnings, and add
+`failOnWarning="true"` to fail the test run:
+
+```xml
+<phpunit failOnWarning="true">
+    <source restrictWarnings="false">
+```
 
 ## Recreate/Update Snapshots
 
